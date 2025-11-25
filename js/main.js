@@ -369,8 +369,8 @@ function render() {
                         ${state.showFairnessTabs ? `
                         <button onclick="state.currentTab = 'fairness'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Fairness</button>
                         <button onclick="state.currentTab = 'fairness2'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness2' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Fairness 2</button>
-                        <button onclick="state.currentTab = 'partnerships'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'partnerships' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Partners</button>
                         ` : ''}
+                        <button onclick="state.currentTab = 'partnerships'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'partnerships' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Partners</button>
                         <button onclick="state.currentTab = 'knockout'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'knockout' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Knockout</button>
                     </div>
                 </div>
