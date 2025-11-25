@@ -268,13 +268,13 @@ function ResultsMatrixTab() {
             </div>
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="overflow-x-auto">
-                    <table class="text-xs border-collapse min-w-full">
+                    <table class="text-xs border-collapse" style="table-layout: fixed;">
                         <thead>
                             <tr>
-                                <th class="border p-2 bg-gray-100 sticky left-0 z-10 text-left font-semibold">Player</th>
+                                <th class="border p-2 bg-gray-100 sticky left-0 z-10 text-left font-semibold" style="width: 150px;">Player</th>
                                 ${Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => {
                                     const round = i + 1;
-                                    return `<th class="border p-2 bg-gray-100 text-center text-sm font-semibold">R${round}</th>`;
+                                    return `<th class="border p-2 bg-gray-100 text-center text-sm font-semibold" style="width: 45px;">R${round}</th>`;
                                 }).join('')}
                             </tr>
                         </thead>
@@ -284,17 +284,17 @@ function ResultsMatrixTab() {
                                 const ranking = idx + 1;
                                 return `
                                     <tr class="hover:bg-gray-50">
-                                        <td class="border p-2 bg-gray-50 sticky left-0 z-10 font-medium text-left whitespace-nowrap">
+                                        <td class="border p-2 bg-gray-50 sticky left-0 z-10 font-medium text-left whitespace-nowrap" style="width: 150px;">
                                             <span class="font-bold text-blue-600">#${ranking}</span> <span class="font-bold text-gray-600">${playerId}</span> ${playerName}
                                         </td>
                                         ${playerRoundPoints[playerId].map(points => {
                                             if (points === null) {
-                                                return `<td class="border p-2 bg-gray-100 text-center"></td>`;
+                                                return `<td class="border p-2 bg-gray-100 text-center" style="width: 45px;"></td>`;
                                             } else if (points === '-') {
-                                                return `<td class="border p-2 text-center text-gray-400">-</td>`;
+                                                return `<td class="border p-2 text-center text-gray-400" style="width: 45px;">-</td>`;
                                             } else {
                                                 const bgColor = points >= 12 ? 'bg-green-100' : points >= 8 ? 'bg-blue-100' : points >= 4 ? 'bg-yellow-100' : 'bg-red-100';
-                                                return `<td class="border p-2 text-center font-semibold ${bgColor}">${points}</td>`;
+                                                return `<td class="border p-2 text-center font-semibold ${bgColor}" style="width: 45px;">${points}</td>`;
                                             }
                                         }).join('')}
                                     </tr>
