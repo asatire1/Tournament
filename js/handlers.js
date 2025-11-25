@@ -65,8 +65,12 @@ function toggleLock() {
 function renderLockButton() {
     const lockBtn = document.getElementById('lock-button');
     lockBtn.innerHTML = `
-        <button onclick="toggleLock()" class="lock-btn ${isUnlocked ? 'unlocked' : 'locked'}" title="${isUnlocked ? 'Click to lock' : 'Click to unlock'}">
-            <span style="font-size: 24px;">${isUnlocked ? '🔓' : '🔒'}</span>
+        <button 
+            onclick="toggleLock()" 
+            class="lock-btn ${isUnlocked ? 'unlocked' : 'locked'}" 
+            title="${isUnlocked ? 'Click to lock editing' : 'Click to unlock editing'}"
+        >
+            <span style="font-size: 32px;">${isUnlocked ? '🔓' : '🔒'}</span>
         </button>
     `;
 }

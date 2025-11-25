@@ -1,6 +1,6 @@
 {
   "players": [
-    { "id": 1, "name": "Meee", "rating": 3.75 },
+    { "id": 1, "name": "Abdul", "rating": 3.75 },
     { "id": 2, "name": "Sohaib", "rating": 3.73 },
     { "id": 3, "name": "Azam", "rating": 3.70 },
     { "id": 4, "name": "Suhail", "rating": 3.68 },

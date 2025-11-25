@@ -8,6 +8,126 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* ===== LOCK BUTTON ===== */
+.lock-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 28px;
+}
+
+.lock-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.lock-btn:active {
+    transform: scale(0.95);
+}
+
+.lock-btn.locked {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+}
+
+.lock-btn.unlocked {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+}
+
+.lock-btn.locked:hover {
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+}
+
+.lock-btn.unlocked:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+/* ===== PASSCODE MODAL ===== */
+.passcode-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.passcode-content {
+    background: white;
+    border-radius: 24px;
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.passcode-input {
+    width: 100%;
+    padding: 16px 20px;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 8px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    transition: all 0.3s;
+}
+
+.passcode-input:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile adjustments for lock button */
+@media (max-width: 640px) {
+    .lock-btn {
+        width: 56px;
+        height: 56px;
+        top: 16px;
+        right: 16px;
+        font-size: 24px;
+    }
+}
+
 /* ===== TIER COLORS ===== */
 .tier-elite { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); }
 .tier-advanced { background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%); }
