@@ -66,9 +66,9 @@ function MatchCard(round, matchIdx, match) {
                     <div class="score-box-horizontal">
                         <span class="rating-text">${team1Rating}</span>
                         <div class="score-row">
-                            <input type="number" min="0" max="16" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 1)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                            <input type="number" min="0" max="${state.fixtureMaxScore}" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 1)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
                             <span class="text-gray-400 text-2xl font-semibold">:</span>
-                            <input type="number" min="0" max="16" value="${score.team2Score !== null ? score.team2Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 2)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                            <input type="number" min="0" max="${state.fixtureMaxScore}" value="${score.team2Score !== null ? score.team2Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 2)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
                         </div>
                         <span class="rating-text">${team2Rating}</span>
                     </div>
@@ -256,11 +256,15 @@ function ResultsMatrixTab() {
         }
     }
     
+    // Get current standings and order players by them
+    const standings = state.calculateStandings();
+    const orderedPlayerIds = standings.map(s => s.playerId);
+    
     return `
         <div class="space-y-6">
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 class="font-semibold text-blue-900 mb-2">📊 Results Matrix</h3>
-                <div class="text-sm text-blue-800">Shows total points scored by each player in each round. Each player plays once per round.</div>
+                <div class="text-sm text-blue-800">Shows total points scored by each player in each round. Players ordered by current standings (best to worst).</div>
             </div>
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="overflow-x-auto">
@@ -275,13 +279,13 @@ function ResultsMatrixTab() {
                             </tr>
                         </thead>
                         <tbody>
-                            ${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => {
-                                const playerId = i + 1;
-                                const playerName = state.playerNames[i];
+                            ${orderedPlayerIds.map((playerId, idx) => {
+                                const playerName = state.playerNames[playerId - 1];
+                                const ranking = idx + 1;
                                 return `
                                     <tr class="hover:bg-gray-50">
                                         <td class="border p-2 bg-gray-50 sticky left-0 z-10 font-medium text-left whitespace-nowrap">
-                                            <span class="font-bold text-gray-600">#${playerId}</span> ${playerName}
+                                            <span class="font-bold text-blue-600">#${ranking}</span> <span class="font-bold text-gray-600">${playerId}</span> ${playerName}
                                         </td>
                                         ${playerRoundPoints[playerId].map(points => {
                                             if (points === null) {
@@ -572,17 +576,17 @@ function PartnershipsTab() {
                     <span class="inline-block w-6 h-6 bg-red-300 border mr-1 ml-3"></span> 3+ partnerships
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="text-xs border-collapse">
-                        <thead><tr><th class="border p-1 bg-gray-100 sticky left-0"></th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => `<th class="border p-1 bg-gray-100 text-center">${i + 1}</th>`).join('')}</tr></thead>
+                    <table class="text-xs border-collapse" style="table-layout: fixed;">
+                        <thead><tr><th class="border p-1 bg-gray-100 sticky left-0" style="width: 40px;"></th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => `<th class="border p-1 bg-gray-100 text-center" style="width: 32px;">${i + 1}</th>`).join('')}</tr></thead>
                         <tbody>
                             ${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => {
                                 const playerId = i + 1;
-                                return `<tr><th class="border p-1 bg-gray-100 sticky left-0 text-right">${playerId}</th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, j) => {
+                                return `<tr><th class="border p-1 bg-gray-100 sticky left-0 text-right" style="width: 40px;">${playerId}</th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, j) => {
                                     const partnerId = j + 1;
-                                    if (playerId === partnerId) return `<td class="border p-1 bg-gray-200 text-center">-</td>`;
+                                    if (playerId === partnerId) return `<td class="border p-1 bg-gray-200 text-center" style="width: 32px;">-</td>`;
                                     const count = data.partnerships[playerId][partnerId];
                                     const bgColor = count === 0 ? 'bg-white' : count === 1 ? 'bg-blue-200' : count === 2 ? 'bg-green-300' : 'bg-red-300';
-                                    return `<td class="border p-1 text-center ${bgColor}" title="Player ${playerId} partnered with Player ${partnerId}: ${count} times">${count > 0 ? count : ''}</td>`;
+                                    return `<td class="border p-1 text-center ${bgColor}" style="width: 32px;" title="Player ${playerId} partnered with Player ${partnerId}: ${count} times">${count > 0 ? count : ''}</td>`;
                                 }).join('')}</tr>`;
                             }).join('')}
                         </tbody>
@@ -598,17 +602,17 @@ function PartnershipsTab() {
                     <span class="inline-block w-6 h-6 bg-purple-300 border mr-1 ml-3"></span> 7+ times
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="text-xs border-collapse">
-                        <thead><tr><th class="border p-1 bg-gray-100 sticky left-0"></th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => `<th class="border p-1 bg-gray-100 text-center">${i + 1}</th>`).join('')}</tr></thead>
+                    <table class="text-xs border-collapse" style="table-layout: fixed;">
+                        <thead><tr><th class="border p-1 bg-gray-100 sticky left-0" style="width: 40px;"></th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => `<th class="border p-1 bg-gray-100 text-center" style="width: 32px;">${i + 1}</th>`).join('')}</tr></thead>
                         <tbody>
                             ${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => {
                                 const playerId = i + 1;
-                                return `<tr><th class="border p-1 bg-gray-100 sticky left-0 text-right">${playerId}</th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, j) => {
+                                return `<tr><th class="border p-1 bg-gray-100 sticky left-0 text-right" style="width: 40px;">${playerId}</th>${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, j) => {
                                     const opponentId = j + 1;
-                                    if (playerId === opponentId) return `<td class="border p-1 bg-gray-200 text-center">-</td>`;
+                                    if (playerId === opponentId) return `<td class="border p-1 bg-gray-200 text-center" style="width: 32px;">-</td>`;
                                     const count = data.opponents[playerId][opponentId];
                                     const bgColor = count === 0 ? 'bg-white' : count <= 2 ? 'bg-red-100' : count <= 4 ? 'bg-orange-200' : count <= 6 ? 'bg-yellow-200' : 'bg-purple-300';
-                                    return `<td class="border p-1 text-center ${bgColor}" title="Player ${playerId} opposed Player ${opponentId}: ${count} times">${count > 0 ? count : ''}</td>`;
+                                    return `<td class="border p-1 text-center ${bgColor}" style="width: 32px;" title="Player ${playerId} opposed Player ${opponentId}: ${count} times">${count > 0 ? count : ''}</td>`;
                                 }).join('')}</tr>`;
                             }).join('')}
                         </tbody>

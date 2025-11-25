@@ -9,6 +9,7 @@ const CONFIG = {
     TOTAL_ROUNDS: 13,
     MATCHES_PER_ROUND: 6,
     DEFAULT_MAX_SCORE: 16,
+    FIXTURE_MAX_SCORE: 16, // Default max score for fixture matches
     
     // Knockout Settings
     KNOCKOUT_MAX_SCORE: 16,

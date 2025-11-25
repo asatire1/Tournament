@@ -22,10 +22,12 @@ class TournamentState {
         this.matchNames = {};
         this.knockoutNames = {};
         this.knockoutScores = {};
+        this.fixtureMaxScore = CONFIG.FIXTURE_MAX_SCORE;
         this.knockoutMaxScore = CONFIG.KNOCKOUT_MAX_SCORE;
         this.semiMaxScore = CONFIG.SEMI_MAX_SCORE;
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
         this.savedVersions = [];
+        this.showFairnessTabs = true; // Show/hide fairness tabs
     }
 
     // ===== INITIALIZATION =====
@@ -74,11 +76,13 @@ class TournamentState {
         this.knockoutScores = {};
         
         // Knockout settings
+        this.fixtureMaxScore = CONFIG.FIXTURE_MAX_SCORE;
         this.knockoutMaxScore = CONFIG.KNOCKOUT_MAX_SCORE;
         this.semiMaxScore = CONFIG.SEMI_MAX_SCORE;
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
         
         this.savedVersions = [];
+        this.showFairnessTabs = true;
     }
 
     // ===== FIREBASE OPERATIONS =====
@@ -94,10 +98,12 @@ class TournamentState {
                 this.matchNames = data.matchNames || this.matchNames;
                 this.knockoutNames = data.knockoutNames || this.knockoutNames;
                 this.knockoutScores = data.knockoutScores || {};
+                this.fixtureMaxScore = data.fixtureMaxScore || CONFIG.FIXTURE_MAX_SCORE;
                 this.knockoutMaxScore = data.knockoutMaxScore || CONFIG.KNOCKOUT_MAX_SCORE;
                 this.semiMaxScore = data.semiMaxScore || CONFIG.SEMI_MAX_SCORE;
                 this.finalMaxScore = data.finalMaxScore || CONFIG.FINAL_MAX_SCORE;
                 this.savedVersions = data.savedVersions || [];
+                this.showFairnessTabs = data.showFairnessTabs !== undefined ? data.showFairnessTabs : true;
             } else {
                 this.initializeDefaults();
                 this.saveToFirebase();
@@ -121,10 +127,12 @@ class TournamentState {
             matchNames: this.matchNames,
             knockoutNames: this.knockoutNames,
             knockoutScores: this.knockoutScores,
+            fixtureMaxScore: this.fixtureMaxScore,
             knockoutMaxScore: this.knockoutMaxScore,
             semiMaxScore: this.semiMaxScore,
             finalMaxScore: this.finalMaxScore,
-            savedVersions: this.savedVersions
+            savedVersions: this.savedVersions,
+            showFairnessTabs: this.showFairnessTabs
         };
         database.ref('tournament').set(data);
     }
@@ -257,6 +265,18 @@ class TournamentState {
     updateFinalMaxScore(value) {
         if (!checkPasscode()) return;
         this.finalMaxScore = value;
+        this.saveToFirebase();
+    }
+
+    updateFixtureMaxScore(value) {
+        if (!checkPasscode()) return;
+        this.fixtureMaxScore = value;
+        this.saveToFirebase();
+    }
+
+    toggleFairnessTabs() {
+        if (!checkPasscode()) return;
+        this.showFairnessTabs = !this.showFairnessTabs;
         this.saveToFirebase();
     }
 

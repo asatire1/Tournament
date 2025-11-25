@@ -76,11 +76,12 @@ function renderLockButton() {
 function handleScoreChange(round, matchIdx, value, team) {
     if (!checkPasscode()) return;
     const score = parseInt(value);
-    if (isNaN(score) || score < 0 || score > 16) return;
+    const maxScore = state.fixtureMaxScore;
+    if (isNaN(score) || score < 0 || score > maxScore) return;
     if (team === 1) { 
-        state.updateMatchScore(round, matchIdx, score, 16 - score); 
+        state.updateMatchScore(round, matchIdx, score, maxScore - score); 
     } else { 
-        state.updateMatchScore(round, matchIdx, 16 - score, score); 
+        state.updateMatchScore(round, matchIdx, maxScore - score, score); 
     }
     render();
 }

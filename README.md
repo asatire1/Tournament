@@ -72,6 +72,12 @@ padel-tournament/
 
 ## ✨ What's New
 
+### v1.3.0 - Tournament Configuration & UI Improvements
+- **New**: Tournament settings tab - Configure match points for all stages
+- **New**: Toggle to show/hide fairness tabs
+- **Improved**: Results matrix now ordered by current standings
+- **Improved**: Partnership matrix cells now uniform size
+
 ### v1.2.0 - Bigger Fonts in Match Cards
 - **Enhanced**: Player badge fonts (+25% larger)
 - **Enhanced**: Score input fonts (+40% larger) 
@@ -88,9 +94,12 @@ padel-tournament/
 - **Cleared**: All match scores (backup preserved)
 
 ### Modified Files
-- ✅ `js/main.js` - Added reset from JSON button
-- ✅ `css/styles.css` - Bigger fonts in match cards
-- ✅ `js/components.js` - Bigger colon separator
+- ✅ `js/main.js` - Tournament tab, fairness toggle, conditional tabs
+- ✅ `js/state.js` - New settings properties and methods
+- ✅ `js/handlers.js` - Dynamic fixture max score
+- ✅ `js/components.js` - Ordered matrix, uniform cells, dynamic scores
+- ✅ `js/config.js` - Fixture max score constant
+- ✅ `css/styles.css` - Bigger fonts (v1.2.0)
 
 ### Unchanged Files
 - ✅ All other files work as-is
@@ -253,10 +262,13 @@ data/ (entire folder)
 
 ## 🎯 Version Info
 
-- **Version**: 1.2.0
+- **Version**: 1.3.0
 - **Date**: November 25, 2024
-- **Latest Feature**: Bigger fonts in match cards
-- **Previous Feature**: Reset from JSON Files
+- **Latest Features**: 
+  - Tournament settings tab with match points configuration
+  - Show/hide fairness tabs toggle
+  - Results matrix ordered by standings
+  - Uniform partnership matrix cells
 - **Status**: ✅ Production Ready
 - **Compatibility**: ✅ Fully backward compatible
 

@@ -30,6 +30,7 @@ function SettingsTab() {
         { id: 'players', label: '👥 Players', icon: '👥' },
         { id: 'courts', label: '🏟️ Courts', icon: '🏟️' },
         { id: 'fixtures', label: '⚙️ Fixtures', icon: '⚙️' },
+        { id: 'tournament', label: '🎯 Tournament', icon: '🎯' },
         { id: 'data', label: '💾 Data', icon: '💾' }
     ];
 
@@ -187,6 +188,68 @@ function SettingsTab() {
                 </div>
             </div>
         `;
+    } else if (state.settingsSubTab === 'tournament') {
+        content = `
+            <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-900 mb-2">🎯 Tournament Configuration</h3>
+                    <div class="text-sm text-blue-800">Configure match points and tab visibility settings for your tournament.</div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🎮 Match Points Configuration</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Fixture Rounds Max Points</label>
+                            <p class="text-xs text-gray-500 mb-3">Maximum points for matches in rounds 1-${CONFIG.TOTAL_ROUNDS}</p>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.fixtureMaxScore}" onchange="state.updateFixtureMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                                ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.fixtureMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Quarter Finals Max Points</label>
+                            <p class="text-xs text-gray-500 mb-3">Maximum points for quarter final matches</p>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.knockoutMaxScore}" onchange="state.updateKnockoutMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                                ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.knockoutMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Semi Finals Max Points</label>
+                            <p class="text-xs text-gray-500 mb-3">Maximum points for semi final matches</p>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.semiMaxScore}" onchange="state.updateSemiMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                                ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.semiMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Final Match Max Points</label>
+                            <p class="text-xs text-gray-500 mb-3">Maximum points for the championship final</p>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-50 transition-all" value="${state.finalMaxScore}" onchange="state.updateFinalMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                                ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.finalMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">👁️ Tab Visibility Settings</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                                <div class="font-semibold text-gray-800">Show Fairness Tabs</div>
+                                <div class="text-sm text-gray-500">Display Fairness, Fairness 2, and Partners tabs in main navigation</div>
+                            </div>
+                            <button 
+                                onclick="state.toggleFairnessTabs(); render();" 
+                                class="px-6 py-2 rounded-lg font-medium transition-all ${state.showFairnessTabs ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-700'}"
+                                ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}
+                            >
+                                ${state.showFairnessTabs ? '✓ Shown' : '✗ Hidden'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     } else if (state.settingsSubTab === 'data') {
         content = `
             <div class="space-y-6">
@@ -303,9 +366,11 @@ function render() {
                         <button onclick="state.currentTab = 'settings'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'settings' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Settings</button>
                         <button onclick="state.currentTab = 'results'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'results' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Results</button>
                         <button onclick="state.currentTab = 'resultsmatrix'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'resultsmatrix' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Results Matrix</button>
+                        ${state.showFairnessTabs ? `
                         <button onclick="state.currentTab = 'fairness'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Fairness</button>
                         <button onclick="state.currentTab = 'fairness2'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness2' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Fairness 2</button>
                         <button onclick="state.currentTab = 'partnerships'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'partnerships' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Partners</button>
+                        ` : ''}
                         <button onclick="state.currentTab = 'knockout'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'knockout' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Knockout</button>
                     </div>
                 </div>
