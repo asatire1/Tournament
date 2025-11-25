@@ -88,6 +88,16 @@ class TournamentState {
     // ===== FIREBASE OPERATIONS =====
 
     loadFromFirebase() {
+        // Monitor Firebase connection status
+        const connectedRef = database.ref('.info/connected');
+        connectedRef.on('value', (snapshot) => {
+            if (snapshot.val() === true) {
+                console.log('✅ Connected to Firebase');
+            } else {
+                console.log('❌ Disconnected from Firebase');
+            }
+        });
+
         database.ref('tournament').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
@@ -119,22 +129,58 @@ class TournamentState {
     }
 
     saveToFirebase() {
-        const data = {
-            playerNames: this.playerNames,
-            skillRatings: this.skillRatings,
-            matchScores: this.matchScores,
-            fixtures: this.fixtures,
-            matchNames: this.matchNames,
-            knockoutNames: this.knockoutNames,
-            knockoutScores: this.knockoutScores,
-            fixtureMaxScore: this.fixtureMaxScore,
-            knockoutMaxScore: this.knockoutMaxScore,
-            semiMaxScore: this.semiMaxScore,
-            finalMaxScore: this.finalMaxScore,
-            savedVersions: this.savedVersions,
-            showFairnessTabs: this.showFairnessTabs
+        // Use granular updates instead of overwriting entire database
+        // This prevents data loss when multiple users edit simultaneously
+        const updates = {
+            'tournament/playerNames': this.playerNames,
+            'tournament/skillRatings': this.skillRatings,
+            'tournament/matchScores': this.matchScores,
+            'tournament/fixtures': this.fixtures,
+            'tournament/matchNames': this.matchNames,
+            'tournament/knockoutNames': this.knockoutNames,
+            'tournament/knockoutScores': this.knockoutScores,
+            'tournament/fixtureMaxScore': this.fixtureMaxScore,
+            'tournament/knockoutMaxScore': this.knockoutMaxScore,
+            'tournament/semiMaxScore': this.semiMaxScore,
+            'tournament/finalMaxScore': this.finalMaxScore,
+            'tournament/savedVersions': this.savedVersions,
+            'tournament/showFairnessTabs': this.showFairnessTabs
         };
-        database.ref('tournament').set(data);
+        database.ref().update(updates);
+    }
+
+    // Debounced save - groups rapid changes together
+    debouncedSave = null;
+    saveToFirebaseDebounced() {
+        if (this.debouncedSave) {
+            clearTimeout(this.debouncedSave);
+        }
+        this.debouncedSave = setTimeout(() => {
+            this.saveToFirebase();
+        }, 500); // Wait 500ms before saving
+    }
+
+    // Granular update for match scores only (most common operation)
+    saveMatchScoreToFirebase(round, matchIdx, team1Score, team2Score) {
+        const path = `tournament/matchScores/${round}/${matchIdx}`;
+        database.ref(path).set({
+            team1Score: team1Score,
+            team2Score: team2Score
+        });
+    }
+
+    // Granular update for knockout scores
+    saveKnockoutScoreToFirebase(matchId, team1Score, team2Score) {
+        const path = `tournament/knockoutScores/${matchId}`;
+        database.ref(path).set({
+            team1Score: team1Score,
+            team2Score: team2Score
+        });
+    }
+
+    // Granular update for settings (less critical, can use debouncing)
+    saveSettingToFirebase(key, value) {
+        database.ref(`tournament/${key}`).set(value);
     }
 
     // ===== PLAYER MANAGEMENT =====
@@ -142,13 +188,15 @@ class TournamentState {
     updatePlayerName(index, name) {
         if (!checkPasscode()) return;
         this.playerNames[index] = name;
-        this.saveToFirebase();
+        // Use debounced save for player names (less critical than scores)
+        this.saveToFirebaseDebounced();
     }
 
     updateSkillRating(playerId, rating) {
         if (!checkPasscode()) return;
         this.skillRatings[playerId] = rating;
-        this.saveToFirebase();
+        // Use debounced save for ratings (less critical than scores)
+        this.saveToFirebaseDebounced();
     }
 
     resetPlayerNames() {
@@ -166,13 +214,15 @@ class TournamentState {
     updateMatchName(matchNum, name) {
         if (!checkPasscode()) return;
         this.matchNames[matchNum] = name;
-        this.saveToFirebase();
+        // Use debounced save for match names (less critical than scores)
+        this.saveToFirebaseDebounced();
     }
 
     updateKnockoutName(matchId, name) {
         if (!checkPasscode()) return;
         this.knockoutNames[matchId] = name;
-        this.saveToFirebase();
+        // Use debounced save for knockout names (less critical than scores)
+        this.saveToFirebaseDebounced();
     }
 
     resetMatchNames() {
@@ -195,14 +245,16 @@ class TournamentState {
             this.matchScores[round] = {};
         }
         this.matchScores[round][match] = { team1Score, team2Score };
-        this.saveToFirebase();
+        // Use granular update for match scores (most frequent operation)
+        this.saveMatchScoreToFirebase(round, match, team1Score, team2Score);
     }
 
     clearMatchScore(round, match) {
         if (!checkPasscode()) return;
         if (this.matchScores[round] && this.matchScores[round][match]) {
             delete this.matchScores[round][match];
-            this.saveToFirebase();
+            // Delete from Firebase directly
+            database.ref(`tournament/matchScores/${round}/${match}`).remove();
         }
     }
 
@@ -235,14 +287,16 @@ class TournamentState {
     updateKnockoutScore(matchId, team1Score, team2Score) {
         if (!checkPasscode()) return;
         this.knockoutScores[matchId] = { team1Score, team2Score };
-        this.saveToFirebase();
+        // Use granular update for knockout scores
+        this.saveKnockoutScoreToFirebase(matchId, team1Score, team2Score);
     }
 
     clearKnockoutScore(matchId) {
         if (!checkPasscode()) return;
         if (this.knockoutScores[matchId]) {
             delete this.knockoutScores[matchId];
-            this.saveToFirebase();
+            // Delete from Firebase directly
+            database.ref(`tournament/knockoutScores/${matchId}`).remove();
         }
     }
 
@@ -253,31 +307,36 @@ class TournamentState {
     updateKnockoutMaxScore(value) {
         if (!checkPasscode()) return;
         this.knockoutMaxScore = value;
-        this.saveToFirebase();
+        // Use granular update for settings
+        this.saveSettingToFirebase('knockoutMaxScore', value);
     }
 
     updateSemiMaxScore(value) {
         if (!checkPasscode()) return;
         this.semiMaxScore = value;
-        this.saveToFirebase();
+        // Use granular update for settings
+        this.saveSettingToFirebase('semiMaxScore', value);
     }
 
     updateFinalMaxScore(value) {
         if (!checkPasscode()) return;
         this.finalMaxScore = value;
-        this.saveToFirebase();
+        // Use granular update for settings
+        this.saveSettingToFirebase('finalMaxScore', value);
     }
 
     updateFixtureMaxScore(value) {
         if (!checkPasscode()) return;
         this.fixtureMaxScore = value;
-        this.saveToFirebase();
+        // Use granular update for settings
+        this.saveSettingToFirebase('fixtureMaxScore', value);
     }
 
     toggleFairnessTabs() {
         if (!checkPasscode()) return;
         this.showFairnessTabs = !this.showFairnessTabs;
-        this.saveToFirebase();
+        // Use granular update for settings
+        this.saveSettingToFirebase('showFairnessTabs', this.showFairnessTabs);
     }
 
     // ===== FIXTURE MANAGEMENT =====
