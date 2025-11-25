@@ -1,0 +1,19 @@
+{
+  "fixtureMatches": {
+    "1": "Court 3",
+    "2": "Court 4",
+    "3": "Court 5",
+    "4": "Court 6",
+    "5": "Court 7",
+    "6": "Court 8"
+  },
+  "knockoutMatches": {
+    "qf1": "QF1",
+    "qf2": "QF2",
+    "qf3": "QF3",
+    "qf4": "QF4",
+    "sf1": "SF1",
+    "sf2": "SF2",
+    "final": "Final"
+  }
+}
