@@ -67,7 +67,7 @@ function MatchCard(round, matchIdx, match) {
                         <span class="rating-text">${team1Rating}</span>
                         <div class="score-row">
                             <input type="number" min="0" max="16" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 1)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
-                            <span class="text-gray-400">:</span>
+                            <span class="text-gray-400 text-2xl font-semibold">:</span>
                             <input type="number" min="0" max="16" value="${score.team2Score !== null ? score.team2Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 2)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
                         </div>
                         <span class="rating-text">${team2Rating}</span>

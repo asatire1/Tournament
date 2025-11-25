@@ -72,7 +72,15 @@ padel-tournament/
 
 ## ✨ What's New
 
-### Added: Reset from JSON Files Button
+### v1.2.0 - Bigger Fonts in Match Cards
+- **Enhanced**: Player badge fonts (+25% larger)
+- **Enhanced**: Score input fonts (+40% larger) 
+- **Enhanced**: Rating fonts (+25% larger)
+- **Enhanced**: Colon separator (+50% larger)
+- **Improved**: Better space utilization in match cards
+- **Maintained**: Same card size, just bigger text!
+
+### v1.1.0 - Reset from JSON Files Button
 - **Location**: Settings → Data subtab
 - **Color**: Purple button
 - **Function**: Reloads all data from JSON files
@@ -80,7 +88,9 @@ padel-tournament/
 - **Cleared**: All match scores (backup preserved)
 
 ### Modified Files
-- ✅ `js/main.js` - Added new button section (only file changed!)
+- ✅ `js/main.js` - Added reset from JSON button
+- ✅ `css/styles.css` - Bigger fonts in match cards
+- ✅ `js/components.js` - Bigger colon separator
 
 ### Unchanged Files
 - ✅ All other files work as-is
@@ -243,9 +253,10 @@ data/ (entire folder)
 
 ## 🎯 Version Info
 
-- **Version**: 1.1.0
+- **Version**: 1.2.0
 - **Date**: November 25, 2024
-- **Feature**: Reset from JSON Files
+- **Latest Feature**: Bigger fonts in match cards
+- **Previous Feature**: Reset from JSON Files
 - **Status**: ✅ Production Ready
 - **Compatibility**: ✅ Fully backward compatible
 
