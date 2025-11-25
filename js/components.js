@@ -646,32 +646,6 @@ function KnockoutTab() {
     
     return `
         <div class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="filter-section rounded-3xl shadow-sm p-5">
-                    <h3 class="font-semibold text-gray-800 mb-3 text-sm" style="letter-spacing: -0.3px;">Quarter Finals</h3>
-                    <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Match Points</label>
-                    <select class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all text-sm font-medium" value="${state.knockoutMaxScore}" onchange="state.updateKnockoutMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
-                        ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.knockoutMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="filter-section rounded-3xl shadow-sm p-5">
-                    <h3 class="font-semibold text-gray-800 mb-3 text-sm" style="letter-spacing: -0.3px;">Semi Finals</h3>
-                    <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Match Points</label>
-                    <select class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all text-sm font-medium" value="${state.semiMaxScore}" onchange="state.updateSemiMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
-                        ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.semiMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="filter-section rounded-3xl shadow-sm p-5 relative overflow-hidden">
-                    <div class="absolute inset-0 bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 opacity-60"></div>
-                    <div class="relative">
-                        <h3 class="font-semibold text-gray-800 mb-3 text-sm flex items-center gap-2" style="letter-spacing: -0.3px;"><span class="text-base">🏆</span>Final Match</h3>
-                        <label class="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Match Points</label>
-                        <select class="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-50 transition-all text-sm font-medium bg-white" value="${state.finalMaxScore}" onchange="state.updateFinalMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
-                            ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.finalMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
-                        </select>
-                    </div>
-                </div>
-            </div>
             <div class="filter-section rounded-3xl shadow-sm p-5">
                 <h3 class="font-semibold text-gray-800 mb-4 text-sm" style="letter-spacing: -0.3px;">Top 16 Qualified Players</h3>
                 <div class="flex flex-wrap gap-2">
