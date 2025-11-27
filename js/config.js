@@ -1,9 +1,6 @@
 // ===== APPLICATION CONFIGURATION =====
 
 const CONFIG = {
-    // Security
-    PASSCODE: "1234", // Change this to your desired passcode
-    
     // Tournament Settings
     TOTAL_PLAYERS: 24,
     TOTAL_ROUNDS: 13,
@@ -76,3 +73,5 @@ function isWithinGroup(match) {
     const tier = getTier(allPlayers[0]);
     return allPlayers.every(p => getTier(p) === tier);
 }
+
+console.log('✅ Config loaded');

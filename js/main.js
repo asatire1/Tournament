@@ -2,30 +2,244 @@
 
 let state;
 
+// Main initialization - starts the router
 async function initializeApp() {
     console.log('🚀 Initializing Stretford Padel Tournament...');
     
-    // Create state instance
-    state = new TournamentState();
+    // Set up route change handler
+    Router.onRouteChange = handleRouteChange;
     
-    // Load default data from JSON files
+    // Initialize router (will trigger initial route)
+    Router.init();
+    
+    // Set up connection monitoring
+    setupConnectionMonitoring();
+    
+    console.log('✅ App initialized successfully');
+}
+
+// Monitor Firebase connection status
+function setupConnectionMonitoring() {
+    if (typeof database === 'undefined') return;
+    
+    const connectedRef = database.ref('.info/connected');
+    connectedRef.on('value', (snap) => {
+        const isConnected = snap.val() === true;
+        updateConnectionIndicator(isConnected);
+    });
+    
+    // Also listen for browser online/offline events
+    window.addEventListener('online', () => updateConnectionIndicator(true));
+    window.addEventListener('offline', () => updateConnectionIndicator(false));
+}
+
+// Update the connection indicator in the UI
+function updateConnectionIndicator(isConnected) {
+    const indicator = document.getElementById('connection-indicator');
+    if (!indicator) return;
+    
+    if (isConnected) {
+        indicator.innerHTML = `
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span class="font-semibold text-green-700">Live</span>
+        `;
+        indicator.className = 'flex items-center gap-1.5 bg-green-50 backdrop-blur rounded-full px-3 py-1.5 border border-green-200';
+    } else {
+        indicator.innerHTML = `
+            <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+            <span class="font-semibold text-red-700">Offline</span>
+        `;
+        indicator.className = 'flex items-center gap-1.5 bg-red-50 backdrop-blur rounded-full px-3 py-1.5 border border-red-200';
+    }
+}
+
+// Handle route changes
+async function handleRouteChange(route, tournamentId, organiserKey) {
+    console.log(`📍 Route: ${route}, Tournament: ${tournamentId}, Key: ${organiserKey ? 'present' : 'none'}`);
+    
+    if (route === Router.routes.HOME) {
+        // Show landing page
+        renderLandingPageView();
+    } else if (route === Router.routes.TOURNAMENT) {
+        // Show tournament view
+        await initializeTournament(tournamentId, organiserKey);
+    }
+}
+
+// Render landing page
+function renderLandingPageView() {
+    // Clean up any existing state
+    if (state) {
+        state.stopListening();
+        state = null;
+    }
+    
+    const app = document.getElementById('app');
+    app.innerHTML = renderLandingPage();
+    
+    // Load recent tournaments after render
+    setTimeout(() => loadRecentTournaments(), 100);
+}
+
+// Initialize tournament view
+async function initializeTournament(tournamentId, organiserKey) {
+    // Clean up existing state
+    if (state) {
+        state.stopListening();
+    }
+    
+    // Show loading state
+    renderLoadingState(tournamentId);
+    
+    // Check if tournament exists first
+    const exists = await checkTournamentExists(tournamentId);
+    if (!exists) {
+        renderTournamentNotFound(tournamentId);
+        return;
+    }
+    
+    // Create new state for this tournament
+    state = new TournamentState(tournamentId);
+    
+    // Load default data (for backup/reset features)
     await state.loadDefaults();
     
-    // Initialize defaults if needed
-    state.initializeDefaults();
+    // Check for cached organiser key if none provided
+    if (!organiserKey) {
+        organiserKey = OrganiserKeyCache.get(tournamentId);
+    }
+    
+    // Verify organiser key if provided
+    if (organiserKey) {
+        const isValid = await state.verifyOrganiserKey(organiserKey);
+        if (isValid) {
+            // Cache valid organiser key for future visits
+            OrganiserKeyCache.set(tournamentId, organiserKey);
+        } else {
+            // Remove invalid cached key
+            OrganiserKeyCache.remove(tournamentId);
+        }
+    }
     
     // Start listening to Firebase
     state.loadFromFirebase();
     
-    // Render lock button
-    renderLockButton();
+    console.log(`✅ Tournament ${tournamentId} loaded (Organiser: ${state.isOrganiser})`);
+}
+
+// Organiser key cache for returning organisers
+const OrganiserKeyCache = {
+    KEY: 'padel_organiser_keys',
     
-    console.log('✅ App initialized successfully');
+    getAll() {
+        try {
+            return JSON.parse(localStorage.getItem(this.KEY) || '{}');
+        } catch {
+            return {};
+        }
+    },
+    
+    get(tournamentId) {
+        return this.getAll()[tournamentId] || null;
+    },
+    
+    set(tournamentId, key) {
+        const keys = this.getAll();
+        keys[tournamentId] = key;
+        localStorage.setItem(this.KEY, JSON.stringify(keys));
+    },
+    
+    remove(tournamentId) {
+        const keys = this.getAll();
+        delete keys[tournamentId];
+        localStorage.setItem(this.KEY, JSON.stringify(keys));
+    }
+};
+
+// Check if tournament exists in Firebase
+async function checkTournamentExists(tournamentId) {
+    try {
+        const snapshot = await database.ref(`tournaments/${tournamentId}/meta`).once('value');
+        return snapshot.exists();
+    } catch (error) {
+        console.error('Error checking tournament:', error);
+        return false;
+    }
+}
+
+// Render loading state
+function renderLoadingState(tournamentId) {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="min-h-screen flex items-center justify-center" style="font-family: 'Space Grotesk', -apple-system, sans-serif;">
+            <div class="text-center">
+                <div class="relative mb-6">
+                    <div class="w-20 h-20 mx-auto rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-3xl">🏓</div>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Loading Tournament</h2>
+                <p class="text-gray-500">Code: <span class="font-mono font-bold text-blue-600">${tournamentId?.toUpperCase() || ''}</span></p>
+            </div>
+        </div>
+    `;
+}
+
+// Render tournament not found
+function renderTournamentNotFound(tournamentId) {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+        <div class="min-h-screen flex items-center justify-center p-4" style="font-family: 'Space Grotesk', -apple-system, sans-serif;">
+            <div class="text-center max-w-md">
+                <div class="text-6xl mb-6">🔍</div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-3">Tournament Not Found</h2>
+                <p class="text-gray-500 mb-2">We couldn't find a tournament with the code:</p>
+                <p class="font-mono text-xl font-bold text-red-500 mb-6">${tournamentId?.toUpperCase() || 'UNKNOWN'}</p>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
+                    <p class="text-sm text-amber-800">
+                        <strong>Possible reasons:</strong>
+                    </p>
+                    <ul class="text-sm text-amber-700 mt-2 space-y-1">
+                        <li>• The code was typed incorrectly</li>
+                        <li>• The tournament was deleted</li>
+                        <li>• The link is outdated</li>
+                    </ul>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button 
+                        onclick="Router.navigate('home')"
+                        class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors"
+                    >
+                        ← Back to Home
+                    </button>
+                    <button 
+                        onclick="showJoinTournamentModal()"
+                        class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors"
+                    >
+                        Try Another Code
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="modal-container"></div>
+    `;
 }
 
 // ===== SETTINGS TAB =====
 
 function SettingsTab() {
+    // Only organisers can see/use Settings
+    if (!state.canEdit()) {
+        return `
+            <div class="text-center py-16">
+                <div class="text-6xl mb-4">🔒</div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Organiser Access Required</h2>
+                <p class="text-gray-500">Settings are only available to the tournament organiser.</p>
+            </div>
+        `;
+    }
+    
     const subtabs = [
         { id: 'players', label: '👥 Players', icon: '👥' },
         { id: 'courts', label: '🏟️ Courts', icon: '🏟️' },
@@ -64,11 +278,11 @@ function SettingsTab() {
                                 <div class="p-4 space-y-3">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Player Name:</label>
-                                        <input type="text" value="${state.playerNames[i]}" class="w-full border rounded px-3 py-2" onchange="state.updatePlayerName(${i}, this.value); render();" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                        <input type="text" value="${state.playerNames[i]}" class="w-full border rounded px-3 py-2" onchange="state.updatePlayerName(${i}, this.value); render();" />
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">Skill Rating:</label>
-                                        <input type="number" min="0" max="5" step="0.01" value="${state.skillRatings[playerId]}" class="w-full border rounded px-3 py-2" onchange="state.updateSkillRating(${playerId}, parseFloat(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                        <input type="number" min="0" max="5" step="0.01" value="${state.skillRatings[playerId]}" class="w-full border rounded px-3 py-2" onchange="state.updateSkillRating(${playerId}, parseFloat(this.value)); render();" />
                                         <div class="text-xs text-gray-500 mt-1">(0-5, step 0.01)</div>
                                     </div>
                                 </div>
@@ -97,7 +311,7 @@ function SettingsTab() {
                             return `
                                 <div class="border border-gray-200 rounded-lg p-4">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Match ${matchNum}:</label>
-                                    <input type="text" value="${state.matchNames[matchNum]}" class="w-full border rounded px-3 py-2" onchange="state.updateMatchName(${matchNum}, this.value); render();" placeholder="e.g. Court ${matchNum + 2}" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                    <input type="text" value="${state.matchNames[matchNum]}" class="w-full border rounded px-3 py-2" onchange="state.updateMatchName(${matchNum}, this.value); render();" placeholder="e.g. Court ${matchNum + 2}" />
                                 </div>
                             `;
                         }).join('')}
@@ -123,7 +337,7 @@ function SettingsTab() {
                             return `
                                 <div class="border border-gray-200 rounded-lg p-4">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">${labels[matchId]}:</label>
-                                    <input type="text" value="${state.knockoutNames[matchId]}" class="w-full border rounded px-3 py-2" onchange="state.updateKnockoutName('${matchId}', this.value); render();" placeholder="${labels[matchId]}" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                    <input type="text" value="${state.knockoutNames[matchId]}" class="w-full border rounded px-3 py-2" onchange="state.updateKnockoutName('${matchId}', this.value); render();" placeholder="${labels[matchId]}" />
                                 </div>
                             `;
                         }).join('')}
@@ -151,15 +365,15 @@ function SettingsTab() {
                                             <div class="flex items-center gap-2 bg-gray-50 p-3 rounded flex-wrap">
                                                 <span class="text-xs font-medium text-gray-500 w-20">${state.matchNames[matchIdx + 1]}:</span>
                                                 <div class="flex items-center gap-1">
-                                                    <input type="number" min="1" max="24" value="${match.team1[0]}" class="fixture-input" id="r${round}m${matchIdx}t1p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p1', ${match.team1[0]}, this.value)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                                    <input type="number" min="1" max="24" value="${match.team1[0]}" class="fixture-input" id="r${round}m${matchIdx}t1p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p1', ${match.team1[0]}, this.value)" />
                                                     <span class="text-gray-400">&</span>
-                                                    <input type="number" min="1" max="24" value="${match.team1[1]}" class="fixture-input" id="r${round}m${matchIdx}t1p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p2', ${match.team1[1]}, this.value)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                                    <input type="number" min="1" max="24" value="${match.team1[1]}" class="fixture-input" id="r${round}m${matchIdx}t1p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p2', ${match.team1[1]}, this.value)" />
                                                 </div>
                                                 <span class="text-gray-400 font-bold">vs</span>
                                                 <div class="flex items-center gap-1">
-                                                    <input type="number" min="1" max="24" value="${match.team2[0]}" class="fixture-input" id="r${round}m${matchIdx}t2p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p1', ${match.team2[0]}, this.value)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                                    <input type="number" min="1" max="24" value="${match.team2[0]}" class="fixture-input" id="r${round}m${matchIdx}t2p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p1', ${match.team2[0]}, this.value)" />
                                                     <span class="text-gray-400">&</span>
-                                                    <input type="number" min="1" max="24" value="${match.team2[1]}" class="fixture-input" id="r${round}m${matchIdx}t2p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p2', ${match.team2[1]}, this.value)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                                                    <input type="number" min="1" max="24" value="${match.team2[1]}" class="fixture-input" id="r${round}m${matchIdx}t2p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p2', ${match.team2[1]}, this.value)" />
                                                 </div>
                                             </div>
                                         `).join('')}
@@ -202,28 +416,28 @@ function SettingsTab() {
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Fixture Rounds Max Points</label>
                             <p class="text-xs text-gray-500 mb-3">Maximum points for matches in rounds 1-${CONFIG.TOTAL_ROUNDS}</p>
-                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.fixtureMaxScore}" onchange="state.updateFixtureMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.fixtureMaxScore}" onchange="state.updateFixtureMaxScore(parseInt(this.value)); render();">
                                 ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.fixtureMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Quarter Finals Max Points</label>
                             <p class="text-xs text-gray-500 mb-3">Maximum points for quarter final matches</p>
-                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.knockoutMaxScore}" onchange="state.updateKnockoutMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.knockoutMaxScore}" onchange="state.updateKnockoutMaxScore(parseInt(this.value)); render();">
                                 ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.knockoutMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Semi Finals Max Points</label>
                             <p class="text-xs text-gray-500 mb-3">Maximum points for semi final matches</p>
-                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.semiMaxScore}" onchange="state.updateSemiMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all" value="${state.semiMaxScore}" onchange="state.updateSemiMaxScore(parseInt(this.value)); render();">
                                 ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.semiMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Final Match Max Points</label>
                             <p class="text-xs text-gray-500 mb-3">Maximum points for the championship final</p>
-                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-50 transition-all" value="${state.finalMaxScore}" onchange="state.updateFinalMaxScore(parseInt(this.value)); render();" ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}>
+                            <select class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-50 transition-all" value="${state.finalMaxScore}" onchange="state.updateFinalMaxScore(parseInt(this.value)); render();">
                                 ${Array.from({length: 17}, (_, i) => i + 8).map(n => `<option value="${n}" ${state.finalMaxScore === n ? 'selected' : ''}>${n}</option>`).join('')}
                             </select>
                         </div>
@@ -241,7 +455,6 @@ function SettingsTab() {
                             <button 
                                 onclick="state.toggleFairnessTabs(); render();" 
                                 class="px-6 py-2 rounded-lg font-medium transition-all ${state.showFairnessTabs ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-gray-300 hover:bg-gray-400 text-gray-700'}"
-                                ${!isUnlocked ? 'onclick="checkPasscode(); return false;"' : ''}
                             >
                                 ${state.showFairnessTabs ? '✓ Shown' : '✗ Hidden'}
                             </button>
@@ -325,8 +538,20 @@ function SettingsTab() {
 // ===== MAIN RENDER FUNCTION =====
 
 function render() {
-    renderLockButton();
+    // Don't render if no state (we're on landing page)
+    if (!state) return;
+    
+    // Don't render if tournament not loaded yet
+    if (!state.isInitialized) return;
+    
     const app = document.getElementById('app');
+    const canEdit = state.canEdit();
+    
+    // If user is on Settings tab but not organiser, redirect to fixtures
+    if (state.currentTab === 'settings' && !canEdit) {
+        state.currentTab = 'fixtures';
+    }
+    
     const tabContent = {
         'fixtures': TournamentFixturesTab(),
         'settings': SettingsTab(),
@@ -338,48 +563,106 @@ function render() {
         'knockout': KnockoutTab()
     };
     
+    // Calculate completed matches for progress indicator
+    const completedMatches = state.countCompletedMatches();
+    const totalMatches = CONFIG.TOTAL_ROUNDS * CONFIG.MATCHES_PER_ROUND;
+    const progressPercent = Math.round((completedMatches / totalMatches) * 100);
+    
     app.innerHTML = `
         <div class="max-w-7xl mx-auto p-4 md:p-6 pb-12">
-            <div class="relative bg-white text-gray-900 rounded-3xl shadow-sm p-8 md:p-10 mb-8 overflow-hidden border border-gray-100">
+            <!-- Header -->
+            <div class="relative bg-white text-gray-900 rounded-3xl shadow-sm p-6 md:p-8 mb-6 overflow-hidden border border-gray-100">
                 <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-60"></div>
                 <div class="relative">
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="text-5xl md:text-6xl">🏓</div>
-                        <div>
-                            <h1 class="text-3xl md:text-4xl font-bold mb-1" style="letter-spacing: -1px;">Stretford Padel Tournament</h1>
-                            <div class="text-sm text-gray-500 font-medium">Professional Match Manager</div>
+                    <!-- Top row: Back button and Share -->
+                    <div class="flex items-center justify-between mb-4">
+                        <button onclick="Router.navigate('home')" class="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors group" title="Back to home">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            <span class="text-sm font-medium">Home</span>
+                        </button>
+                        <button onclick="showShareLinksModal()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium flex items-center gap-2 transition-colors text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                            Share
+                        </button>
+                    </div>
+                    
+                    <!-- Main header content -->
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="text-4xl md:text-5xl">🏓</div>
+                        <div class="flex-1 min-w-0">
+                            <h1 class="text-2xl md:text-3xl font-bold mb-1 truncate" style="letter-spacing: -0.5px;">${state.tournamentName || 'Padel Tournament'}</h1>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="text-gray-500">Code: <span class="font-mono font-bold text-blue-600">${state.tournamentId?.toUpperCase() || ''}</span></span>
+                                <span class="text-gray-300">•</span>
+                                <span class="text-gray-500">${completedMatches}/${totalMatches} matches</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2 text-xs md:text-sm">
-                        <div class="flex items-center gap-2 bg-white/80 backdrop-blur rounded-full px-4 py-2 border border-gray-200"><span class="text-base">👥</span><span class="font-semibold text-gray-700">${CONFIG.TOTAL_PLAYERS} Players</span></div>
-                        <div class="flex items-center gap-2 bg-white/80 backdrop-blur rounded-full px-4 py-2 border border-gray-200"><span class="text-base">🎯</span><span class="font-semibold text-gray-700">${CONFIG.TOTAL_ROUNDS} Rounds</span></div>
-                        <div class="flex items-center gap-2 bg-white/80 backdrop-blur rounded-full px-4 py-2 border border-gray-200"><span class="text-base">⚙️</span><span class="font-semibold text-gray-700">Smart Swap</span></div>
-                        <div class="flex items-center gap-2 bg-green-50 backdrop-blur rounded-full px-4 py-2 border border-green-200"><span class="text-base">☁️</span><span class="font-semibold text-green-700">Live Sync</span></div>
-                        <div class="flex items-center gap-2 backdrop-blur rounded-full px-4 py-2 border ${isUnlocked ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}"><span class="text-base">${isUnlocked ? '🔓' : '🔒'}</span><span class="font-semibold ${isUnlocked ? 'text-green-700' : 'text-red-700'}">${isUnlocked ? 'Unlocked' : 'Locked'}</span></div>
+                    
+                    <!-- Progress bar -->
+                    <div class="mb-4">
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500" style="width: ${progressPercent}%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status badges -->
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
+                            <span>👥</span>
+                            <span class="font-semibold text-gray-700">${CONFIG.TOTAL_PLAYERS} Players</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
+                            <span>🎯</span>
+                            <span class="font-semibold text-gray-700">${CONFIG.TOTAL_ROUNDS} Rounds</span>
+                        </div>
+                        <div id="connection-indicator" class="flex items-center gap-1.5 bg-green-50 backdrop-blur rounded-full px-3 py-1.5 border border-green-200">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span class="font-semibold text-green-700">Live</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 backdrop-blur rounded-full px-3 py-1.5 border ${canEdit ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}">
+                            <span>${canEdit ? '✏️' : '👀'}</span>
+                            <span class="font-semibold ${canEdit ? 'text-blue-700' : 'text-gray-600'}">${canEdit ? 'Organiser' : 'View Only'}</span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl shadow-sm mb-8 overflow-hidden border border-gray-100">
+            
+            <!-- Navigation Tabs -->
+            <div class="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden border border-gray-100">
                 <div class="overflow-x-auto">
                     <div class="flex p-2 gap-1 min-w-max">
-                        <button onclick="state.currentTab = 'fixtures'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fixtures' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Fixtures</button>
-                        <button onclick="state.currentTab = 'settings'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'settings' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Settings</button>
-                        <button onclick="state.currentTab = 'results'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'results' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Results</button>
-                        <button onclick="state.currentTab = 'resultsmatrix'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'resultsmatrix' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Results Matrix</button>
+                        <button onclick="state.currentTab = 'fixtures'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fixtures' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Fixtures</button>
+                        ${canEdit ? `<button onclick="state.currentTab = 'settings'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'settings' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Settings</button>` : ''}
+                        <button onclick="state.currentTab = 'results'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'results' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Results</button>
+                        <button onclick="state.currentTab = 'resultsmatrix'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'resultsmatrix' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Matrix</button>
                         ${state.showFairnessTabs ? `
-                        <button onclick="state.currentTab = 'fairness'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Fairness</button>
-                        <button onclick="state.currentTab = 'fairness2'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness2' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Fairness 2</button>
+                        <button onclick="state.currentTab = 'fairness'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Fairness</button>
+                        <button onclick="state.currentTab = 'fairness2'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fairness2' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Fairness 2</button>
                         ` : ''}
-                        <button onclick="state.currentTab = 'partnerships'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'partnerships' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Partners</button>
-                        <button onclick="state.currentTab = 'knockout'; render();" class="px-5 py-3 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'knockout' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}" style="letter-spacing: -0.2px;">Knockout</button>
+                        <button onclick="state.currentTab = 'partnerships'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'partnerships' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Partners</button>
+                        <button onclick="state.currentTab = 'knockout'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'knockout' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Knockout</button>
                     </div>
                 </div>
             </div>
+            
+            <!-- Tab Content -->
             <div>${tabContent[state.currentTab]}</div>
         </div>
+        
+        <!-- Modal container -->
+        <div id="modal-container"></div>
+        
+        <!-- Toast container -->
+        <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
     `;
 }
 
 // ===== START THE APP =====
-// This will run when the page loads
 window.addEventListener('DOMContentLoaded', initializeApp);
+
+console.log('✅ Main app loaded');

@@ -1,18 +1,27 @@
 // ===== STATE MANAGEMENT CLASS =====
 
 class TournamentState {
-    constructor() {
+    constructor(tournamentId = null) {
+        this.tournamentId = tournamentId;
         this.currentTab = 'fixtures';
         this.settingsSubTab = 'players';
         this.filterRound = 'all';
         this.filterPlayer = 'all';
         this.isInitialized = false;
         
+        // Organiser status (set by verifying key against Firebase)
+        this.isOrganiser = false;
+        this.organiserKey = null;
+        
         // Default data (will be overridden by loaded JSON)
         this.defaultPlayers = [];
         this.defaultFixtures = {};
         this.defaultMatchNames = {};
         this.defaultKnockoutNames = {};
+        
+        // Tournament metadata
+        this.tournamentName = '';
+        this.createdAt = null;
         
         // Current state
         this.playerNames = [];
@@ -27,7 +36,48 @@ class TournamentState {
         this.semiMaxScore = CONFIG.SEMI_MAX_SCORE;
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
         this.savedVersions = [];
-        this.showFairnessTabs = true; // Show/hide fairness tabs
+        this.showFairnessTabs = true;
+    }
+
+    // Get Firebase base path for this tournament
+    getBasePath() {
+        if (!this.tournamentId) {
+            console.error('No tournament ID set!');
+            return 'tournament'; // Fallback for legacy
+        }
+        return `tournaments/${this.tournamentId}`;
+    }
+
+    // Check if user can edit (is organiser)
+    canEdit() {
+        return this.isOrganiser;
+    }
+
+    // Verify organiser key against Firebase
+    async verifyOrganiserKey(key) {
+        if (!this.tournamentId || !key) {
+            this.isOrganiser = false;
+            return false;
+        }
+        
+        try {
+            const snapshot = await database.ref(`${this.getBasePath()}/meta/organiserKey`).once('value');
+            const storedKey = snapshot.val();
+            this.isOrganiser = (storedKey === key);
+            this.organiserKey = key;
+            
+            if (this.isOrganiser) {
+                console.log('✅ Organiser access granted');
+            } else {
+                console.log('❌ Invalid organiser key');
+            }
+            
+            return this.isOrganiser;
+        } catch (error) {
+            console.error('Error verifying organiser key:', error);
+            this.isOrganiser = false;
+            return false;
+        }
     }
 
     // ===== INITIALIZATION =====
@@ -88,6 +138,8 @@ class TournamentState {
     // ===== FIREBASE OPERATIONS =====
 
     loadFromFirebase() {
+        const basePath = this.getBasePath();
+        
         // Monitor Firebase connection status
         const connectedRef = database.ref('.info/connected');
         connectedRef.on('value', (snapshot) => {
@@ -98,9 +150,15 @@ class TournamentState {
             }
         });
 
-        database.ref('tournament').on('value', (snapshot) => {
+        database.ref(basePath).on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
+                // Load metadata
+                if (data.meta) {
+                    this.tournamentName = data.meta.name || '';
+                    this.createdAt = data.meta.createdAt || null;
+                }
+                
                 this.playerNames = data.playerNames || this.playerNames;
                 this.skillRatings = data.skillRatings || this.skillRatings;
                 this.matchScores = data.matchScores || {};
@@ -115,8 +173,8 @@ class TournamentState {
                 this.savedVersions = data.savedVersions || [];
                 this.showFairnessTabs = data.showFairnessTabs !== undefined ? data.showFairnessTabs : true;
             } else {
-                this.initializeDefaults();
-                this.saveToFirebase();
+                // Tournament doesn't exist
+                console.log('⚠️ Tournament not found in Firebase');
             }
             
             if (!this.isInitialized) {
@@ -128,79 +186,108 @@ class TournamentState {
         });
     }
 
+    // Stop listening to Firebase (when leaving tournament)
+    stopListening() {
+        const basePath = this.getBasePath();
+        database.ref(basePath).off();
+        database.ref('.info/connected').off();
+    }
+
     saveToFirebase() {
+        if (!this.canEdit()) {
+            console.log('⚠️ Cannot save - not organiser');
+            return;
+        }
+        
+        const basePath = this.getBasePath();
+        
+        // Update the updatedAt timestamp
+        database.ref(`${basePath}/meta/updatedAt`).set(new Date().toISOString());
+        
         // Use granular updates instead of overwriting entire database
-        // This prevents data loss when multiple users edit simultaneously
-        const updates = {
-            'tournament/playerNames': this.playerNames,
-            'tournament/skillRatings': this.skillRatings,
-            'tournament/matchScores': this.matchScores,
-            'tournament/fixtures': this.fixtures,
-            'tournament/matchNames': this.matchNames,
-            'tournament/knockoutNames': this.knockoutNames,
-            'tournament/knockoutScores': this.knockoutScores,
-            'tournament/fixtureMaxScore': this.fixtureMaxScore,
-            'tournament/knockoutMaxScore': this.knockoutMaxScore,
-            'tournament/semiMaxScore': this.semiMaxScore,
-            'tournament/finalMaxScore': this.finalMaxScore,
-            'tournament/savedVersions': this.savedVersions,
-            'tournament/showFairnessTabs': this.showFairnessTabs
-        };
+        const updates = {};
+        updates[`${basePath}/playerNames`] = this.playerNames;
+        updates[`${basePath}/skillRatings`] = this.skillRatings;
+        updates[`${basePath}/matchScores`] = this.matchScores;
+        updates[`${basePath}/fixtures`] = this.fixtures;
+        updates[`${basePath}/matchNames`] = this.matchNames;
+        updates[`${basePath}/knockoutNames`] = this.knockoutNames;
+        updates[`${basePath}/knockoutScores`] = this.knockoutScores;
+        updates[`${basePath}/fixtureMaxScore`] = this.fixtureMaxScore;
+        updates[`${basePath}/knockoutMaxScore`] = this.knockoutMaxScore;
+        updates[`${basePath}/semiMaxScore`] = this.semiMaxScore;
+        updates[`${basePath}/finalMaxScore`] = this.finalMaxScore;
+        updates[`${basePath}/savedVersions`] = this.savedVersions;
+        updates[`${basePath}/showFairnessTabs`] = this.showFairnessTabs;
+        
         database.ref().update(updates);
     }
 
     // Debounced save - groups rapid changes together
     debouncedSave = null;
     saveToFirebaseDebounced() {
+        if (!this.canEdit()) return;
+        
         if (this.debouncedSave) {
             clearTimeout(this.debouncedSave);
         }
         this.debouncedSave = setTimeout(() => {
             this.saveToFirebase();
-        }, 500); // Wait 500ms before saving
+        }, 500);
     }
 
     // Granular update for match scores only (most common operation)
     saveMatchScoreToFirebase(round, matchIdx, team1Score, team2Score) {
-        const path = `tournament/matchScores/${round}/${matchIdx}`;
+        if (!this.canEdit()) return;
+        
+        const path = `${this.getBasePath()}/matchScores/${round}/${matchIdx}`;
         database.ref(path).set({
             team1Score: team1Score,
             team2Score: team2Score
         });
+        
+        // Update timestamp
+        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
     }
 
     // Granular update for knockout scores
     saveKnockoutScoreToFirebase(matchId, team1Score, team2Score) {
-        const path = `tournament/knockoutScores/${matchId}`;
+        if (!this.canEdit()) return;
+        
+        const path = `${this.getBasePath()}/knockoutScores/${matchId}`;
         database.ref(path).set({
             team1Score: team1Score,
             team2Score: team2Score
         });
+        
+        // Update timestamp
+        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
     }
 
-    // Granular update for settings (less critical, can use debouncing)
+    // Granular update for settings
     saveSettingToFirebase(key, value) {
-        database.ref(`tournament/${key}`).set(value);
+        if (!this.canEdit()) return;
+        
+        database.ref(`${this.getBasePath()}/${key}`).set(value);
+        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
     }
 
     // ===== PLAYER MANAGEMENT =====
 
     updatePlayerName(index, name) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.playerNames[index] = name;
-        // Use debounced save for player names (less critical than scores)
         this.saveToFirebaseDebounced();
     }
 
     updateSkillRating(playerId, rating) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.skillRatings[playerId] = rating;
-        // Use debounced save for ratings (less critical than scores)
         this.saveToFirebaseDebounced();
     }
 
     resetPlayerNames() {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.playerNames = this.defaultPlayers.map(p => p.name);
         this.skillRatings = {};
         this.defaultPlayers.forEach(p => {
@@ -212,27 +299,25 @@ class TournamentState {
     // ===== MATCH NAME MANAGEMENT =====
 
     updateMatchName(matchNum, name) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.matchNames[matchNum] = name;
-        // Use debounced save for match names (less critical than scores)
         this.saveToFirebaseDebounced();
     }
 
     updateKnockoutName(matchId, name) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.knockoutNames[matchId] = name;
-        // Use debounced save for knockout names (less critical than scores)
         this.saveToFirebaseDebounced();
     }
 
     resetMatchNames() {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.matchNames = {...this.defaultMatchNames};
         this.saveToFirebase();
     }
 
     resetKnockoutNames() {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.knockoutNames = {...this.defaultKnockoutNames};
         this.saveToFirebase();
     }
@@ -240,21 +325,19 @@ class TournamentState {
     // ===== SCORE MANAGEMENT =====
 
     updateMatchScore(round, match, team1Score, team2Score) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         if (!this.matchScores[round]) {
             this.matchScores[round] = {};
         }
         this.matchScores[round][match] = { team1Score, team2Score };
-        // Use granular update for match scores (most frequent operation)
         this.saveMatchScoreToFirebase(round, match, team1Score, team2Score);
     }
 
     clearMatchScore(round, match) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         if (this.matchScores[round] && this.matchScores[round][match]) {
             delete this.matchScores[round][match];
-            // Delete from Firebase directly
-            database.ref(`tournament/matchScores/${round}/${match}`).remove();
+            database.ref(`${this.getBasePath()}/matchScores/${round}/${match}`).remove();
         }
     }
 
@@ -276,7 +359,7 @@ class TournamentState {
     }
 
     resetAllScores() {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.createBackup('Auto-backup before reset');
         this.matchScores = {};
         this.saveToFirebase();
@@ -285,18 +368,16 @@ class TournamentState {
     // ===== KNOCKOUT SCORE MANAGEMENT =====
 
     updateKnockoutScore(matchId, team1Score, team2Score) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.knockoutScores[matchId] = { team1Score, team2Score };
-        // Use granular update for knockout scores
         this.saveKnockoutScoreToFirebase(matchId, team1Score, team2Score);
     }
 
     clearKnockoutScore(matchId) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         if (this.knockoutScores[matchId]) {
             delete this.knockoutScores[matchId];
-            // Delete from Firebase directly
-            database.ref(`tournament/knockoutScores/${matchId}`).remove();
+            database.ref(`${this.getBasePath()}/knockoutScores/${matchId}`).remove();
         }
     }
 
@@ -305,44 +386,39 @@ class TournamentState {
     }
 
     updateKnockoutMaxScore(value) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.knockoutMaxScore = value;
-        // Use granular update for settings
         this.saveSettingToFirebase('knockoutMaxScore', value);
     }
 
     updateSemiMaxScore(value) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.semiMaxScore = value;
-        // Use granular update for settings
         this.saveSettingToFirebase('semiMaxScore', value);
     }
 
     updateFinalMaxScore(value) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.finalMaxScore = value;
-        // Use granular update for settings
         this.saveSettingToFirebase('finalMaxScore', value);
     }
 
     updateFixtureMaxScore(value) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.fixtureMaxScore = value;
-        // Use granular update for settings
         this.saveSettingToFirebase('fixtureMaxScore', value);
     }
 
     toggleFairnessTabs() {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.showFairnessTabs = !this.showFairnessTabs;
-        // Use granular update for settings
         this.saveSettingToFirebase('showFairnessTabs', this.showFairnessTabs);
     }
 
     // ===== FIXTURE MANAGEMENT =====
 
     updateFixture(round, matchIdx, team1p1, team1p2, team2p1, team2p2) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.fixtures[round][matchIdx] = {
             team1: [parseInt(team1p1), parseInt(team1p2)],
             team2: [parseInt(team2p1), parseInt(team2p2)]
@@ -351,7 +427,7 @@ class TournamentState {
     }
 
     updateFixtureWithSwap(round, matchIdx, position, oldValue, newValue) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         const match = this.fixtures[round][matchIdx];
         
         // Check if new value exists elsewhere in round
@@ -383,7 +459,7 @@ class TournamentState {
     }
 
     resetFixtures() {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.fixtures = JSON.parse(JSON.stringify(this.defaultFixtures));
         this.saveToFirebase();
     }
@@ -393,7 +469,7 @@ class TournamentState {
     }
 
     importFixtures(fixturesJson) {
-        if (!checkPasscode()) return false;
+        if (!this.canEdit()) return false;
         try {
             const parsed = JSON.parse(fixturesJson);
             this.fixtures = parsed;
@@ -407,7 +483,7 @@ class TournamentState {
     // ===== VERSION MANAGEMENT =====
 
     createBackup(name) {
-        if (!checkPasscode()) return null;
+        if (!this.canEdit()) return null;
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
         const backup = {
             id: Date.now(),
@@ -434,7 +510,7 @@ class TournamentState {
     }
 
     loadVersion(versionId) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         const version = this.savedVersions.find(v => v.id === versionId);
         if (version) {
             this.createBackup('Auto-backup before load');
@@ -453,7 +529,7 @@ class TournamentState {
     }
 
     deleteVersion(versionId) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         this.savedVersions = this.savedVersions.filter(v => v.id !== versionId);
         this.saveToFirebase();
     }
@@ -463,6 +539,8 @@ class TournamentState {
     exportData() {
         return {
             exportDate: new Date().toISOString(),
+            tournamentId: this.tournamentId,
+            tournamentName: this.tournamentName,
             playerNames: this.playerNames,
             skillRatings: this.skillRatings,
             matchScores: this.matchScores,
@@ -478,7 +556,7 @@ class TournamentState {
     }
 
     importData(data) {
-        if (!checkPasscode()) return;
+        if (!this.canEdit()) return;
         if (data.playerNames) this.playerNames = data.playerNames;
         if (data.skillRatings) this.skillRatings = data.skillRatings;
         if (data.matchScores) this.matchScores = data.matchScores;
@@ -514,6 +592,8 @@ class TournamentState {
             const partners = new Set();
             
             for (let round = 1; round <= CONFIG.TOTAL_ROUNDS; round++) {
+                if (!this.fixtures[round]) continue;
+                
                 this.fixtures[round].forEach((match, matchIdx) => {
                     const allPlayers = [...match.team1, ...match.team2];
                     if (!allPlayers.includes(playerId)) return;
@@ -568,3 +648,5 @@ class TournamentState {
         return standings;
     }
 }
+
+console.log('✅ State management loaded');

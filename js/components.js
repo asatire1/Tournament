@@ -34,11 +34,23 @@ function MatchCard(round, matchIdx, match) {
     const score = state.getMatchScore(round, matchIdx);
     const isComplete = state.isMatchComplete(round, matchIdx);
     const winner = state.getWinner(round, matchIdx);
+    const canEdit = state.canEdit();
     
     const team1Rating = (state.skillRatings[match.team1[0]] + state.skillRatings[match.team1[1]]).toFixed(2);
     const team2Rating = (state.skillRatings[match.team2[0]] + state.skillRatings[match.team2[1]]).toFixed(2);
     
     const matchName = state.matchNames[matchIdx + 1] || `Match ${matchIdx + 1}`;
+    
+    // Read-only score display
+    const scoreDisplay = canEdit ? `
+        <input type="number" min="0" max="${state.fixtureMaxScore}" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 1)" />
+        <span class="text-gray-400 text-2xl font-semibold">:</span>
+        <input type="number" min="0" max="${state.fixtureMaxScore}" value="${score.team2Score !== null ? score.team2Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 2)" />
+    ` : `
+        <span class="text-3xl font-bold text-gray-800">${score.team1Score !== null ? score.team1Score : '—'}</span>
+        <span class="text-gray-400 text-2xl font-semibold">:</span>
+        <span class="text-3xl font-bold text-gray-800">${score.team2Score !== null ? score.team2Score : '—'}</span>
+    `;
     
     return `
         <div class="match-card ${within ? 'match-within' : 'match-cross'} ${isComplete ? 'complete' : ''}">
@@ -66,9 +78,7 @@ function MatchCard(round, matchIdx, match) {
                     <div class="score-box-horizontal">
                         <span class="rating-text">${team1Rating}</span>
                         <div class="score-row">
-                            <input type="number" min="0" max="${state.fixtureMaxScore}" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 1)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
-                            <span class="text-gray-400 text-2xl font-semibold">:</span>
-                            <input type="number" min="0" max="${state.fixtureMaxScore}" value="${score.team2Score !== null ? score.team2Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 2)" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
+                            ${scoreDisplay}
                         </div>
                         <span class="rating-text">${team2Rating}</span>
                     </div>
@@ -76,7 +86,7 @@ function MatchCard(round, matchIdx, match) {
                         ${CompactPlayerBadge(match.team2[0])}
                         ${CompactPlayerBadge(match.team2[1])}
                     </div>
-                    ${isComplete ? `<button onclick="clearScore(${round}, ${matchIdx})" class="clear-score-btn-small" title="Clear score">×</button>` : ''}
+                    ${isComplete && canEdit ? `<button onclick="clearScore(${round}, ${matchIdx})" class="clear-score-btn-small" title="Clear score">×</button>` : ''}
                 </div>
             </div>
         </div>
@@ -89,6 +99,19 @@ function KnockoutMatchCard(matchId, team1Players, team2Players, maxScore) {
     const score = state.getKnockoutScore(matchId);
     const isComplete = score.team1Score !== null && score.team2Score !== null;
     const winner = isComplete ? (score.team1Score > score.team2Score ? 'team1' : 'team2') : null;
+    const canEdit = state.canEdit();
+    
+    // Read-only score display
+    const scoreInputs = canEdit ? `
+        <input type="number" min="0" max="${maxScore}" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input" onchange="handleKnockoutScore('${matchId}', this.value, 1, ${maxScore})" />
+        <span class="score-divider">:</span>
+        <input type="number" min="0" max="${maxScore}" value="${score.team2Score !== null ? score.team2Score : ''}" placeholder="—" class="score-input" onchange="handleKnockoutScore('${matchId}', this.value, 2, ${maxScore})" />
+        ${isComplete ? `<button onclick="state.clearKnockoutScore('${matchId}'); render();" class="clear-score-btn" title="Clear score">×</button>` : ''}
+    ` : `
+        <div class="text-4xl font-bold text-gray-800">${score.team1Score !== null ? score.team1Score : '—'}</div>
+        <span class="score-divider">:</span>
+        <div class="text-4xl font-bold text-gray-800">${score.team2Score !== null ? score.team2Score : '—'}</div>
+    `;
     
     return `
         <div class="match-card ${isComplete ? 'complete' : ''} ${isComplete ? '' : 'border border-gray-200'}">
@@ -102,10 +125,7 @@ function KnockoutMatchCard(matchId, team1Players, team2Players, maxScore) {
                         ${winner === 'team1' ? `<div class="flex items-center justify-center gap-1 text-green-600 font-semibold text-xs"><span style="font-size: 1rem;">🏆</span><span>Winners</span></div>` : ''}
                     </div>
                     <div class="flex items-center justify-center gap-3 py-1">
-                        <input type="number" min="0" max="${maxScore}" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input" onchange="handleKnockoutScore('${matchId}', this.value, 1, ${maxScore})" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
-                        <span class="score-divider">:</span>
-                        <input type="number" min="0" max="${maxScore}" value="${score.team2Score !== null ? score.team2Score : ''}" placeholder="—" class="score-input" onchange="handleKnockoutScore('${matchId}', this.value, 2, ${maxScore})" ${!isUnlocked ? 'onclick="checkPasscode(); this.blur(); return false;"' : ''} />
-                        ${isComplete ? `<button onclick="state.clearKnockoutScore('${matchId}'); render();" class="clear-score-btn" title="Clear score">×</button>` : ''}
+                        ${scoreInputs}
                     </div>
                     <div class="space-y-2">
                         <div class="flex justify-center gap-2">${PlayerBadge(team2Players[0])}${PlayerBadge(team2Players[1])}</div>
@@ -132,8 +152,19 @@ function TournamentFixturesTab() {
         });
     }
     
+    const canEdit = state.canEdit();
+    
     return `
         <div class="space-y-6">
+            ${!canEdit ? `
+                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3">
+                    <span class="text-2xl">👀</span>
+                    <div>
+                        <div class="font-semibold text-blue-900">View Only Mode</div>
+                        <div class="text-sm text-blue-700">Scores update in real-time. Only the organiser can edit.</div>
+                    </div>
+                </div>
+            ` : ''}
             <div class="filter-section rounded-3xl shadow-sm p-6 space-y-6">
                 <div class="flex items-center gap-2.5">
                     <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
@@ -627,6 +658,7 @@ function PartnershipsTab() {
 function KnockoutTab() {
     const standings = state.calculateStandings();
     const top16 = standings.slice(0, 16);
+    const canEdit = state.canEdit();
     
     const qf1 = state.getKnockoutScore('qf1');
     const qf2 = state.getKnockoutScore('qf2');
@@ -646,6 +678,15 @@ function KnockoutTab() {
     
     return `
         <div class="space-y-6">
+            ${!canEdit ? `
+                <div class="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center gap-3">
+                    <span class="text-2xl">🏆</span>
+                    <div>
+                        <div class="font-semibold text-purple-900">Knockout Stage - View Only</div>
+                        <div class="text-sm text-purple-700">Watch the knockout rounds unfold in real-time!</div>
+                    </div>
+                </div>
+            ` : ''}
             <div class="filter-section rounded-3xl shadow-sm p-5">
                 <h3 class="font-semibold text-gray-800 mb-4 text-sm" style="letter-spacing: -0.3px;">Top 16 Qualified Players</h3>
                 <div class="flex flex-wrap gap-2">
