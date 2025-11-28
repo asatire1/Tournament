@@ -445,6 +445,11 @@ async function createTournament() {
     const passcode = passcodeInput?.value.trim();
     const name = nameInput?.value.trim() || `Tournament ${new Date().toLocaleDateString()}`;
     
+    // Debug logging
+    console.log('Entered passcode:', passcode, 'Length:', passcode?.length);
+    console.log('Expected passcode:', CONFIG.ADMIN_PASSCODE, 'Length:', CONFIG.ADMIN_PASSCODE?.length);
+    console.log('Match:', passcode === CONFIG.ADMIN_PASSCODE);
+    
     // Verify admin passcode
     if (passcode !== CONFIG.ADMIN_PASSCODE) {
         // Show error
