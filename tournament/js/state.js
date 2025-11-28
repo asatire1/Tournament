@@ -8,6 +8,7 @@ class TournamentState {
         this.filterRound = 'all';
         this.filterPlayer = 'all';
         this.isInitialized = false;
+        this.isSaving = false; // Flag to prevent re-render during save
         
         // Organiser status (set by verifying key against Firebase)
         this.isOrganiser = false;
@@ -152,6 +153,13 @@ class TournamentState {
 
         database.ref(basePath).on('value', (snapshot) => {
             const data = snapshot.val();
+            
+            // Skip updating local state if we're in the middle of saving
+            if (this.isSaving) {
+                console.log('⏳ Skipping Firebase update - save in progress');
+                return;
+            }
+            
             if (data) {
                 // Load metadata
                 if (data.meta) {
@@ -199,6 +207,9 @@ class TournamentState {
             return;
         }
         
+        // Set flag to prevent Firebase listener from overwriting during save
+        this.isSaving = true;
+        
         const basePath = this.getBasePath();
         
         // Update the updatedAt timestamp
@@ -220,7 +231,15 @@ class TournamentState {
         updates[`${basePath}/savedVersions`] = this.savedVersions;
         updates[`${basePath}/showFairnessTabs`] = this.showFairnessTabs;
         
-        database.ref().update(updates);
+        database.ref().update(updates).then(() => {
+            // Clear saving flag after a short delay to allow Firebase listener to settle
+            setTimeout(() => {
+                this.isSaving = false;
+            }, 100);
+        }).catch((error) => {
+            console.error('❌ Error saving to Firebase:', error);
+            this.isSaving = false;
+        });
     }
 
     // Debounced save - groups rapid changes together
