@@ -104,20 +104,13 @@ async function initializeTournament(tournamentId, organiserKey) {
     // Load default data (for backup/reset features)
     await state.loadDefaults();
     
-    // Check for cached organiser key if none provided
-    if (!organiserKey) {
-        organiserKey = OrganiserKeyCache.get(tournamentId);
-    }
-    
-    // Verify organiser key if provided
+    // Only verify organiser key if explicitly provided in URL
+    // (Cache is NOT used automatically - organiser must use full link or My Tournaments)
     if (organiserKey) {
         const isValid = await state.verifyOrganiserKey(organiserKey);
         if (isValid) {
-            // Cache valid organiser key for future visits
+            // Cache valid organiser key for My Tournaments list access
             OrganiserKeyCache.set(tournamentId, organiserKey);
-        } else {
-            // Remove invalid cached key
-            OrganiserKeyCache.remove(tournamentId);
         }
     }
     

@@ -83,13 +83,15 @@ const Router = {
     
     // Get shareable player link (without key)
     getPlayerLink(tournamentId) {
-        const base = window.location.origin + window.location.pathname;
+        // Get clean base URL (remove any hash)
+        const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
         return `${base}#/t/${tournamentId}`;
     },
     
     // Get organiser link (with key)
     getOrganiserLink(tournamentId, organiserKey) {
-        const base = window.location.origin + window.location.pathname;
+        // Get clean base URL (remove any hash)
+        const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
         return `${base}#/t/${tournamentId}?key=${organiserKey}`;
     },
     
