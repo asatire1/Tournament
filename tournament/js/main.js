@@ -595,6 +595,10 @@ function render() {
                                 <span class="font-semibold text-blue-700">Organiser</span>
                             </div>
                         ` : `
+                            <div class="flex items-center gap-1.5 bg-gray-100 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
+                                <span>👀</span>
+                                <span class="font-semibold text-gray-600">View Only</span>
+                            </div>
                             <button onclick="showOrganiserLoginModal()" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 backdrop-blur rounded-full px-3 py-1.5 border border-amber-200 transition-colors cursor-pointer">
                                 <span>🔑</span>
                                 <span class="font-semibold text-amber-700">Enter as Organiser</span>

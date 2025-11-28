@@ -153,48 +153,30 @@ function TournamentFixturesTab() {
     }
     
     const canEdit = state.canEdit();
+    const hasFilters = state.filterRound !== 'all' || state.filterPlayer !== 'all';
     
     return `
         <div class="space-y-6">
-            ${!canEdit ? `
-                <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3">
-                    <span class="text-2xl">👀</span>
-                    <div>
-                        <div class="font-semibold text-blue-900">View Only Mode</div>
-                        <div class="text-sm text-blue-700">Scores update in real-time. Only the organiser can edit.</div>
-                    </div>
-                </div>
-            ` : ''}
-            <div class="filter-section rounded-3xl shadow-sm p-6 space-y-6">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                    <h3 class="font-semibold text-gray-800 text-base" style="letter-spacing: -0.3px;">Filters & Navigation</h3>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-2.5 uppercase tracking-wide">Round</label>
-                        <select class="w-full border border-gray-200 rounded-2xl px-4 py-3.5 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all text-sm font-medium" onchange="state.filterRound = this.value; render();">
+            <div class="filter-section rounded-2xl shadow-sm p-4 border border-gray-100">
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="w-36">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Round</label>
+                        <select class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all text-sm font-medium" onchange="state.filterRound = this.value; render();">
                             <option value="all" ${state.filterRound === 'all' ? 'selected' : ''}>All Rounds</option>
                             ${Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => `<option value="${i + 1}" ${state.filterRound == (i + 1) ? 'selected' : ''}>Round ${i + 1}</option>`).join('')}
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-2.5 uppercase tracking-wide">Player</label>
-                        <select class="w-full border border-gray-200 rounded-2xl px-4 py-3.5 focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all text-sm font-medium" onchange="state.filterPlayer = this.value; render();">
+                    <div class="w-44">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Player</label>
+                        <select class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all text-sm font-medium" onchange="state.filterPlayer = this.value; render();">
                             <option value="all" ${state.filterPlayer === 'all' ? 'selected' : ''}>All Players</option>
                             ${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => `<option value="${i + 1}" ${state.filterPlayer == (i + 1) ? 'selected' : ''}>#${i + 1} ${state.playerNames[i]}</option>`).join('')}
                         </select>
                     </div>
-                </div>
-                <button onclick="state.filterRound = 'all'; state.filterPlayer = 'all'; render();" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-150 active:bg-gray-200 rounded-xl text-sm font-semibold transition-all text-gray-700">Clear All</button>
-                <div class="pt-2">
-                    <div class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Quick Access</div>
-                    <div class="flex flex-wrap gap-2">
-                        ${Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => `<button onclick="state.filterRound = '${i + 1}'; render();" class="round-btn px-4 py-2.5 rounded-xl text-xs font-semibold transition-all ${state.filterRound == (i + 1) ? 'bg-blue-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600'}">R${i + 1}</button>`).join('')}
-                    </div>
+                    ${hasFilters ? `<button onclick="state.filterRound = 'all'; state.filterPlayer = 'all'; render();" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors text-gray-600">Clear</button>` : ''}
+                    <div class="ml-auto text-sm text-gray-500 py-2.5">${matches.length} ${matches.length === 1 ? 'match' : 'matches'}</div>
                 </div>
             </div>
-            ${matches.length > 0 ? `<div class="bg-blue-50 border border-blue-100 rounded-2xl p-4"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">${matches.length}</div><span class="font-medium text-gray-700">${matches.length === 1 ? 'match' : 'matches'} found</span></div></div>` : ''}
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 ${matches.map(m => MatchCard(m.round, m.idx, m.match)).join('')}
             </div>
