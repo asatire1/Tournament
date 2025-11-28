@@ -158,7 +158,7 @@ function TournamentFixturesTab() {
     return `
         <div class="space-y-6">
             <div class="filter-section rounded-2xl shadow-sm p-4 border border-gray-100">
-                <div class="flex flex-wrap items-end gap-3">
+                <div class="flex flex-wrap items-end gap-3 mb-4">
                     <div class="w-36">
                         <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Round</label>
                         <select class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all text-sm font-medium" onchange="state.filterRound = this.value; render();">
@@ -175,6 +175,10 @@ function TournamentFixturesTab() {
                     </div>
                     ${hasFilters ? `<button onclick="state.filterRound = 'all'; state.filterPlayer = 'all'; render();" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors text-gray-600">Clear</button>` : ''}
                     <div class="ml-auto text-sm text-gray-500 py-2.5">${matches.length} ${matches.length === 1 ? 'match' : 'matches'}</div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="state.filterRound = 'all'; render();" class="round-btn px-3 py-2 rounded-xl text-xs font-semibold transition-all ${state.filterRound === 'all' ? 'bg-blue-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">All</button>
+                    ${Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => `<button onclick="state.filterRound = '${i + 1}'; render();" class="round-btn px-3 py-2 rounded-xl text-xs font-semibold transition-all ${state.filterRound == (i + 1) ? 'bg-blue-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">R${i + 1}</button>`).join('')}
                 </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
