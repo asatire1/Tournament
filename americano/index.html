@@ -18,6 +18,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <style>
+        /* ===== BASE STYLES (Same as tournament) ===== */
         * {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -27,7 +28,7 @@
             font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
-        /* Animations */
+        /* ===== ANIMATIONS (Same as tournament) ===== */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -43,141 +44,168 @@
             50% { opacity: 0.5; }
         }
         
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-slide-up { animation: slideUp 0.4s ease-out; }
+        .animate-pulse { animation: pulse 2s ease-in-out infinite; }
         
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        .animate-slide-up {
-            animation: slideUp 0.4s ease-out;
-        }
-        
-        .animate-pulse {
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        /* Tab styles */
-        .tab-active {
-            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        /* ===== TAB STYLES (Same as tournament - BLUE) ===== */
+        .tab-active { 
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
             color: white;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
         }
-        
-        .tab-inactive {
+        .tab-inactive { 
             background: transparent;
             color: #6B7280;
         }
-        
         .tab-inactive:hover {
             background: #F3F4F6;
         }
         
-        /* Player count button */
-        .player-count-btn {
+        /* ===== MATCH CARD (Same as tournament) ===== */
+        .match-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .player-count-btn.active {
-            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-            color: white;
-            border-color: transparent;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-        }
-        
-        /* Round card */
-        .round-card {
             background: white;
             border-radius: 16px;
-            border: 1px solid #E5E7EB;
             overflow: hidden;
-            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-left: 3px solid #3B82F6;
         }
         
-        .round-card:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-color: rgba(59, 130, 246, 0.2);
         }
         
-        .round-card.complete {
-            border-color: #10B981;
+        .match-card.complete {
             background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+            border-color: rgba(22, 163, 74, 0.2);
+            border-left-color: #16A34A;
         }
         
-        /* Score input */
-        .score-input {
-            font-size: 1.5rem;
+        /* ===== PLAYER BADGE COMPACT (Same as tournament) ===== */
+        .player-badge-compact {
+            width: 100%;
+            max-width: 140px;
+            padding: 7px 12px;
+            border-radius: 100px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        }
+        
+        .player-name-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* ===== TEAM STACK (Same as tournament) ===== */
+        .team-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* ===== SCORE BOX (Same as tournament) ===== */
+        .score-box-horizontal {
+            min-width: 150px;
+            height: 68px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            background: #f3f4f6;
+            padding: 8px;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        
+        /* ===== SCORE ROW (Same as tournament) ===== */
+        .score-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        /* ===== COMPACT SCORE INPUT (Same as tournament) ===== */
+        .score-input-compact {
+            font-size: 1.75rem;
             font-weight: 700;
             text-align: center;
-            border: 2px solid #E5E7EB;
-            border-radius: 12px;
-            width: 70px;
-            height: 56px;
-            transition: all 0.3s ease;
-            background: white;
+            border: none;
+            background: transparent;
+            width: 50px;
+            color: #1F2937;
         }
         
-        .score-input:focus {
+        .score-input-compact:focus {
             outline: none;
-            border-color: #8B5CF6;
-            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+            background: white;
+            border-radius: 6px;
         }
         
-        .score-input:read-only {
-            background: #F3F4F6;
-            cursor: not-allowed;
+        .score-input-compact::placeholder {
+            color: #D1D5DB;
+            font-weight: 400;
         }
         
-        /* Hide number spinners */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
+        .score-input-compact::-webkit-inner-spin-button,
+        .score-input-compact::-webkit-outer-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-        input[type="number"] {
-            -moz-appearance: textfield;
-        }
+        .score-input-compact { -moz-appearance: textfield; }
         
-        /* Leaderboard */
-        .leaderboard-row {
-            transition: all 0.3s ease;
-        }
-        
-        .leaderboard-row:hover {
-            background: #F9FAFB;
-        }
-        
-        /* Team badge */
-        .team-badge {
-            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 100px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            display: inline-flex;
+        /* ===== MATCH ROW (Same as tournament) ===== */
+        .match-row {
+            display: flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+            flex-wrap: nowrap;
+            width: 100%;
         }
         
-        /* Resting badge */
-        .resting-badge {
-            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-            color: #92400E;
-            padding: 8px 16px;
-            border-radius: 100px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            display: inline-flex;
+        /* ===== CLEAR SCORE BUTTON (Same as tournament) ===== */
+        .clear-score-btn-small {
+            background: rgba(239, 68, 68, 0.1);
+            color: #DC2626;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
             align-items: center;
-            gap: 6px;
-            border: 1px solid #F59E0B;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
         
-        /* Settings subtab */
+        .clear-score-btn-small:hover {
+            background: #FEE2E2;
+            transform: scale(1.1);
+        }
+        
+        /* ===== SETTINGS SUBTABS (Same as tournament - BLUE) ===== */
         .settings-subtab {
             padding: 12px 24px;
             border-radius: 12px;
@@ -188,9 +216,9 @@
         }
         
         .settings-subtab.active {
-            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
             color: white;
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
         }
         
         .settings-subtab.inactive {
@@ -202,36 +230,64 @@
             background: #E5E7EB;
         }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        /* ===== RESTING BADGE ===== */
+        .resting-badge {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            color: #92400E;
+            padding: 6px 12px;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid #F59E0B;
         }
         
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
+        /* ===== LEADERBOARD ===== */
+        .leaderboard-row {
+            transition: all 0.3s ease;
+        }
+        .leaderboard-row:hover {
+            background: #F9FAFB;
         }
         
-        ::-webkit-scrollbar-thumb {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
+        /* ===== ROUND BUTTONS ===== */
+        .round-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+        .round-btn:active {
+            transform: scale(0.95);
         }
         
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 0, 0, 0.3);
+        /* ===== SCROLLBAR (Same as tournament) ===== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
+        
+        /* ===== MOBILE RESPONSIVE (Same as tournament) ===== */
+        @media (max-width: 640px) {
+            .match-card { border-radius: 12px; }
+            .player-badge-compact { max-width: 115px; font-size: 0.75rem; padding: 6px 10px; }
+            .score-box-horizontal { min-width: 130px; height: 60px; padding: 6px; }
+            .score-input-compact { font-size: 1.5rem; width: 44px; }
+            .clear-score-btn-small { width: 22px; height: 22px; font-size: 0.875rem; }
+            .team-stack { gap: 5px; }
+            .match-row { gap: 5px; }
+        }
+        
+        @media (max-width: 380px) {
+            .player-badge-compact { max-width: 95px; font-size: 0.6875rem; padding: 5px 8px; }
+            .score-box-horizontal { min-width: 115px; height: 56px; }
+            .score-input-compact { font-size: 1.35rem; width: 38px; }
         }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
-    
-    <!-- Main App Container -->
     <div id="app"></div>
-    
-    <!-- Modal Container -->
     <div id="modal-container"></div>
-    
-    <!-- Toast Container -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
 
     <script>
@@ -243,11 +299,9 @@
             projectId: "stretford-padel-tournament",
             storageBucket: "stretford-padel-tournament.firebasestorage.app",
             messagingSenderId: "596263602058",
-            appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73",
-            measurementId: "G-TGJ6CZ4DZ0"
+            appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
         };
         
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
@@ -338,15 +392,8 @@
         
         // ===== ROUTER =====
         const Router = {
-            currentRoute: null,
-            tournamentId: null,
-            organiserKey: null,
-            isOrganiser: false,
-            
-            routes: {
-                HOME: 'home',
-                TOURNAMENT: 'tournament'
-            },
+            currentRoute: null, tournamentId: null, organiserKey: null, isOrganiser: false,
+            routes: { HOME: 'home', TOURNAMENT: 'tournament' },
             
             init() {
                 window.addEventListener('hashchange', () => this.handleRoute());
@@ -355,7 +402,6 @@
             
             handleRoute() {
                 const hash = window.location.hash.slice(1);
-                
                 if (!hash || hash === '/' || hash === '') {
                     this.currentRoute = this.routes.HOME;
                     this.tournamentId = null;
@@ -366,7 +412,6 @@
                     const pathAndQuery = hash.slice(3);
                     const [path, queryString] = pathAndQuery.split('?');
                     this.tournamentId = path;
-                    
                     if (queryString) {
                         const params = new URLSearchParams(queryString);
                         this.organiserKey = params.get('key');
@@ -378,21 +423,15 @@
                     this.navigate('home');
                     return;
                 }
-                
-                if (this.onRouteChange) {
-                    this.onRouteChange(this.currentRoute, this.tournamentId, this.organiserKey);
-                }
+                if (this.onRouteChange) this.onRouteChange(this.currentRoute, this.tournamentId, this.organiserKey);
             },
             
             navigate(route, tournamentId = null, organiserKey = null) {
                 let hash = '';
-                if (route === 'home' || route === this.routes.HOME) {
-                    hash = '';
-                } else if (route === 'tournament' || route === this.routes.TOURNAMENT) {
+                if (route === 'home' || route === this.routes.HOME) hash = '';
+                else if (route === 'tournament' || route === this.routes.TOURNAMENT) {
                     hash = `/t/${tournamentId}`;
-                    if (organiserKey) {
-                        hash += `?key=${organiserKey}`;
-                    }
+                    if (organiserKey) hash += `?key=${organiserKey}`;
                 }
                 window.location.hash = hash;
             },
@@ -410,18 +449,14 @@
             generateTournamentId() {
                 const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
                 let id = '';
-                for (let i = 0; i < 6; i++) {
-                    id += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
+                for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
                 return id;
             },
             
             generateOrganiserKey() {
                 const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                 let key = '';
-                for (let i = 0; i < 16; i++) {
-                    key += chars.charAt(Math.floor(Math.random() * chars.length));
-                }
+                for (let i = 0; i < 16; i++) key += chars.charAt(Math.floor(Math.random() * chars.length));
                 return key;
             },
             
@@ -436,28 +471,21 @@
                 this.organiserKey = null;
                 this.isOrganiser = false;
                 this.isInitialized = false;
-                
                 this.playerCount = 6;
                 this.playerNames = [];
                 this.fixedPoints = false;
                 this.totalPoints = 16;
                 this.scores = [];
                 this.tournamentStarted = false;
-                
-                this.currentTab = 'tournament';
+                this.currentTab = 'fixtures';
                 this.settingsSubTab = 'players';
-                
+                this.selectedRound = 1;
                 this.firebaseRef = null;
                 this.unsubscribe = null;
             }
             
-            // Verify organiser key
             async verifyOrganiserKey(key) {
-                if (!this.tournamentId || !key) {
-                    this.isOrganiser = false;
-                    return false;
-                }
-                
+                if (!this.tournamentId || !key) { this.isOrganiser = false; return false; }
                 try {
                     const snapshot = await database.ref(`americano/${this.tournamentId}/meta/organiserKey`).once('value');
                     const storedKey = snapshot.val();
@@ -465,60 +493,37 @@
                     this.organiserKey = this.isOrganiser ? key : null;
                     return this.isOrganiser;
                 } catch (error) {
-                    console.error('Error verifying organiser key:', error);
                     this.isOrganiser = false;
                     return false;
                 }
             }
             
-            // Check if user can edit
-            canEdit() {
-                return this.isOrganiser;
-            }
+            canEdit() { return this.isOrganiser; }
             
-            // Load from Firebase
             loadFromFirebase() {
                 if (!this.tournamentId) return;
-                
                 this.firebaseRef = database.ref(`americano/${this.tournamentId}`);
-                
                 this.unsubscribe = this.firebaseRef.on('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
                         this.tournamentName = data.meta?.name || '';
                         this.playerCount = data.playerCount || 6;
-                        
-                        // Convert playerNames object to array
                         if (data.playerNames) {
-                            if (Array.isArray(data.playerNames)) {
-                                this.playerNames = data.playerNames;
-                            } else {
-                                this.playerNames = Object.values(data.playerNames);
-                            }
+                            this.playerNames = Array.isArray(data.playerNames) ? data.playerNames : Object.values(data.playerNames);
                         } else {
                             this.playerNames = [];
                         }
-                        
                         this.fixedPoints = data.fixedPoints || false;
                         this.totalPoints = data.totalPoints || 16;
-                        
-                        // Convert scores object to array, and -1 back to null
                         if (data.scores) {
-                            if (Array.isArray(data.scores)) {
-                                this.scores = data.scores.map(s => ({
-                                    team1: s?.team1 === -1 ? null : s?.team1,
-                                    team2: s?.team2 === -1 ? null : s?.team2
-                                }));
-                            } else {
-                                this.scores = Object.values(data.scores).map(s => ({
-                                    team1: s?.team1 === -1 ? null : s?.team1,
-                                    team2: s?.team2 === -1 ? null : s?.team2
-                                }));
-                            }
+                            const scoresArr = Array.isArray(data.scores) ? data.scores : Object.values(data.scores);
+                            this.scores = scoresArr.map(s => ({
+                                team1: s?.team1 === -1 ? null : s?.team1,
+                                team2: s?.team2 === -1 ? null : s?.team2
+                            }));
                         } else {
                             this.scores = [];
                         }
-                        
                         this.tournamentStarted = data.tournamentStarted || false;
                         this.isInitialized = true;
                         render();
@@ -526,112 +531,72 @@
                 });
             }
             
-            // Stop listening
             stopListening() {
-                if (this.firebaseRef && this.unsubscribe) {
-                    this.firebaseRef.off('value', this.unsubscribe);
-                }
+                if (this.firebaseRef && this.unsubscribe) this.firebaseRef.off('value', this.unsubscribe);
             }
             
-            // Save to Firebase (full save)
             saveToFirebase() {
                 if (!this.tournamentId) return;
-                
-                const data = {
-                    meta: {
-                        name: this.tournamentName,
-                        organiserKey: this.organiserKey,
-                        updatedAt: new Date().toISOString()
-                    },
+                database.ref(`americano/${this.tournamentId}`).update({
+                    meta: { name: this.tournamentName, organiserKey: this.organiserKey, updatedAt: new Date().toISOString() },
                     playerCount: this.playerCount,
                     playerNames: this.playerNames,
                     fixedPoints: this.fixedPoints,
                     totalPoints: this.totalPoints,
                     scores: this.scores,
                     tournamentStarted: this.tournamentStarted
-                };
-                
-                database.ref(`americano/${this.tournamentId}`).update(data);
+                });
             }
             
-            // Granular score update
             saveScoreToFirebase(roundIndex, team1Score, team2Score) {
                 if (!this.tournamentId) return;
-                
-                // Convert null to -1 for Firebase storage
                 database.ref(`americano/${this.tournamentId}/scores/${roundIndex}`).set({
                     team1: team1Score === null ? -1 : team1Score,
                     team2: team2Score === null ? -1 : team2Score
                 });
-                
                 database.ref(`americano/${this.tournamentId}/meta/updatedAt`).set(new Date().toISOString());
             }
             
-            // Update score
             updateScore(roundIndex, team, value) {
                 if (!this.canEdit()) return;
-                
-                if (!this.scores[roundIndex]) {
-                    this.scores[roundIndex] = { team1: null, team2: null };
-                }
-                
+                if (!this.scores[roundIndex]) this.scores[roundIndex] = { team1: null, team2: null };
                 const numValue = value === '' || value === null ? null : parseInt(value);
                 this.scores[roundIndex][team] = numValue;
-                
-                // Auto-calculate other team if fixed points
                 if (this.fixedPoints && team === 'team1' && numValue !== null) {
                     this.scores[roundIndex].team2 = this.totalPoints - numValue;
                 }
-                
-                this.saveScoreToFirebase(
-                    roundIndex,
-                    this.scores[roundIndex].team1,
-                    this.scores[roundIndex].team2
-                );
+                this.saveScoreToFirebase(roundIndex, this.scores[roundIndex].team1, this.scores[roundIndex].team2);
             }
             
-            // Clear score
             clearScore(roundIndex) {
                 if (!this.canEdit()) return;
-                
                 this.scores[roundIndex] = { team1: null, team2: null };
                 this.saveScoreToFirebase(roundIndex, null, null);
             }
             
-            // Update player name
             updatePlayerName(index, name) {
                 if (!this.canEdit()) return;
                 this.playerNames[index] = name;
                 this.saveToFirebase();
             }
             
-            // Update settings
             updateSettings(settings) {
                 if (!this.canEdit()) return;
                 Object.assign(this, settings);
                 this.saveToFirebase();
             }
             
-            // Calculate standings
             calculateStandings() {
                 const playerScores = Array(this.playerCount).fill(0);
                 const gamesPlayed = Array(this.playerCount).fill(0);
                 const fixtures = FIXTURES[this.playerCount] || [];
-                
                 fixtures.forEach((fixture, roundIndex) => {
                     const score = this.scores[roundIndex];
                     if (score && score.team1 !== null && score.team2 !== null) {
-                        fixture.teams[0].forEach(playerNum => {
-                            playerScores[playerNum - 1] += score.team1;
-                            gamesPlayed[playerNum - 1]++;
-                        });
-                        fixture.teams[1].forEach(playerNum => {
-                            playerScores[playerNum - 1] += score.team2;
-                            gamesPlayed[playerNum - 1]++;
-                        });
+                        fixture.teams[0].forEach(playerNum => { playerScores[playerNum - 1] += score.team1; gamesPlayed[playerNum - 1]++; });
+                        fixture.teams[1].forEach(playerNum => { playerScores[playerNum - 1] += score.team2; gamesPlayed[playerNum - 1]++; });
                     }
                 });
-                
                 return this.playerNames.map((name, index) => ({
                     name: name || `Player ${index + 1}`,
                     index: index + 1,
@@ -640,12 +605,10 @@
                 })).sort((a, b) => b.score - a.score);
             }
             
-            // Count completed rounds
             countCompletedRounds() {
                 return this.scores.filter(s => s && s.team1 !== null && s.team2 !== null).length;
             }
             
-            // Reset all scores
             resetAllScores() {
                 if (!this.canEdit()) return;
                 const fixtures = FIXTURES[this.playerCount] || [];
@@ -654,35 +617,20 @@
             }
         }
         
-        // ===== GLOBAL STATE =====
         let state = null;
         
-        // ===== MY TOURNAMENTS (LocalStorage) =====
+        // ===== MY TOURNAMENTS =====
         const MyTournaments = {
             KEY: 'stretford_padel_americano_tournaments',
-            
-            getAll() {
-                try {
-                    const data = localStorage.getItem(this.KEY);
-                    return data ? JSON.parse(data) : [];
-                } catch (e) {
-                    return [];
-                }
-            },
-            
+            getAll() { try { const data = localStorage.getItem(this.KEY); return data ? JSON.parse(data) : []; } catch (e) { return []; } },
             add(tournamentId, name) {
                 const tournaments = this.getAll();
                 if (!tournaments.find(t => t.id === tournamentId)) {
-                    tournaments.unshift({
-                        id: tournamentId,
-                        name: name,
-                        createdAt: new Date().toISOString()
-                    });
+                    tournaments.unshift({ id: tournamentId, name: name, createdAt: new Date().toISOString() });
                     if (tournaments.length > 20) tournaments.pop();
                     localStorage.setItem(this.KEY, JSON.stringify(tournaments));
                 }
             },
-            
             remove(tournamentId) {
                 const tournaments = this.getAll().filter(t => t.id !== tournamentId);
                 localStorage.setItem(this.KEY, JSON.stringify(tournaments));
@@ -696,32 +644,17 @@
         }
         
         async function handleRouteChange(route, tournamentId, organiserKey) {
-            if (route === Router.routes.HOME) {
-                renderLandingPage();
-            } else if (route === Router.routes.TOURNAMENT) {
-                await initializeTournament(tournamentId, organiserKey);
-            }
+            if (route === Router.routes.HOME) renderLandingPage();
+            else if (route === Router.routes.TOURNAMENT) await initializeTournament(tournamentId, organiserKey);
         }
         
         async function initializeTournament(tournamentId, organiserKey) {
-            if (state) {
-                state.stopListening();
-            }
-            
+            if (state) state.stopListening();
             renderLoadingState(tournamentId);
-            
             const exists = await checkTournamentExists(tournamentId);
-            if (!exists) {
-                renderTournamentNotFound(tournamentId);
-                return;
-            }
-            
+            if (!exists) { renderTournamentNotFound(tournamentId); return; }
             state = new AmericanoState(tournamentId);
-            
-            if (organiserKey) {
-                await state.verifyOrganiserKey(organiserKey);
-            }
-            
+            if (organiserKey) await state.verifyOrganiserKey(organiserKey);
             state.loadFromFirebase();
         }
         
@@ -729,189 +662,112 @@
             try {
                 const snapshot = await database.ref(`americano/${tournamentId}/meta`).once('value');
                 return snapshot.exists();
-            } catch (error) {
-                console.error('Error checking tournament:', error);
-                return false;
-            }
+            } catch (error) { return false; }
         }
         
         // ===== CREATE TOURNAMENT =====
         async function createTournament(name, passcode, playerCount) {
             const tournamentId = Router.generateTournamentId();
             const organiserKey = Router.generateOrganiserKey();
-            
-            // Hash the passcode (simple hash for demo - in production use bcrypt)
             const hashedPasscode = btoa(passcode);
-            
-            // Create player names object (Firebase prefers objects over arrays for reliability)
             const playerNames = {};
-            for (let i = 0; i < playerCount; i++) {
-                playerNames[i] = `Player ${i + 1}`;
-            }
-            
-            // Create scores object (use -1 to indicate no score, as Firebase filters out null)
+            for (let i = 0; i < playerCount; i++) playerNames[i] = `Player ${i + 1}`;
             const fixtures = FIXTURES[playerCount] || [];
             const scores = {};
-            fixtures.forEach((_, idx) => {
-                scores[idx] = { team1: -1, team2: -1 };
+            fixtures.forEach((_, idx) => { scores[idx] = { team1: -1, team2: -1 }; });
+            
+            await database.ref(`americano/${tournamentId}`).set({
+                meta: { name, organiserKey, passcodeHash: hashedPasscode, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+                playerCount, playerNames, fixedPoints: false, totalPoints: 16, scores, tournamentStarted: true
             });
-            
-            const tournamentData = {
-                meta: {
-                    name: name,
-                    organiserKey: organiserKey,
-                    passcodeHash: hashedPasscode,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                },
-                playerCount: playerCount,
-                playerNames: playerNames,
-                fixedPoints: false,
-                totalPoints: 16,
-                scores: scores,
-                tournamentStarted: true
-            };
-            
-            console.log('Creating tournament:', tournamentId, tournamentData);
-            
-            await database.ref(`americano/${tournamentId}`).set(tournamentData);
-            
-            console.log('Tournament created successfully!');
-            
             MyTournaments.add(tournamentId, name);
-            
             return { tournamentId, organiserKey };
         }
         
         // ===== RENDER FUNCTIONS =====
-        
         function renderLoadingState(tournamentId) {
-            const app = document.getElementById('app');
-            app.innerHTML = `
+            document.getElementById('app').innerHTML = `
                 <div class="min-h-screen flex items-center justify-center">
                     <div class="text-center">
                         <div class="relative mb-6">
-                            <div class="w-20 h-20 mx-auto rounded-full border-4 border-purple-100 border-t-purple-500 animate-spin"></div>
+                            <div class="w-20 h-20 mx-auto rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin"></div>
                             <div class="absolute inset-0 flex items-center justify-center text-3xl">🔄</div>
                         </div>
                         <h2 class="text-xl font-semibold text-gray-800 mb-2">Loading Session</h2>
-                        <p class="text-gray-500">Code: <span class="font-mono font-bold text-purple-600">${tournamentId?.toUpperCase() || ''}</span></p>
+                        <p class="text-gray-500">Code: <span class="font-mono font-bold text-blue-600">${tournamentId?.toUpperCase() || ''}</span></p>
                     </div>
                 </div>
             `;
         }
         
         function renderTournamentNotFound(tournamentId) {
-            const app = document.getElementById('app');
-            app.innerHTML = `
+            document.getElementById('app').innerHTML = `
                 <div class="min-h-screen flex items-center justify-center p-4">
                     <div class="text-center max-w-md">
                         <div class="text-6xl mb-6">🔍</div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-3">Session Not Found</h2>
                         <p class="text-gray-500 mb-2">We couldn't find a session with the code:</p>
                         <p class="font-mono text-xl font-bold text-red-500 mb-6">${tournamentId?.toUpperCase() || 'UNKNOWN'}</p>
-                        
-                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                            <button onclick="Router.navigate('home')" class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
-                                ← Back to Home
-                            </button>
-                        </div>
+                        <button onclick="Router.navigate('home')" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors">← Back to Home</button>
                     </div>
                 </div>
             `;
         }
         
         function renderLandingPage() {
-            if (state) {
-                state.stopListening();
-                state = null;
-            }
-            
+            if (state) { state.stopListening(); state = null; }
             const myTournaments = MyTournaments.getAll();
             
-            const app = document.getElementById('app');
-            app.innerHTML = `
+            document.getElementById('app').innerHTML = `
                 <div class="min-h-screen">
-                    <!-- Hero Section -->
+                    <!-- Hero Section - BLUE theme like tournament -->
                     <div class="relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800"></div>
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-purple-800"></div>
                         <div class="absolute inset-0 opacity-30">
                             <div class="absolute top-20 left-10 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
-                            <div class="absolute bottom-20 right-10 w-80 h-80 bg-indigo-300 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
+                            <div class="absolute bottom-20 right-10 w-80 h-80 bg-purple-300 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
                         </div>
-                        
                         <div class="relative max-w-5xl mx-auto px-6 py-16 md:py-24">
                             <div class="text-center">
                                 <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2 mb-8">
                                     <span class="text-3xl">🔄</span>
                                     <span class="text-white/90 font-medium">Americano Format</span>
                                 </div>
-                                
-                                <h1 class="text-4xl md:text-6xl font-bold text-white mb-6" style="letter-spacing: -2px; line-height: 1.1;">
-                                    Rotating<br>Partners
-                                </h1>
-                                
-                                <p class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-12" style="line-height: 1.6;">
-                                    Everyone plays with everyone. 5-9 players, automatic pairings,<br class="hidden md:block">
-                                    real-time leaderboard.
-                                </p>
-                                
+                                <h1 class="text-4xl md:text-6xl font-bold text-white mb-6" style="letter-spacing: -2px; line-height: 1.1;">Rotating<br>Partners</h1>
+                                <p class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-12" style="line-height: 1.6;">Everyone plays with everyone. 5-9 players, automatic pairings,<br class="hidden md:block">real-time leaderboard.</p>
                                 <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
-                                    <button onclick="showCreateModal()" class="flex-1 px-8 py-4 bg-white text-purple-700 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200">
-                                        <span class="mr-2">✨</span> Create Session
-                                    </button>
-                                    
-                                    <button onclick="showJoinModal()" class="flex-1 px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-2xl font-semibold text-lg hover:bg-white/20 transition-all duration-200">
-                                        <span class="mr-2">🔗</span> Join with Code
-                                    </button>
+                                    <button onclick="showCreateModal()" class="flex-1 px-8 py-4 bg-white text-blue-700 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200"><span class="mr-2">✨</span> Create Session</button>
+                                    <button onclick="showJoinModal()" class="flex-1 px-8 py-4 bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 rounded-2xl font-semibold text-lg hover:bg-white/20 transition-all duration-200"><span class="mr-2">🔗</span> Join with Code</button>
                                 </div>
-                                
                                 <div class="mt-8">
-                                    <a href="../" class="text-white/60 hover:text-white text-sm transition-colors">
-                                        ← Back to Stretford Padel Home
-                                    </a>
+                                    <a href="../" class="text-white/60 hover:text-white text-sm transition-colors">← Back to Stretford Padel Home</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <!-- My Sessions -->
                     ${myTournaments.length > 0 ? `
                         <div class="max-w-5xl mx-auto px-6 py-12">
                             <div class="flex items-center gap-3 mb-6">
-                                <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                                    <span class="text-xl">📋</span>
-                                </div>
+                                <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><span class="text-xl">📋</span></div>
                                 <h2 class="text-2xl font-bold text-gray-800" style="letter-spacing: -0.5px;">My Sessions</h2>
                             </div>
-                            
                             <div class="grid gap-4">
                                 ${myTournaments.map(t => `
                                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center gap-4 flex-1 min-w-0">
-                                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                                                    ${t.name ? t.name.charAt(0).toUpperCase() : '🔄'}
-                                                </div>
+                                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">${t.name ? t.name.charAt(0).toUpperCase() : '🔄'}</div>
                                                 <div class="min-w-0">
                                                     <h3 class="font-semibold text-gray-800 truncate">${t.name || 'Unnamed Session'}</h3>
                                                     <div class="flex items-center gap-2 text-sm text-gray-500">
-                                                        <span class="font-mono font-medium text-purple-600">${t.id.toUpperCase()}</span>
+                                                        <span class="font-mono font-medium text-blue-600">${t.id.toUpperCase()}</span>
                                                         <span class="text-gray-300">•</span>
                                                         <span>${formatTimeAgo(t.createdAt)}</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="flex items-center gap-2 flex-shrink-0">
-                                                <button onclick="Router.navigate('tournament', '${t.id}')" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-medium text-sm transition-colors">
-                                                    Open
-                                                </button>
-                                                <button onclick="copyToClipboard('${Router.getPlayerLink(t.id)}'); showToast('✅ Link copied!')" class="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-colors" title="Copy link">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                            <button onclick="Router.navigate('tournament', '${t.id}')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium text-sm transition-colors">Open</button>
                                         </div>
                                     </div>
                                 `).join('')}
@@ -919,185 +775,185 @@
                         </div>
                     ` : ''}
                     
-                    <!-- Features -->
-                    <div class="bg-white border-t border-gray-100">
-                        <div class="max-w-5xl mx-auto px-6 py-16">
-                            <div class="text-center mb-12">
-                                <h2 class="text-3xl font-bold text-gray-800 mb-4" style="letter-spacing: -0.5px;">How Americano Works</h2>
-                                <p class="text-gray-600">The perfect format for casual sessions</p>
-                            </div>
-                            
-                            <div class="grid md:grid-cols-3 gap-8">
-                                <div class="text-center">
-                                    <div class="w-16 h-16 rounded-2xl bg-purple-100 flex items-center justify-center mx-auto mb-4 text-3xl">
-                                        👥
-                                    </div>
-                                    <h3 class="font-semibold text-gray-800 mb-2">5-9 Players</h3>
-                                    <p class="text-gray-600 text-sm">Perfect for any group size. Everyone gets equal playing time.</p>
-                                </div>
-                                
-                                <div class="text-center">
-                                    <div class="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center mx-auto mb-4 text-3xl">
-                                        🔄
-                                    </div>
-                                    <h3 class="font-semibold text-gray-800 mb-2">Rotating Partners</h3>
-                                    <p class="text-gray-600 text-sm">Play with different partners each round. Meet everyone!</p>
-                                </div>
-                                
-                                <div class="text-center">
-                                    <div class="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center mx-auto mb-4 text-3xl">
-                                        🏆
-                                    </div>
-                                    <h3 class="font-semibold text-gray-800 mb-2">Individual Scoring</h3>
-                                    <p class="text-gray-600 text-sm">Points accumulate personally. Best overall player wins!</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Footer -->
                     <div class="bg-gray-900 text-gray-400 py-8">
-                        <div class="max-w-5xl mx-auto px-6 text-center text-sm">
-                            <p>Stretford Padel • Americano Format</p>
-                        </div>
+                        <div class="max-w-5xl mx-auto px-6 text-center text-sm"><p>Stretford Padel • Americano Format</p></div>
                     </div>
                 </div>
             `;
-            
-            loadRecentSessions();
         }
         
-        async function loadRecentSessions() {
-            // This populates the recent sessions if we add that section later
-        }
-        
-        // ===== MAIN TOURNAMENT RENDER =====
+        // ===== MAIN RENDER =====
         function render() {
             if (!state || !state.isInitialized) return;
-            
-            const app = document.getElementById('app');
             const canEdit = state.canEdit();
-            const standings = state.calculateStandings();
             const completedRounds = state.countCompletedRounds();
             const totalRounds = FIXTURES[state.playerCount]?.length || 0;
             const progressPercent = totalRounds > 0 ? Math.round((completedRounds / totalRounds) * 100) : 0;
             
-            app.innerHTML = `
-                <div class="max-w-6xl mx-auto p-4 md:p-6 pb-12">
-                    <!-- Header -->
+            document.getElementById('app').innerHTML = `
+                <div class="max-w-7xl mx-auto p-4 md:p-6 pb-12">
+                    <!-- Header (Same style as tournament) -->
                     <div class="relative bg-white text-gray-900 rounded-3xl shadow-sm p-6 md:p-8 mb-6 overflow-hidden border border-gray-100">
-                        <div class="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-indigo-50 opacity-60"></div>
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-60"></div>
                         <div class="relative">
                             <div class="flex items-center justify-between mb-4">
-                                <button onclick="Router.navigate('home')" class="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors group" title="Back to home">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                    </svg>
+                                <button onclick="Router.navigate('home')" class="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors group">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                                     <span class="text-sm font-medium">Home</span>
                                 </button>
-                                <button onclick="showShareModal()" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-medium flex items-center gap-2 transition-colors text-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                    </svg>
+                                <button onclick="showShareModal()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium flex items-center gap-2 transition-colors text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                                     Share
                                 </button>
                             </div>
-                            
                             <div class="flex items-start gap-4 mb-4">
                                 <div class="text-4xl md:text-5xl">🔄</div>
                                 <div class="flex-1 min-w-0">
                                     <h1 class="text-2xl md:text-3xl font-bold mb-1 truncate" style="letter-spacing: -0.5px;">${state.tournamentName || 'Americano Session'}</h1>
                                     <div class="flex items-center gap-3 text-sm">
-                                        <span class="text-gray-500">Code: <span class="font-mono font-bold text-purple-600">${state.tournamentId?.toUpperCase() || ''}</span></span>
+                                        <span class="text-gray-500">Code: <span class="font-mono font-bold text-blue-600">${state.tournamentId?.toUpperCase() || ''}</span></span>
                                         <span class="text-gray-300">•</span>
                                         <span class="text-gray-500">${completedRounds}/${totalRounds} rounds</span>
                                     </div>
                                 </div>
                             </div>
-                            
                             <div class="mb-4">
                                 <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500" style="width: ${progressPercent}%"></div>
+                                    <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500" style="width: ${progressPercent}%"></div>
                                 </div>
                             </div>
-                            
                             <div class="flex flex-wrap gap-2 text-xs">
-                                <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
-                                    <span>👥</span>
-                                    <span class="font-semibold text-gray-700">${state.playerCount} Players</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
-                                    <span>🎯</span>
-                                    <span class="font-semibold text-gray-700">${totalRounds} Rounds</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 bg-green-50 backdrop-blur rounded-full px-3 py-1.5 border border-green-200">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                    <span class="font-semibold text-green-700">Live</span>
-                                </div>
-                                ${canEdit ? `
-                                    <div class="flex items-center gap-1.5 bg-purple-50 backdrop-blur rounded-full px-3 py-1.5 border border-purple-200">
-                                        <span>✏️</span>
-                                        <span class="font-semibold text-purple-700">Organiser</span>
-                                    </div>
-                                ` : `
-                                    <button onclick="showOrganiserLoginModal()" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 backdrop-blur rounded-full px-3 py-1.5 border border-amber-200 transition-colors cursor-pointer">
-                                        <span>🔑</span>
-                                        <span class="font-semibold text-amber-700">Enter as Organiser</span>
-                                    </button>
-                                `}
+                                <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200"><span>👥</span><span class="font-semibold text-gray-700">${state.playerCount} Players</span></div>
+                                <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200"><span>🎯</span><span class="font-semibold text-gray-700">${totalRounds} Rounds</span></div>
+                                <div class="flex items-center gap-1.5 bg-green-50 backdrop-blur rounded-full px-3 py-1.5 border border-green-200"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span><span class="font-semibold text-green-700">Live</span></div>
+                                ${canEdit ? `<div class="flex items-center gap-1.5 bg-blue-50 backdrop-blur rounded-full px-3 py-1.5 border border-blue-200"><span>✏️</span><span class="font-semibold text-blue-700">Organiser</span></div>` : `<button onclick="showOrganiserLoginModal()" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 backdrop-blur rounded-full px-3 py-1.5 border border-amber-200 transition-colors cursor-pointer"><span>🔑</span><span class="font-semibold text-amber-700">Enter as Organiser</span></button>`}
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Navigation Tabs -->
+                    <!-- Navigation Tabs (Fixtures first) -->
                     <div class="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden border border-gray-100">
                         <div class="overflow-x-auto">
                             <div class="flex p-2 gap-1 min-w-max">
-                                <button onclick="state.currentTab = 'tournament'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'tournament' ? 'tab-active' : 'tab-inactive'}">🏆 Leaderboard</button>
-                                <button onclick="state.currentTab = 'matches'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'matches' ? 'tab-active' : 'tab-inactive'}">📋 Matches</button>
-                                ${canEdit ? `<button onclick="state.currentTab = 'settings'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'settings' ? 'tab-active' : 'tab-inactive'}">⚙️ Settings</button>` : ''}
+                                <button onclick="state.currentTab = 'fixtures'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fixtures' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Fixtures</button>
+                                <button onclick="state.currentTab = 'results'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'results' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Leaderboard</button>
+                                ${canEdit ? `<button onclick="state.currentTab = 'settings'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'settings' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Settings</button>` : ''}
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Tab Content -->
                     <div class="animate-fade-in">
-                        ${state.currentTab === 'tournament' ? renderLeaderboardTab(standings) : ''}
-                        ${state.currentTab === 'matches' ? renderMatchesTab() : ''}
+                        ${state.currentTab === 'fixtures' ? renderFixturesTab() : ''}
+                        ${state.currentTab === 'results' ? renderResultsTab() : ''}
                         ${state.currentTab === 'settings' ? renderSettingsTab() : ''}
                     </div>
                 </div>
             `;
         }
         
-        function renderLeaderboardTab(standings) {
+        // ===== FIXTURES TAB =====
+        function renderFixturesTab() {
+            const fixtures = FIXTURES[state.playerCount] || [];
+            const canEdit = state.canEdit();
+            const totalRounds = fixtures.length;
+            
+            const roundButtons = Array.from({ length: totalRounds }, (_, i) => {
+                const roundNum = i + 1;
+                const score = state.scores[i] || { team1: null, team2: null };
+                const isComplete = score.team1 !== null && score.team2 !== null;
+                const isSelected = state.selectedRound === roundNum;
+                return `<button onclick="state.selectedRound = ${roundNum}; render();" class="round-btn w-10 h-10 rounded-xl font-semibold text-sm transition-all ${isSelected ? 'bg-blue-500 text-white shadow-lg' : isComplete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${roundNum}</button>`;
+            }).join('');
+            
+            const roundIndex = state.selectedRound - 1;
+            const fixture = fixtures[roundIndex];
+            if (!fixture) return '<div class="text-center py-8 text-gray-500">No fixture data</div>';
+            
+            const score = state.scores[roundIndex] || { team1: null, team2: null };
+            const isComplete = score.team1 !== null && score.team2 !== null;
+            const team1Players = fixture.teams[0];
+            const team2Players = fixture.teams[1];
+            const restingPlayers = fixture.rest;
+            const getPlayerName = (num) => state.playerNames[num - 1] || `Player ${num}`;
+            
+            const scoreDisplay = canEdit ? `
+                <input type="number" min="0" value="${score.team1 !== null ? score.team1 : ''}" placeholder="—" class="score-input-compact" onchange="state.updateScore(${roundIndex}, 'team1', this.value)" />
+                <span class="text-gray-400 text-2xl font-semibold">:</span>
+                <input type="number" min="0" value="${score.team2 !== null ? score.team2 : ''}" placeholder="—" class="score-input-compact" ${state.fixedPoints ? 'readonly' : ''} onchange="state.updateScore(${roundIndex}, 'team2', this.value)" />
+            ` : `
+                <span class="text-3xl font-bold text-gray-800">${score.team1 !== null ? score.team1 : '—'}</span>
+                <span class="text-gray-400 text-2xl font-semibold">:</span>
+                <span class="text-3xl font-bold text-gray-800">${score.team2 !== null ? score.team2 : '—'}</span>
+            `;
+            
+            return `
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-gray-800">Select Round</h3>
+                            <div class="flex items-center gap-2 text-sm"><span class="w-3 h-3 rounded bg-green-100 border border-green-300"></span><span class="text-gray-500">Complete</span></div>
+                        </div>
+                        <div class="flex flex-wrap gap-2">${roundButtons}</div>
+                    </div>
+                    
+                    <div class="match-card ${isComplete ? 'complete' : ''}">
+                        <div class="px-4 py-2 flex justify-between items-center bg-gray-50">
+                            <div class="flex items-center gap-2">
+                                <div class="font-semibold text-gray-800">R${state.selectedRound}</div>
+                                <div class="w-1 h-1 rounded-full bg-gray-300"></div>
+                                <div class="text-xs text-gray-500">Match ${state.selectedRound}</div>
+                            </div>
+                            <div class="flex items-center gap-2">${isComplete ? '<span class="text-green-600 text-sm">✓ Complete</span>' : ''}</div>
+                        </div>
+                        <div class="px-3 py-4">
+                            <div class="match-row">
+                                <div class="team-stack">
+                                    ${team1Players.map(p => `<div class="player-badge-compact"><span class="font-bold">#${p}</span><span class="player-name-truncate">${getPlayerName(p)}</span></div>`).join('')}
+                                </div>
+                                <div class="score-box-horizontal">
+                                    <div class="score-row">${scoreDisplay}</div>
+                                    ${state.fixedPoints ? `<span class="text-xs text-gray-400">Fixed: ${state.totalPoints} pts</span>` : ''}
+                                </div>
+                                <div class="team-stack">
+                                    ${team2Players.map(p => `<div class="player-badge-compact"><span class="font-bold">#${p}</span><span class="player-name-truncate">${getPlayerName(p)}</span></div>`).join('')}
+                                </div>
+                                ${isComplete && canEdit ? `<button onclick="state.clearScore(${roundIndex}); render();" class="clear-score-btn-small" title="Clear score">×</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-amber-50 rounded-2xl border border-amber-200 p-4">
+                        <div class="flex items-center gap-2 mb-3"><span class="text-lg">⏸️</span><h3 class="font-semibold text-amber-800">Resting This Round</h3></div>
+                        <div class="flex flex-wrap gap-2">${restingPlayers.map(p => `<span class="resting-badge">#${p} ${getPlayerName(p)}</span>`).join('')}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ===== RESULTS TAB =====
+        function renderResultsTab() {
+            const standings = state.calculateStandings();
             return `
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
-                        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <span>🏆</span> Leaderboard
-                        </h2>
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+                        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2"><span>🏆</span> Leaderboard</h2>
                     </div>
                     <div class="divide-y divide-gray-100">
                         ${standings.map((player, rank) => {
-                            let medal = '';
-                            let bgClass = '';
+                            let medal = '', bgClass = '';
                             if (rank === 0) { medal = '🥇'; bgClass = 'bg-yellow-50'; }
                             else if (rank === 1) { medal = '🥈'; bgClass = 'bg-gray-50'; }
                             else if (rank === 2) { medal = '🥉'; bgClass = 'bg-orange-50'; }
-                            
                             return `
                                 <div class="leaderboard-row flex items-center justify-between px-6 py-4 ${bgClass}">
                                     <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                            ${medal || (rank + 1)}
-                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">${medal || (rank + 1)}</div>
                                         <div>
                                             <div class="font-semibold text-gray-900">${player.name}</div>
                                             <div class="text-xs text-gray-500">${player.gamesPlayed} games played</div>
                                         </div>
                                     </div>
-                                    <div class="text-2xl font-bold text-purple-600">${player.score}</div>
+                                    <div class="text-2xl font-bold text-blue-600">${player.score}</div>
                                 </div>
                             `;
                         }).join('')}
@@ -1106,243 +962,37 @@
             `;
         }
         
-        function renderMatchesTab() {
-            const fixtures = FIXTURES[state.playerCount] || [];
-            const canEdit = state.canEdit();
-            
-            return `
-                <div class="space-y-4">
-                    ${fixtures.map((fixture, roundIndex) => {
-                        const score = state.scores[roundIndex] || { team1: null, team2: null };
-                        const isComplete = score.team1 !== null && score.team2 !== null;
-                        const team1Players = fixture.teams[0].map(p => state.playerNames[p - 1] || `Player ${p}`).join(' & ');
-                        const team2Players = fixture.teams[1].map(p => state.playerNames[p - 1] || `Player ${p}`).join(' & ');
-                        const restingPlayers = fixture.rest.map(p => state.playerNames[p - 1] || `Player ${p}`).join(', ');
-                        
-                        return `
-                            <div class="round-card ${isComplete ? 'complete' : ''}">
-                                <div class="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                                    <div class="font-bold text-gray-800">Round ${roundIndex + 1}</div>
-                                    ${isComplete ? '<span class="text-green-600 text-sm font-medium">✓ Complete</span>' : ''}
-                                </div>
-                                <div class="p-5">
-                                    <div class="grid md:grid-cols-2 gap-4 mb-4">
-                                        <!-- Team 1 -->
-                                        <div class="bg-gray-50 rounded-xl p-4">
-                                            <div class="text-sm font-semibold text-gray-500 mb-2">TEAM 1</div>
-                                            <div class="font-bold text-gray-900 mb-3">${team1Players}</div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-sm text-gray-500">Score:</span>
-                                                ${canEdit ? `
-                                                    <input type="number" min="0" value="${score.team1 !== null ? score.team1 : ''}" 
-                                                        placeholder="—" class="score-input"
-                                                        onchange="state.updateScore(${roundIndex}, 'team1', this.value)" />
-                                                ` : `
-                                                    <span class="text-2xl font-bold text-purple-600">${score.team1 !== null ? score.team1 : '—'}</span>
-                                                `}
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Team 2 -->
-                                        <div class="bg-gray-50 rounded-xl p-4">
-                                            <div class="text-sm font-semibold text-gray-500 mb-2">TEAM 2</div>
-                                            <div class="font-bold text-gray-900 mb-3">${team2Players}</div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-sm text-gray-500">Score:</span>
-                                                ${canEdit ? `
-                                                    <input type="number" min="0" value="${score.team2 !== null ? score.team2 : ''}" 
-                                                        placeholder="—" class="score-input"
-                                                        ${state.fixedPoints ? 'readonly' : ''}
-                                                        onchange="state.updateScore(${roundIndex}, 'team2', this.value)" />
-                                                    ${state.fixedPoints ? '<span class="text-xs text-gray-400">(auto)</span>' : ''}
-                                                ` : `
-                                                    <span class="text-2xl font-bold text-purple-600">${score.team2 !== null ? score.team2 : '—'}</span>
-                                                `}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Resting -->
-                                    <div class="flex items-center gap-2 text-sm">
-                                        <span class="resting-badge">
-                                            <span>⏸️</span>
-                                            <span>Resting: ${restingPlayers}</span>
-                                        </span>
-                                    </div>
-                                    
-                                    ${isComplete && canEdit ? `
-                                        <div class="mt-4 pt-4 border-t border-gray-100">
-                                            <button onclick="state.clearScore(${roundIndex})" class="text-sm text-red-500 hover:text-red-600 font-medium">
-                                                Clear Score
-                                            </button>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            `;
-        }
-        
+        // ===== SETTINGS TAB =====
         function renderSettingsTab() {
-            if (!state.canEdit()) {
-                return `
-                    <div class="text-center py-16">
-                        <div class="text-6xl mb-4">🔒</div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Organiser Access Required</h2>
-                        <p class="text-gray-500">Settings are only available to the session organiser.</p>
-                    </div>
-                `;
-            }
+            if (!state.canEdit()) return `<div class="text-center py-16"><div class="text-6xl mb-4">🔒</div><h2 class="text-2xl font-bold text-gray-800 mb-2">Organiser Access Required</h2><p class="text-gray-500">Settings are only available to the session organiser.</p></div>`;
             
-            const subtabs = [
-                { id: 'players', label: '👥 Players' },
-                { id: 'scoring', label: '⚙️ Scoring' },
-                { id: 'data', label: '💾 Data' }
-            ];
-            
+            const subtabs = [{ id: 'players', label: '👥 Players' }, { id: 'scoring', label: '⚙️ Scoring' }, { id: 'data', label: '💾 Data' }];
             let content = '';
             
             if (state.settingsSubTab === 'players') {
-                content = `
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4">Player Names</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            ${Array.from({ length: state.playerCount }, (_, i) => `
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Player ${i + 1}</label>
-                                    <input type="text" value="${state.playerNames[i] || `Player ${i + 1}`}" 
-                                        class="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
-                                        onchange="state.updatePlayerName(${i}, this.value)" />
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
+                content = `<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"><h3 class="text-lg font-bold text-gray-800 mb-4">Player Names</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${Array.from({ length: state.playerCount }, (_, i) => `<div><label class="block text-sm font-medium text-gray-700 mb-1">Player ${i + 1}</label><input type="text" value="${state.playerNames[i] || `Player ${i + 1}`}" class="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors" onchange="state.updatePlayerName(${i}, this.value)" /></div>`).join('')}</div></div>`;
             } else if (state.settingsSubTab === 'scoring') {
-                content = `
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4">Scoring Options</h3>
-                        
-                        <div class="space-y-4">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" ${state.fixedPoints ? 'checked' : ''} 
-                                    class="w-5 h-5 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                    onchange="state.updateSettings({ fixedPoints: this.checked }); render();" />
-                                <span class="font-semibold text-gray-700">Fixed Points Per Game</span>
-                            </label>
-                            
-                            ${state.fixedPoints ? `
-                                <div class="ml-8 p-4 bg-purple-50 rounded-xl border border-purple-200">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Total Points Per Game</label>
-                                    <input type="number" min="1" value="${state.totalPoints}" 
-                                        class="w-24 px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none"
-                                        onchange="state.updateSettings({ totalPoints: parseInt(this.value) })" />
-                                    <p class="text-sm text-purple-700 mt-2">When you enter Team 1 score, Team 2 auto-calculates.</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
+                content = `<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"><h3 class="text-lg font-bold text-gray-800 mb-4">Scoring Options</h3><div class="space-y-4"><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" ${state.fixedPoints ? 'checked' : ''} class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" onchange="state.updateSettings({ fixedPoints: this.checked }); render();" /><span class="font-semibold text-gray-700">Fixed Points Per Game</span></label>${state.fixedPoints ? `<div class="ml-8 p-4 bg-blue-50 rounded-xl border border-blue-200"><label class="block text-sm font-medium text-gray-700 mb-2">Total Points Per Game</label><input type="number" min="1" value="${state.totalPoints}" class="w-24 px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" onchange="state.updateSettings({ totalPoints: parseInt(this.value) })" /><p class="text-sm text-blue-700 mt-2">When you enter Team 1 score, Team 2 auto-calculates.</p></div>` : ''}</div></div>`;
             } else if (state.settingsSubTab === 'data') {
-                content = `
-                    <div class="space-y-6">
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4">Reset Scores</h3>
-                            <p class="text-sm text-gray-600 mb-4">Clear all match scores to start fresh.</p>
-                            <button onclick="if(confirm('Reset all scores? This cannot be undone.')) { state.resetAllScores(); render(); }" 
-                                class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors">
-                                Reset All Scores
-                            </button>
-                        </div>
-                        
-                        <div class="bg-green-50 border border-green-200 rounded-2xl p-6">
-                            <div class="flex items-center gap-3 mb-2">
-                                <span class="text-2xl">✅</span>
-                                <h3 class="font-bold text-green-800">Auto-Save Active</h3>
-                            </div>
-                            <p class="text-sm text-green-700">All changes are automatically saved to the cloud. Everyone sees updates in real-time!</p>
-                        </div>
-                    </div>
-                `;
+                content = `<div class="space-y-6"><div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"><h3 class="text-lg font-bold text-gray-800 mb-4">Reset Scores</h3><p class="text-sm text-gray-600 mb-4">Clear all match scores to start fresh.</p><button onclick="if(confirm('Reset all scores? This cannot be undone.')) { state.resetAllScores(); render(); }" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors">Reset All Scores</button></div><div class="bg-green-50 border border-green-200 rounded-2xl p-6"><div class="flex items-center gap-3 mb-2"><span class="text-2xl">✅</span><h3 class="font-bold text-green-800">Auto-Save Active</h3></div><p class="text-sm text-green-700">All changes are automatically saved to the cloud!</p></div></div>`;
             }
             
-            return `
-                <div class="space-y-6">
-                    <div class="bg-white rounded-2xl shadow-sm p-3 border border-gray-100">
-                        <div class="flex gap-2 flex-wrap">
-                            ${subtabs.map(tab => `
-                                <button onclick="state.settingsSubTab = '${tab.id}'; render();" 
-                                    class="settings-subtab ${state.settingsSubTab === tab.id ? 'active' : 'inactive'}">
-                                    ${tab.label}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                    ${content}
-                </div>
-            `;
+            return `<div class="space-y-6"><div class="bg-white rounded-2xl shadow-sm p-3 border border-gray-100"><div class="flex gap-2 flex-wrap">${subtabs.map(tab => `<button onclick="state.settingsSubTab = '${tab.id}'; render();" class="settings-subtab ${state.settingsSubTab === tab.id ? 'active' : 'inactive'}">${tab.label}</button>`).join('')}</div></div>${content}</div>`;
         }
         
         // ===== MODALS =====
-        
         function showCreateModal() {
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
+            document.getElementById('modal-container').innerHTML = `
                 <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
                     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-slide-up">
-                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5">
-                            <h2 class="text-xl font-bold text-white">✨ Create Americano Session</h2>
-                        </div>
-                        
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-5"><h2 class="text-xl font-bold text-white">✨ Create Americano Session</h2></div>
                         <div class="p-6">
-                            <div class="mb-4">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Session Name</label>
-                                <input type="text" id="session-name-input" 
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg"
-                                    placeholder="e.g. Sunday Padel" autofocus />
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Number of Players</label>
-                                <div class="flex gap-2 flex-wrap">
-                                    ${[5, 6, 7, 8, 9].map(n => `
-                                        <button type="button" onclick="selectPlayerCount(${n})" 
-                                            class="player-count-btn px-5 py-2 border-2 border-gray-200 rounded-xl font-semibold ${n === 6 ? 'active' : ''}"
-                                            data-count="${n}">${n}</button>
-                                    `).join('')}
-                                </div>
-                                <p id="player-count-info" class="text-sm text-gray-500 mt-2">12 rounds • 8 games per player</p>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Create Organiser Passcode</label>
-                                <input type="password" id="organiser-passcode-input" 
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg"
-                                    placeholder="Create a passcode" />
-                                <p class="text-xs text-gray-500 mt-1">You'll need this to edit the session</p>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Passcode</label>
-                                <input type="password" id="organiser-passcode-confirm" 
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg"
-                                    placeholder="Confirm passcode" />
-                            </div>
-                            
-                            <div id="create-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                                <p id="create-error-text" class="text-sm text-red-600 font-medium">❌ Error</p>
-                            </div>
-                            
-                            <div class="flex gap-3">
-                                <button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
-                                    Cancel
-                                </button>
-                                <button onclick="handleCreateSession()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
-                                    Create Session
-                                </button>
-                            </div>
+                            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-2">Session Name</label><input type="text" id="session-name-input" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg" placeholder="e.g. Sunday Padel" autofocus /></div>
+                            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-2">Number of Players</label><div class="flex gap-2 flex-wrap">${[5,6,7,8,9].map(n => `<button type="button" onclick="selectPlayerCount(${n})" class="px-5 py-2 border-2 rounded-xl font-semibold transition-all ${n === 6 ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-200 text-gray-600 hover:border-blue-300'}" data-count="${n}">${n}</button>`).join('')}</div><p id="player-count-info" class="text-sm text-gray-500 mt-2">12 rounds • 8 games per player</p></div>
+                            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-2">Create Organiser Passcode</label><input type="password" id="organiser-passcode-input" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg" placeholder="Create a passcode" /></div>
+                            <div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Passcode</label><input type="password" id="organiser-passcode-confirm" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg" placeholder="Confirm passcode" /></div>
+                            <div id="create-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4"><p id="create-error-text" class="text-sm text-red-600 font-medium">❌ Error</p></div>
+                            <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">Cancel</button><button onclick="handleCreateSession()" class="flex-1 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors">Create</button></div>
                         </div>
                     </div>
                 </div>
@@ -1353,11 +1003,8 @@
         
         function selectPlayerCount(count) {
             selectedPlayerCount = count;
-            document.querySelectorAll('.player-count-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (parseInt(btn.dataset.count) === count) {
-                    btn.classList.add('active');
-                }
+            document.querySelectorAll('[data-count]').forEach(btn => {
+                btn.className = parseInt(btn.dataset.count) === count ? 'px-5 py-2 border-2 rounded-xl font-semibold transition-all bg-blue-500 text-white border-blue-500' : 'px-5 py-2 border-2 rounded-xl font-semibold transition-all border-gray-200 text-gray-600 hover:border-blue-300';
             });
             const info = TOURNAMENT_INFO[count];
             document.getElementById('player-count-info').textContent = `${info.rounds} rounds • ${info.gamesPerPlayer} games per player`;
@@ -1367,85 +1014,35 @@
             const name = document.getElementById('session-name-input').value.trim();
             const passcode = document.getElementById('organiser-passcode-input').value;
             const passcodeConfirm = document.getElementById('organiser-passcode-confirm').value;
-            
             const errorDiv = document.getElementById('create-error');
             const errorText = document.getElementById('create-error-text');
             
-            if (!name) {
-                errorDiv.classList.remove('hidden');
-                errorText.textContent = '❌ Please enter a session name';
-                return;
-            }
-            
-            if (!passcode || passcode.length < 4) {
-                errorDiv.classList.remove('hidden');
-                errorText.textContent = '❌ Passcode must be at least 4 characters';
-                return;
-            }
-            
-            if (passcode !== passcodeConfirm) {
-                errorDiv.classList.remove('hidden');
-                errorText.textContent = '❌ Passcodes do not match';
-                return;
-            }
+            if (!name) { errorDiv.classList.remove('hidden'); errorText.textContent = '❌ Please enter a session name'; return; }
+            if (!passcode || passcode.length < 4) { errorDiv.classList.remove('hidden'); errorText.textContent = '❌ Passcode must be at least 4 characters'; return; }
+            if (passcode !== passcodeConfirm) { errorDiv.classList.remove('hidden'); errorText.textContent = '❌ Passcodes do not match'; return; }
             
             try {
                 const { tournamentId, organiserKey } = await createTournament(name, passcode, selectedPlayerCount);
                 closeModal();
                 showCreatedModal(tournamentId, organiserKey);
-            } catch (error) {
-                console.error('Error creating session:', error);
-                errorDiv.classList.remove('hidden');
-                errorText.textContent = '❌ Failed to create session. Please try again.';
-            }
+            } catch (error) { errorDiv.classList.remove('hidden'); errorText.textContent = '❌ Failed to create session. Please try again.'; }
         }
         
         function showCreatedModal(tournamentId, organiserKey) {
             const playerLink = Router.getPlayerLink(tournamentId);
             const organiserLink = Router.getOrganiserLink(tournamentId, organiserKey);
-            
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
+            document.getElementById('modal-container').innerHTML = `
                 <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
-                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-5">
-                            <h2 class="text-xl font-bold text-white">🎉 Session Created!</h2>
-                        </div>
-                        
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-5"><h2 class="text-xl font-bold text-white">🎉 Session Created!</h2></div>
                         <div class="p-6">
-                            <div class="text-center mb-6">
-                                <div class="text-6xl mb-4">✅</div>
-                                <p class="text-gray-600">Your Americano session is ready!</p>
-                            </div>
-                            
+                            <div class="text-center mb-6"><div class="text-6xl mb-4">✅</div><p class="text-gray-600">Your Americano session is ready!</p></div>
                             <div class="space-y-4 mb-6">
-                                <div class="bg-purple-50 rounded-xl p-4">
-                                    <div class="text-sm font-semibold text-purple-800 mb-2">📋 Session Code</div>
-                                    <div class="font-mono text-2xl font-bold text-purple-600 tracking-wider">${tournamentId.toUpperCase()}</div>
-                                </div>
-                                
-                                <div class="bg-blue-50 rounded-xl p-4">
-                                    <div class="text-sm font-semibold text-blue-800 mb-2">🔗 Player Link (share this)</div>
-                                    <div class="flex items-center gap-2">
-                                        <input type="text" value="${playerLink}" readonly class="flex-1 px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-mono" />
-                                        <button onclick="copyToClipboard('${playerLink}'); showToast('✅ Player link copied!')" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">Copy</button>
-                                    </div>
-                                </div>
-                                
-                                <div class="bg-amber-50 rounded-xl p-4">
-                                    <div class="text-sm font-semibold text-amber-800 mb-2">🔑 Organiser Link (keep this secret!)</div>
-                                    <div class="flex items-center gap-2">
-                                        <input type="text" value="${organiserLink}" readonly class="flex-1 px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-mono" />
-                                        <button onclick="copyToClipboard('${organiserLink}'); showToast('✅ Organiser link copied!')" class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">Copy</button>
-                                    </div>
-                                    <p class="text-xs text-amber-700 mt-2">⚠️ Save this link! You need it to enter scores.</p>
-                                </div>
+                                <div class="bg-blue-50 rounded-xl p-4"><div class="text-sm font-semibold text-blue-800 mb-2">📋 Session Code</div><div class="font-mono text-2xl font-bold text-blue-600 tracking-wider">${tournamentId.toUpperCase()}</div></div>
+                                <div class="bg-gray-50 rounded-xl p-4"><div class="text-sm font-semibold text-gray-700 mb-2">🔗 Player Link</div><div class="flex items-center gap-2"><input type="text" value="${playerLink}" readonly class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono" /><button onclick="copyToClipboard('${playerLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">Copy</button></div></div>
+                                <div class="bg-amber-50 rounded-xl p-4"><div class="text-sm font-semibold text-amber-800 mb-2">🔑 Organiser Link (keep secret!)</div><div class="flex items-center gap-2"><input type="text" value="${organiserLink}" readonly class="flex-1 px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-mono" /><button onclick="copyToClipboard('${organiserLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">Copy</button></div></div>
                             </div>
-                            
-                            <button onclick="closeModal(); Router.navigate('tournament', '${tournamentId}', '${organiserKey}')" 
-                                class="w-full px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
-                                Open Session →
-                            </button>
+                            <button onclick="closeModal(); Router.navigate('tournament', '${tournamentId}', '${organiserKey}')" class="w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors">Open Session →</button>
                         </div>
                     </div>
                 </div>
@@ -1453,97 +1050,41 @@
         }
         
         function showJoinModal() {
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
+            document.getElementById('modal-container').innerHTML = `
                 <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
                     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-slide-up">
-                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5">
-                            <h2 class="text-xl font-bold text-white">🔗 Join Session</h2>
-                        </div>
-                        
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-5"><h2 class="text-xl font-bold text-white">🔗 Join Session</h2></div>
                         <div class="p-6">
-                            <div class="mb-6">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Session Code</label>
-                                <input type="text" id="join-code-input" 
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg text-center tracking-widest uppercase"
-                                    placeholder="ABC123" maxlength="10" autofocus
-                                    onkeypress="if(event.key === 'Enter') handleJoinSession()" />
-                                <p class="text-xs text-gray-500 mt-2 text-center">Enter the code from your organiser</p>
-                            </div>
-                            
-                            <div class="flex gap-3">
-                                <button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
-                                    Cancel
-                                </button>
-                                <button onclick="handleJoinSession()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
-                                    Join
-                                </button>
-                            </div>
+                            <div class="mb-6"><label class="block text-sm font-semibold text-gray-700 mb-2">Session Code</label><input type="text" id="join-code-input" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg text-center tracking-widest uppercase" placeholder="ABC123" maxlength="10" autofocus onkeypress="if(event.key === 'Enter') handleJoinSession()" /></div>
+                            <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">Cancel</button><button onclick="handleJoinSession()" class="flex-1 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors">Join</button></div>
                         </div>
                     </div>
                 </div>
             `;
-            
             setTimeout(() => document.getElementById('join-code-input')?.focus(), 100);
         }
         
         async function handleJoinSession() {
             const code = document.getElementById('join-code-input').value.trim().toLowerCase();
-            if (!code) {
-                showToast('❌ Please enter a session code');
-                return;
-            }
-            
+            if (!code) { showToast('❌ Please enter a session code'); return; }
             const exists = await checkTournamentExists(code);
-            if (exists) {
-                closeModal();
-                Router.navigate('tournament', code);
-            } else {
-                showToast('❌ Session not found. Check the code and try again.');
-            }
+            if (exists) { closeModal(); Router.navigate('tournament', code); }
+            else { showToast('❌ Session not found'); }
         }
         
         function showShareModal() {
             if (!state) return;
-            
             const playerLink = Router.getPlayerLink(state.tournamentId);
             const organiserLink = state.organiserKey ? Router.getOrganiserLink(state.tournamentId, state.organiserKey) : null;
-            
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
+            document.getElementById('modal-container').innerHTML = `
                 <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
                     <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
-                        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-5">
-                            <h2 class="text-xl font-bold text-white">📤 Share Session</h2>
-                        </div>
-                        
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-5"><h2 class="text-xl font-bold text-white">📤 Share Session</h2></div>
                         <div class="p-6 space-y-4">
-                            <div class="bg-purple-50 rounded-xl p-4">
-                                <div class="text-sm font-semibold text-purple-800 mb-2">📋 Session Code</div>
-                                <div class="font-mono text-2xl font-bold text-purple-600 tracking-wider">${state.tournamentId.toUpperCase()}</div>
-                            </div>
-                            
-                            <div class="bg-blue-50 rounded-xl p-4">
-                                <div class="text-sm font-semibold text-blue-800 mb-2">🔗 Player Link</div>
-                                <div class="flex items-center gap-2">
-                                    <input type="text" value="${playerLink}" readonly class="flex-1 px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm font-mono" />
-                                    <button onclick="copyToClipboard('${playerLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">Copy</button>
-                                </div>
-                            </div>
-                            
-                            ${organiserLink ? `
-                                <div class="bg-amber-50 rounded-xl p-4">
-                                    <div class="text-sm font-semibold text-amber-800 mb-2">🔑 Your Organiser Link</div>
-                                    <div class="flex items-center gap-2">
-                                        <input type="text" value="${organiserLink}" readonly class="flex-1 px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-mono" />
-                                        <button onclick="copyToClipboard('${organiserLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">Copy</button>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            <button onclick="closeModal()" class="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
-                                Done
-                            </button>
+                            <div class="bg-blue-50 rounded-xl p-4"><div class="text-sm font-semibold text-blue-800 mb-2">📋 Session Code</div><div class="font-mono text-2xl font-bold text-blue-600 tracking-wider">${state.tournamentId.toUpperCase()}</div></div>
+                            <div class="bg-gray-50 rounded-xl p-4"><div class="text-sm font-semibold text-gray-700 mb-2">🔗 Player Link</div><div class="flex items-center gap-2"><input type="text" value="${playerLink}" readonly class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono" /><button onclick="copyToClipboard('${playerLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600">Copy</button></div></div>
+                            ${organiserLink ? `<div class="bg-amber-50 rounded-xl p-4"><div class="text-sm font-semibold text-amber-800 mb-2">🔑 Your Organiser Link</div><div class="flex items-center gap-2"><input type="text" value="${organiserLink}" readonly class="flex-1 px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-mono" /><button onclick="copyToClipboard('${organiserLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">Copy</button></div></div>` : ''}
+                            <button onclick="closeModal()" class="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">Done</button>
                         </div>
                     </div>
                 </div>
@@ -1551,95 +1092,53 @@
         }
         
         function showOrganiserLoginModal() {
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
+            document.getElementById('modal-container').innerHTML = `
                 <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
                     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-slide-up">
-                        <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5">
-                            <h2 class="text-xl font-bold text-white">🔑 Organiser Login</h2>
-                        </div>
-                        
+                        <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5"><h2 class="text-xl font-bold text-white">🔑 Organiser Login</h2></div>
                         <div class="p-6">
                             <p class="text-sm text-gray-600 mb-4">Enter your organiser passcode to edit this session.</p>
-                            
-                            <div class="mb-4">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Passcode</label>
-                                <input type="password" id="login-passcode-input" 
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-500 focus:outline-none transition-colors text-lg text-center tracking-widest"
-                                    placeholder="••••" autofocus
-                                    onkeypress="if(event.key === 'Enter') handleOrganiserLogin()" />
-                            </div>
-                            
-                            <div id="login-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                                <p class="text-sm text-red-600 font-medium">❌ Invalid passcode</p>
-                            </div>
-                            
-                            <div class="flex gap-3">
-                                <button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
-                                    Cancel
-                                </button>
-                                <button onclick="handleOrganiserLogin()" class="flex-1 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors">
-                                    Login
-                                </button>
-                            </div>
+                            <div class="mb-4"><input type="password" id="login-passcode-input" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-500 focus:outline-none transition-colors text-lg text-center tracking-widest" placeholder="••••" autofocus onkeypress="if(event.key === 'Enter') handleOrganiserLogin()" /></div>
+                            <div id="login-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4"><p class="text-sm text-red-600 font-medium">❌ Invalid passcode</p></div>
+                            <div class="flex gap-3"><button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">Cancel</button><button onclick="handleOrganiserLogin()" class="flex-1 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors">Login</button></div>
                         </div>
                     </div>
                 </div>
             `;
-            
             setTimeout(() => document.getElementById('login-passcode-input')?.focus(), 100);
         }
         
         async function handleOrganiserLogin() {
             const passcode = document.getElementById('login-passcode-input').value;
-            
-            if (!passcode) {
-                document.getElementById('login-error').classList.remove('hidden');
-                return;
-            }
-            
+            if (!passcode) { document.getElementById('login-error').classList.remove('hidden'); return; }
             try {
                 const snapshot = await database.ref(`americano/${state.tournamentId}/meta`).once('value');
                 const meta = snapshot.val();
-                
                 if (meta && btoa(passcode) === meta.passcodeHash) {
                     state.isOrganiser = true;
                     state.organiserKey = meta.organiserKey;
                     closeModal();
                     showToast('✅ Logged in as organiser!');
-                    
-                    // Update URL with organiser key
                     Router.navigate('tournament', state.tournamentId, meta.organiserKey);
                 } else {
                     document.getElementById('login-error').classList.remove('hidden');
                 }
-            } catch (error) {
-                console.error('Error logging in:', error);
-                document.getElementById('login-error').classList.remove('hidden');
-            }
+            } catch (error) { document.getElementById('login-error').classList.remove('hidden'); }
         }
         
-        function closeModal() {
-            document.getElementById('modal-container').innerHTML = '';
-        }
+        function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
         
         // ===== UTILITIES =====
-        
         function formatTimeAgo(isoString) {
             if (!isoString) return 'Unknown';
             const date = new Date(isoString);
             const now = new Date();
             const diffMs = now - date;
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            
             if (diffDays === 0) return 'Today';
             if (diffDays === 1) return 'Yesterday';
             if (diffDays < 7) return `${diffDays} days ago`;
-            
-            return date.toLocaleDateString('en-GB', { 
-                day: 'numeric', 
-                month: 'short'
-            });
+            return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         }
         
         function copyToClipboard(text) {
@@ -1659,15 +1158,9 @@
             toast.className = 'bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg mb-2 animate-fade-in';
             toast.textContent = message;
             container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s';
-                setTimeout(() => toast.remove(), 300);
-            }, 2500);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 2500);
         }
         
-        // ===== START APP =====
         document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
