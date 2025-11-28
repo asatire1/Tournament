@@ -242,6 +242,18 @@ function showCreateTournamentModal() {
                 </div>
                 
                 <div class="p-6">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Admin Passcode</label>
+                        <input 
+                            type="password" 
+                            id="admin-passcode-input" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg text-center tracking-widest"
+                            placeholder="Enter passcode"
+                            autofocus
+                        />
+                        <p class="text-xs text-gray-500 mt-1">Required to create tournaments</p>
+                    </div>
+                    
                     <div class="mb-6">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament Name</label>
                         <input 
@@ -249,8 +261,11 @@ function showCreateTournamentModal() {
                             id="tournament-name-input" 
                             class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
                             placeholder="e.g. Sunday Session Dec 1st"
-                            autofocus
                         />
+                    </div>
+                    
+                    <div id="passcode-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                        <p class="text-sm text-red-600 font-medium">❌ Incorrect passcode</p>
                     </div>
                     
                     <div class="bg-blue-50 rounded-xl p-4 mb-6">
@@ -287,9 +302,9 @@ function showCreateTournamentModal() {
         </div>
     `;
     
-    // Focus the input
+    // Focus the passcode input
     setTimeout(() => {
-        document.getElementById('tournament-name-input')?.focus();
+        document.getElementById('admin-passcode-input')?.focus();
     }, 100);
 }
 
@@ -423,8 +438,26 @@ function closeModal() {
 
 // Create tournament
 async function createTournament() {
+    const passcodeInput = document.getElementById('admin-passcode-input');
     const nameInput = document.getElementById('tournament-name-input');
+    const passcodeError = document.getElementById('passcode-error');
+    
+    const passcode = passcodeInput?.value.trim();
     const name = nameInput?.value.trim() || `Tournament ${new Date().toLocaleDateString()}`;
+    
+    // Verify admin passcode
+    if (passcode !== CONFIG.ADMIN_PASSCODE) {
+        // Show error
+        if (passcodeError) {
+            passcodeError.classList.remove('hidden');
+        }
+        if (passcodeInput) {
+            passcodeInput.classList.add('border-red-500');
+            passcodeInput.focus();
+            passcodeInput.select();
+        }
+        return;
+    }
     
     // Generate IDs
     const tournamentId = Router.generateTournamentId();

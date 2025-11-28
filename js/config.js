@@ -1,6 +1,9 @@
 // ===== APPLICATION CONFIGURATION =====
 
 const CONFIG = {
+    // Admin passcode for creating tournaments
+    ADMIN_PASSCODE: '2025',
+    
     // Tournament Settings
     TOTAL_PLAYERS: 24,
     TOTAL_ROUNDS: 13,
