@@ -44,10 +44,9 @@ function handleKnockoutScore(matchId, value, team, maxScore) {
 
 // ===== FIXTURE HANDLERS =====
 
-function handleFixtureChange(round, matchIdx, position, oldValue, newValue) {
+function handleFixtureChange(round, matchIdx, position, newValue) {
     if (!checkCanEdit()) return;
     newValue = parseInt(newValue);
-    oldValue = parseInt(oldValue);
     
     if (isNaN(newValue) || newValue < 1 || newValue > CONFIG.TOTAL_PLAYERS) {
         alert(`Player number must be between 1 and ${CONFIG.TOTAL_PLAYERS}`);
@@ -56,6 +55,17 @@ function handleFixtureChange(round, matchIdx, position, oldValue, newValue) {
     }
     
     const match = state.fixtures[round][matchIdx];
+    
+    // Get the old value from the current state based on position
+    let oldValue;
+    if (position === 't1p1') oldValue = match.team1[0];
+    else if (position === 't1p2') oldValue = match.team1[1];
+    else if (position === 't2p1') oldValue = match.team2[0];
+    else if (position === 't2p2') oldValue = match.team2[1];
+    
+    // If value hasn't changed, do nothing
+    if (oldValue === newValue) return;
+    
     const players = [...match.team1, ...match.team2];
     
     const posMap = { 't1p1': 0, 't1p2': 1, 't2p1': 2, 't2p2': 3 };

@@ -330,15 +330,15 @@ function SettingsTab() {
                                             <div class="flex items-center gap-2 bg-gray-50 p-3 rounded flex-wrap">
                                                 <span class="text-xs font-medium text-gray-500 w-20">${state.matchNames[matchIdx + 1]}:</span>
                                                 <div class="flex items-center gap-1">
-                                                    <input type="number" min="1" max="24" value="${match.team1[0]}" class="fixture-input" id="r${round}m${matchIdx}t1p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p1', ${match.team1[0]}, this.value)" />
+                                                    <input type="number" min="1" max="24" value="${match.team1[0]}" class="fixture-input" id="r${round}m${matchIdx}t1p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p1', this.value)" />
                                                     <span class="text-gray-400">&</span>
-                                                    <input type="number" min="1" max="24" value="${match.team1[1]}" class="fixture-input" id="r${round}m${matchIdx}t1p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p2', ${match.team1[1]}, this.value)" />
+                                                    <input type="number" min="1" max="24" value="${match.team1[1]}" class="fixture-input" id="r${round}m${matchIdx}t1p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't1p2', this.value)" />
                                                 </div>
                                                 <span class="text-gray-400 font-bold">vs</span>
                                                 <div class="flex items-center gap-1">
-                                                    <input type="number" min="1" max="24" value="${match.team2[0]}" class="fixture-input" id="r${round}m${matchIdx}t2p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p1', ${match.team2[0]}, this.value)" />
+                                                    <input type="number" min="1" max="24" value="${match.team2[0]}" class="fixture-input" id="r${round}m${matchIdx}t2p1" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p1', this.value)" />
                                                     <span class="text-gray-400">&</span>
-                                                    <input type="number" min="1" max="24" value="${match.team2[1]}" class="fixture-input" id="r${round}m${matchIdx}t2p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p2', ${match.team2[1]}, this.value)" />
+                                                    <input type="number" min="1" max="24" value="${match.team2[1]}" class="fixture-input" id="r${round}m${matchIdx}t2p2" onchange="handleFixtureChange(${round}, ${matchIdx}, 't2p2', this.value)" />
                                                 </div>
                                             </div>
                                         `).join('')}
