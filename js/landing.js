@@ -243,29 +243,39 @@ function showCreateTournamentModal() {
                 
                 <div class="p-6">
                     <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Admin Passcode</label>
-                        <input 
-                            type="password" 
-                            id="admin-passcode-input" 
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg text-center tracking-widest"
-                            placeholder="Enter passcode"
-                            autofocus
-                        />
-                        <p class="text-xs text-gray-500 mt-1">Required to create tournaments</p>
-                    </div>
-                    
-                    <div class="mb-6">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament Name</label>
                         <input 
                             type="text" 
                             id="tournament-name-input" 
                             class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
                             placeholder="e.g. Sunday Session Dec 1st"
+                            autofocus
+                        />
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Create Organiser Passcode</label>
+                        <input 
+                            type="password" 
+                            id="organiser-passcode-input" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
+                            placeholder="Create a passcode"
+                        />
+                        <p class="text-xs text-gray-500 mt-1">You'll need this to edit the tournament</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Passcode</label>
+                        <input 
+                            type="password" 
+                            id="organiser-passcode-confirm" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
+                            placeholder="Confirm passcode"
                         />
                     </div>
                     
                     <div id="passcode-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                        <p class="text-sm text-red-600 font-medium">❌ Incorrect passcode</p>
+                        <p id="passcode-error-text" class="text-sm text-red-600 font-medium">❌ Error</p>
                     </div>
                     
                     <div class="bg-blue-50 rounded-xl p-4 mb-6">
@@ -274,10 +284,9 @@ function showCreateTournamentModal() {
                             <div class="text-sm text-blue-800">
                                 <p class="font-medium mb-1">What happens next:</p>
                                 <ul class="space-y-1 text-blue-700">
-                                    <li>• 24 default players will be set up</li>
-                                    <li>• 13 rounds of fixtures ready to go</li>
-                                    <li>• You get an organiser link to edit</li>
-                                    <li>• Share the player link for viewing</li>
+                                    <li>• You get a <strong>player link</strong> to share (view-only)</li>
+                                    <li>• Use your <strong>passcode</strong> to access organiser mode</li>
+                                    <li>• 24 players & 13 rounds ready to go</li>
                                 </ul>
                             </div>
                         </div>
@@ -302,9 +311,9 @@ function showCreateTournamentModal() {
         </div>
     `;
     
-    // Focus the passcode input
+    // Focus the name input
     setTimeout(() => {
-        document.getElementById('admin-passcode-input')?.focus();
+        document.getElementById('tournament-name-input')?.focus();
     }, 100);
 }
 
@@ -358,9 +367,8 @@ function showJoinTournamentModal() {
 }
 
 // Show tournament created success modal with links
-function showTournamentCreatedModal(tournamentId, organiserKey, name) {
+function showTournamentCreatedModal(tournamentId, passcode, name) {
     const playerLink = Router.getPlayerLink(tournamentId);
-    const organiserLink = Router.getOrganiserLink(tournamentId, organiserKey);
     
     const modal = document.getElementById('modal-container');
     modal.innerHTML = `
@@ -398,29 +406,19 @@ function showTournamentCreatedModal(tournamentId, organiserKey, name) {
                         <p class="text-xs text-blue-600 mt-2">Players can view scores but not edit</p>
                     </div>
                     
-                    <!-- Organiser Link -->
+                    <!-- Organiser Passcode -->
                     <div class="bg-amber-50 rounded-xl p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-semibold text-amber-800">🔑 Your Organiser Link</span>
-                            <button 
-                                onclick="copyToClipboard('${organiserLink}'); this.innerHTML = '✓ Copied!'; setTimeout(() => this.innerHTML = 'Copy', 2000)"
-                                class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-lg font-medium transition-colors"
-                            >
-                                Copy
-                            </button>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm font-semibold text-amber-800">🔑 Your Organiser Passcode</span>
                         </div>
-                        <input 
-                            type="text" 
-                            value="${organiserLink}" 
-                            readonly 
-                            class="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm text-gray-600 font-mono"
-                            onclick="this.select()"
-                        />
-                        <p class="text-xs text-amber-600 mt-2">⚠️ Keep this private! Use on any device to edit.</p>
+                        <div class="bg-white border border-amber-200 rounded-lg px-4 py-3 text-center">
+                            <span class="text-2xl font-bold text-amber-700 tracking-widest">${passcode}</span>
+                        </div>
+                        <p class="text-xs text-amber-600 mt-2">⚠️ Remember this! You'll need it to edit the tournament.</p>
                     </div>
                     
                     <button 
-                        onclick="closeModal(); Router.navigate('tournament', '${tournamentId}', '${organiserKey}')"
+                        onclick="closeModal(); Router.navigate('tournament', '${tournamentId}', '${passcode}')"
                         class="w-full px-5 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors text-lg"
                     >
                         Go to Tournament →
@@ -438,35 +436,41 @@ function closeModal() {
 
 // Create tournament
 async function createTournament() {
-    const passcodeInput = document.getElementById('admin-passcode-input');
     const nameInput = document.getElementById('tournament-name-input');
+    const passcodeInput = document.getElementById('organiser-passcode-input');
+    const passcodeConfirm = document.getElementById('organiser-passcode-confirm');
     const passcodeError = document.getElementById('passcode-error');
+    const passcodeErrorText = document.getElementById('passcode-error-text');
     
-    const passcode = passcodeInput?.value.trim();
     const name = nameInput?.value.trim() || `Tournament ${new Date().toLocaleDateString()}`;
+    const passcode = passcodeInput?.value;
+    const passcodeConfirmValue = passcodeConfirm?.value;
     
-    // Debug logging
-    console.log('Entered passcode:', passcode, 'Length:', passcode?.length);
-    console.log('Expected passcode:', CONFIG.ADMIN_PASSCODE, 'Length:', CONFIG.ADMIN_PASSCODE?.length);
-    console.log('Match:', passcode === CONFIG.ADMIN_PASSCODE);
+    // Hide previous errors
+    passcodeError?.classList.add('hidden');
+    passcodeInput?.classList.remove('border-red-500');
+    passcodeConfirm?.classList.remove('border-red-500');
     
-    // Verify admin passcode
-    if (passcode !== CONFIG.ADMIN_PASSCODE) {
-        // Show error
-        if (passcodeError) {
-            passcodeError.classList.remove('hidden');
-        }
-        if (passcodeInput) {
-            passcodeInput.classList.add('border-red-500');
-            passcodeInput.focus();
-            passcodeInput.select();
-        }
+    // Validate passcode
+    if (!passcode || passcode.length < 4) {
+        passcodeErrorText.textContent = '❌ Passcode must be at least 4 characters';
+        passcodeError?.classList.remove('hidden');
+        passcodeInput?.classList.add('border-red-500');
+        passcodeInput?.focus();
         return;
     }
     
-    // Generate IDs
+    if (passcode !== passcodeConfirmValue) {
+        passcodeErrorText.textContent = '❌ Passcodes do not match';
+        passcodeError?.classList.remove('hidden');
+        passcodeConfirm?.classList.add('border-red-500');
+        passcodeConfirm?.focus();
+        passcodeConfirm?.select();
+        return;
+    }
+    
+    // Generate tournament ID (passcode is used instead of random organiserKey)
     const tournamentId = Router.generateTournamentId();
-    const organiserKey = Router.generateOrganiserKey();
     
     try {
         // Show loading state
@@ -476,14 +480,14 @@ async function createTournament() {
             btn.innerHTML = '<span class="animate-pulse">Creating...</span>';
         }
         
-        // Create tournament in Firebase
-        await createTournamentInFirebase(tournamentId, organiserKey, name);
+        // Create tournament in Firebase (passcode is stored as organiserKey)
+        await createTournamentInFirebase(tournamentId, passcode, name);
         
-        // Save to my tournaments
-        MyTournaments.add(tournamentId, organiserKey, name);
+        // Save to my tournaments (with passcode)
+        MyTournaments.add(tournamentId, passcode, name);
         
         // Show success modal
-        showTournamentCreatedModal(tournamentId, organiserKey, name);
+        showTournamentCreatedModal(tournamentId, passcode, name);
         
     } catch (error) {
         console.error('Error creating tournament:', error);

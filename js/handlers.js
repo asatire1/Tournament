@@ -217,7 +217,6 @@ function showShareLinksModal() {
     if (!state.tournamentId) return;
     
     const playerLink = Router.getPlayerLink(state.tournamentId);
-    const organiserLink = state.organiserKey ? Router.getOrganiserLink(state.tournamentId, state.organiserKey) : null;
     const canEdit = state.canEdit();
     
     const modal = document.getElementById('modal-container') || createModalContainer();
@@ -245,10 +244,9 @@ function showShareLinksModal() {
                     <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-lg">👥</span>
-                            <span class="font-semibold text-green-800">Player Link</span>
-                            <span class="text-xs bg-green-200 text-green-700 px-2 py-0.5 rounded-full">View Only</span>
+                            <span class="font-semibold text-green-800">Share Link</span>
                         </div>
-                        <p class="text-sm text-green-700 mb-3">Share this with players to view scores in real-time</p>
+                        <p class="text-sm text-green-700 mb-3">Share this with everyone to view scores in real-time</p>
                         <div class="flex gap-2">
                             <input 
                                 type="text" 
@@ -266,40 +264,19 @@ function showShareLinksModal() {
                         </div>
                     </div>
                     
-                    ${canEdit && organiserLink ? `
-                    <!-- Organiser Link -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                    ${canEdit ? `
+                    <!-- Organiser Info -->
+                    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="text-lg">✏️</span>
-                            <span class="font-semibold text-blue-800">Organiser Link</span>
-                            <span class="text-xs bg-blue-200 text-blue-700 px-2 py-0.5 rounded-full">Full Access</span>
+                            <span class="text-lg">🔑</span>
+                            <span class="font-semibold text-amber-800">Organiser Access</span>
                         </div>
-                        <p class="text-sm text-blue-700 mb-3">Keep this private! Use on any device to edit</p>
-                        <div class="flex gap-2">
-                            <input 
-                                type="text" 
-                                value="${organiserLink}" 
-                                readonly 
-                                class="flex-1 min-w-0 px-3 py-2.5 bg-white border border-blue-300 rounded-xl text-sm text-gray-600 font-mono truncate"
-                                onclick="this.select()"
-                            />
-                            <button 
-                                onclick="copyToClipboard('${organiserLink}'); this.innerHTML = '✓'; setTimeout(() => this.innerHTML = 'Copy', 2000)"
-                                class="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-xl font-medium transition-colors whitespace-nowrap"
-                            >
-                                Copy
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
-                        <span class="text-amber-500 flex-shrink-0">⚠️</span>
-                        <p class="text-xs text-amber-700">Never share the organiser link publicly. Anyone with this link can modify tournament data.</p>
+                        <p class="text-sm text-amber-700">You're logged in as organiser. Others can use the "Enter as Organiser" button and your passcode to edit.</p>
                     </div>
                     ` : `
                     <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center gap-2">
                         <span class="text-gray-400">ℹ️</span>
-                        <p class="text-sm text-gray-600">You're viewing as a player. Only the organiser can see the edit link.</p>
+                        <p class="text-sm text-gray-600">You're viewing as a player. Use "Enter as Organiser" if you have the passcode.</p>
                     </div>
                     `}
                 </div>
@@ -322,6 +299,93 @@ function createModalContainer() {
     container.id = 'modal-container';
     document.body.appendChild(container);
     return container;
+}
+
+// Show organiser login modal
+function showOrganiserLoginModal() {
+    const modal = document.getElementById('modal-container') || createModalContainer();
+    modal.innerHTML = `
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50" onclick="if(event.target === this) closeModal()">
+            <div class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span>🔑</span> Organiser Login
+                    </h2>
+                    <button onclick="closeModal()" class="text-white/80 hover:text-white p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="p-6">
+                    <p class="text-gray-600 mb-4">Enter your organiser passcode to edit this tournament.</p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Passcode</label>
+                        <input 
+                            type="password" 
+                            id="organiser-login-passcode" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-amber-500 focus:outline-none transition-colors text-lg text-center tracking-widest"
+                            placeholder="Enter passcode"
+                            autofocus
+                            onkeypress="if(event.key === 'Enter') verifyOrganiserLogin()"
+                        />
+                    </div>
+                    
+                    <div id="login-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+                        <p class="text-sm text-red-600 font-medium">❌ Incorrect passcode</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button 
+                            onclick="closeModal()"
+                            class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onclick="verifyOrganiserLogin()"
+                            class="flex-1 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors"
+                        >
+                            Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    setTimeout(() => {
+        document.getElementById('organiser-login-passcode')?.focus();
+    }, 100);
+}
+
+// Verify organiser login
+async function verifyOrganiserLogin() {
+    const passcodeInput = document.getElementById('organiser-login-passcode');
+    const loginError = document.getElementById('login-error');
+    const passcode = passcodeInput?.value;
+    
+    if (!passcode) {
+        loginError?.classList.remove('hidden');
+        passcodeInput?.focus();
+        return;
+    }
+    
+    // Verify against Firebase
+    const isValid = await state.verifyOrganiserKey(passcode);
+    
+    if (isValid) {
+        closeModal();
+        showToast('✅ Logged in as organiser!');
+        render();
+    } else {
+        loginError?.classList.remove('hidden');
+        passcodeInput?.classList.add('border-red-500');
+        passcodeInput?.focus();
+        passcodeInput?.select();
+    }
 }
 
 // Utility: Show toast notification (may already be defined in landing.js, but defining here for tournament view)

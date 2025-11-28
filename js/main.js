@@ -617,10 +617,17 @@ function render() {
                             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                             <span class="font-semibold text-green-700">Live</span>
                         </div>
-                        <div class="flex items-center gap-1.5 backdrop-blur rounded-full px-3 py-1.5 border ${canEdit ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'}">
-                            <span>${canEdit ? '✏️' : '👀'}</span>
-                            <span class="font-semibold ${canEdit ? 'text-blue-700' : 'text-gray-600'}">${canEdit ? 'Organiser' : 'View Only'}</span>
-                        </div>
+                        ${canEdit ? `
+                            <div class="flex items-center gap-1.5 bg-blue-50 backdrop-blur rounded-full px-3 py-1.5 border border-blue-200">
+                                <span>✏️</span>
+                                <span class="font-semibold text-blue-700">Organiser</span>
+                            </div>
+                        ` : `
+                            <button onclick="showOrganiserLoginModal()" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 backdrop-blur rounded-full px-3 py-1.5 border border-amber-200 transition-colors cursor-pointer">
+                                <span>🔑</span>
+                                <span class="font-semibold text-amber-700">Enter as Organiser</span>
+                            </button>
+                        `}
                     </div>
                 </div>
             </div>
