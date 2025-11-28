@@ -598,7 +598,6 @@ function renderRecentTournaments(tournaments) {
         `;
     }).join('');
 }
-}
 
 // Utility: Format date
 function formatDate(isoString) {
