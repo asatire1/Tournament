@@ -14,14 +14,13 @@ const MyTournaments = {
         }
     },
     
-    // Add a tournament I created
-    add(tournamentId, organiserKey, name) {
+    // Add a tournament I created (passcode NOT stored for security)
+    add(tournamentId, passcode, name) {
         const tournaments = this.getAll();
         // Check if already exists
         if (!tournaments.find(t => t.id === tournamentId)) {
             tournaments.unshift({
                 id: tournamentId,
-                key: organiserKey,
                 name: name,
                 createdAt: new Date().toISOString()
             });
@@ -132,7 +131,7 @@ function renderLandingPage() {
                                     </div>
                                     <div class="flex items-center gap-2 flex-shrink-0">
                                         <button 
-                                            onclick="event.stopPropagation(); Router.navigate('tournament', '${t.id}', '${t.key}')"
+                                            onclick="event.stopPropagation(); Router.navigate('tournament', '${t.id}')"
                                             class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium text-sm transition-colors"
                                         >
                                             Open
@@ -562,15 +561,19 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name) {
 
 // Load recent tournaments from Firebase
 async function loadRecentTournaments() {
+    console.log('🔄 Loading recent tournaments from Firebase...');
     try {
         const snapshot = await database.ref('tournaments')
             .orderByChild('meta/createdAt')
             .limitToLast(10)
             .once('value');
         
+        console.log('📦 Firebase snapshot received:', snapshot.exists());
+        
         const tournaments = [];
         snapshot.forEach(child => {
             const data = child.val();
+            console.log('📋 Tournament found:', child.key, data?.meta?.name);
             if (data && data.meta) {
                 tournaments.push({
                     id: child.key,
@@ -581,12 +584,14 @@ async function loadRecentTournaments() {
             }
         });
         
+        console.log(`✅ Loaded ${tournaments.length} tournaments`);
+        
         // Reverse to show newest first
         tournaments.reverse();
         
         renderRecentTournaments(tournaments);
     } catch (error) {
-        console.error('Error loading recent tournaments:', error);
+        console.error('❌ Error loading recent tournaments:', error);
         renderRecentTournaments([]);
     }
 }

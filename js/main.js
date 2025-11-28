@@ -104,14 +104,9 @@ async function initializeTournament(tournamentId, organiserKey) {
     // Load default data (for backup/reset features)
     await state.loadDefaults();
     
-    // Only verify organiser key if explicitly provided in URL
-    // (Cache is NOT used automatically - organiser must use full link or My Tournaments)
+    // Only verify organiser key/passcode if explicitly provided in URL
     if (organiserKey) {
-        const isValid = await state.verifyOrganiserKey(organiserKey);
-        if (isValid) {
-            // Cache valid organiser key for My Tournaments list access
-            OrganiserKeyCache.set(tournamentId, organiserKey);
-        }
+        await state.verifyOrganiserKey(organiserKey);
     }
     
     // Start listening to Firebase
@@ -120,42 +115,19 @@ async function initializeTournament(tournamentId, organiserKey) {
     console.log(`✅ Tournament ${tournamentId} loaded (Organiser: ${state.isOrganiser})`);
 }
 
-// Organiser key cache for returning organisers
-const OrganiserKeyCache = {
-    KEY: 'padel_organiser_keys',
-    
-    getAll() {
-        try {
-            return JSON.parse(localStorage.getItem(this.KEY) || '{}');
-        } catch {
-            return {};
-        }
-    },
-    
-    get(tournamentId) {
-        return this.getAll()[tournamentId] || null;
-    },
-    
-    set(tournamentId, key) {
-        const keys = this.getAll();
-        keys[tournamentId] = key;
-        localStorage.setItem(this.KEY, JSON.stringify(keys));
-    },
-    
-    remove(tournamentId) {
-        const keys = this.getAll();
-        delete keys[tournamentId];
-        localStorage.setItem(this.KEY, JSON.stringify(keys));
-    }
-};
-
 // Check if tournament exists in Firebase
 async function checkTournamentExists(tournamentId) {
     try {
+        console.log(`🔍 Checking if tournament ${tournamentId} exists...`);
         const snapshot = await database.ref(`tournaments/${tournamentId}/meta`).once('value');
-        return snapshot.exists();
+        const exists = snapshot.exists();
+        console.log(`🔍 Tournament ${tournamentId} exists: ${exists}`);
+        if (exists) {
+            console.log('📋 Tournament meta:', snapshot.val());
+        }
+        return exists;
     } catch (error) {
-        console.error('Error checking tournament:', error);
+        console.error('❌ Error checking tournament:', error);
         return false;
     }
 }
