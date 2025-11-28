@@ -487,10 +487,38 @@
                     if (data) {
                         this.tournamentName = data.meta?.name || '';
                         this.playerCount = data.playerCount || 6;
-                        this.playerNames = data.playerNames || [];
+                        
+                        // Convert playerNames object to array
+                        if (data.playerNames) {
+                            if (Array.isArray(data.playerNames)) {
+                                this.playerNames = data.playerNames;
+                            } else {
+                                this.playerNames = Object.values(data.playerNames);
+                            }
+                        } else {
+                            this.playerNames = [];
+                        }
+                        
                         this.fixedPoints = data.fixedPoints || false;
                         this.totalPoints = data.totalPoints || 16;
-                        this.scores = data.scores || [];
+                        
+                        // Convert scores object to array, and -1 back to null
+                        if (data.scores) {
+                            if (Array.isArray(data.scores)) {
+                                this.scores = data.scores.map(s => ({
+                                    team1: s?.team1 === -1 ? null : s?.team1,
+                                    team2: s?.team2 === -1 ? null : s?.team2
+                                }));
+                            } else {
+                                this.scores = Object.values(data.scores).map(s => ({
+                                    team1: s?.team1 === -1 ? null : s?.team1,
+                                    team2: s?.team2 === -1 ? null : s?.team2
+                                }));
+                            }
+                        } else {
+                            this.scores = [];
+                        }
+                        
                         this.tournamentStarted = data.tournamentStarted || false;
                         this.isInitialized = true;
                         render();
@@ -530,9 +558,10 @@
             saveScoreToFirebase(roundIndex, team1Score, team2Score) {
                 if (!this.tournamentId) return;
                 
+                // Convert null to -1 for Firebase storage
                 database.ref(`americano/${this.tournamentId}/scores/${roundIndex}`).set({
-                    team1: team1Score,
-                    team2: team2Score
+                    team1: team1Score === null ? -1 : team1Score,
+                    team2: team2Score === null ? -1 : team2Score
                 });
                 
                 database.ref(`americano/${this.tournamentId}/meta/updatedAt`).set(new Date().toISOString());
@@ -714,9 +743,18 @@
             // Hash the passcode (simple hash for demo - in production use bcrypt)
             const hashedPasscode = btoa(passcode);
             
-            const playerNames = Array.from({ length: playerCount }, (_, i) => `Player ${i + 1}`);
+            // Create player names object (Firebase prefers objects over arrays for reliability)
+            const playerNames = {};
+            for (let i = 0; i < playerCount; i++) {
+                playerNames[i] = `Player ${i + 1}`;
+            }
+            
+            // Create scores object (use -1 to indicate no score, as Firebase filters out null)
             const fixtures = FIXTURES[playerCount] || [];
-            const scores = fixtures.map(() => ({ team1: null, team2: null }));
+            const scores = {};
+            fixtures.forEach((_, idx) => {
+                scores[idx] = { team1: -1, team2: -1 };
+            });
             
             const tournamentData = {
                 meta: {
@@ -734,7 +772,11 @@
                 tournamentStarted: true
             };
             
+            console.log('Creating tournament:', tournamentId, tournamentData);
+            
             await database.ref(`americano/${tournamentId}`).set(tournamentData);
+            
+            console.log('Tournament created successfully!');
             
             MyTournaments.add(tournamentId, name);
             
