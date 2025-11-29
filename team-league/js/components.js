@@ -239,6 +239,174 @@ function GroupTab(group) {
     `;
 }
 
+// ===== FIXTURES TAB (Side-by-Side View) =====
+
+function FixturesTab() {
+    const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
+    const fixturesA = state.groupAFixtures || [];
+    const fixturesB = state.groupBFixtures || [];
+    const teamsA = state.getGroupTeams('A');
+    const teamsB = state.getGroupTeams('B');
+    
+    // View toggle state (stored in state object)
+    const viewMode = state.fixturesViewMode || 'side-by-side';
+    
+    // Calculate completion stats
+    const getCompletionStats = (fixtures, group) => {
+        let completed = 0, total = 0;
+        fixtures.forEach(round => {
+            round.matches.forEach(match => {
+                total++;
+                const score = state.getGroupScore(group, match.team1Id, match.team2Id);
+                if (score.team1Score !== null && score.team2Score !== null) completed++;
+            });
+        });
+        return { completed, total };
+    };
+    
+    const statsA = getCompletionStats(fixturesA, 'A');
+    const statsB = isTwoGroups ? getCompletionStats(fixturesB, 'B') : { completed: 0, total: 0 };
+    
+    // Get max rounds
+    const maxRounds = Math.max(fixturesA.length, fixturesB.length);
+    
+    if (teamsA.length === 0 && teamsB.length === 0) {
+        return `
+            <div class="text-center py-12">
+                <div class="text-5xl mb-4 opacity-50">📋</div>
+                <p class="text-gray-500 mb-2">No teams added yet</p>
+                <p class="text-sm text-gray-400">Add teams in Settings to generate fixtures</p>
+            </div>
+        `;
+    }
+    
+    if (fixturesA.length === 0 && fixturesB.length === 0) {
+        return `
+            <div class="text-center py-12">
+                <div class="text-5xl mb-4 opacity-50">📋</div>
+                <p class="text-gray-500 mb-2">No fixtures generated</p>
+                <p class="text-sm text-gray-400">Generate fixtures in Settings</p>
+            </div>
+        `;
+    }
+    
+    // Single group - just show Group A
+    if (!isTwoGroups) {
+        return `
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-800">All Fixtures</h2>
+                <span class="text-sm text-gray-500">${statsA.completed}/${statsA.total} matches complete</span>
+            </div>
+            ${renderFixturesForGroup('A', fixturesA)}
+        `;
+    }
+    
+    // Two groups - show view toggle and side-by-side or stacked view
+    return `
+        <!-- View Mode Toggle -->
+        <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
+            <h2 class="text-xl font-bold text-gray-800">All Fixtures</h2>
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-500 mr-2">
+                    ${statsA.completed + statsB.completed}/${statsA.total + statsB.total} matches complete
+                </span>
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                    <button onclick="setFixturesViewMode('side-by-side')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'side-by-side' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+                        Side by Side
+                    </button>
+                    <button onclick="setFixturesViewMode('group-a')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-a' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+                        Group A
+                    </button>
+                    <button onclick="setFixturesViewMode('group-b')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-b' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+                        Group B
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        ${viewMode === 'side-by-side' ? renderSideBySideFixtures(fixturesA, fixturesB, maxRounds) : ''}
+        ${viewMode === 'group-a' ? renderFixturesForGroup('A', fixturesA) : ''}
+        ${viewMode === 'group-b' ? renderFixturesForGroup('B', fixturesB) : ''}
+    `;
+}
+
+function renderSideBySideFixtures(fixturesA, fixturesB, maxRounds) {
+    let html = '';
+    
+    for (let roundIdx = 0; roundIdx < maxRounds; roundIdx++) {
+        const roundA = fixturesA[roundIdx];
+        const roundB = fixturesB[roundIdx];
+        const roundNum = roundIdx + 1;
+        
+        html += `
+            <div class="mb-8">
+                <h3 class="text-lg font-bold text-gray-700 mb-4 pb-2 border-b border-gray-200">
+                    Round ${roundNum}
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Group A -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-6 h-6 rounded bg-blue-500 text-white flex items-center justify-center text-xs font-bold">A</span>
+                            <span class="text-sm font-semibold text-gray-600">Group A</span>
+                        </div>
+                        <div class="space-y-3">
+                            ${roundA ? roundA.matches.map((match, idx) => 
+                                GroupMatchCard(match, 'A', roundNum, idx + 1)
+                            ).join('') : '<p class="text-gray-400 text-sm">No matches</p>'}
+                        </div>
+                    </div>
+                    
+                    <!-- Group B -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="w-6 h-6 rounded bg-purple-500 text-white flex items-center justify-center text-xs font-bold">B</span>
+                            <span class="text-sm font-semibold text-gray-600">Group B</span>
+                        </div>
+                        <div class="space-y-3">
+                            ${roundB ? roundB.matches.map((match, idx) => 
+                                GroupMatchCard(match, 'B', roundNum, idx + 1)
+                            ).join('') : '<p class="text-gray-400 text-sm">No matches</p>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    return html;
+}
+
+function renderFixturesForGroup(group, fixtures) {
+    if (fixtures.length === 0) {
+        return `<p class="text-gray-400 text-center py-8">No fixtures for Group ${group}</p>`;
+    }
+    
+    const headerClass = group === 'A' ? 'group-header-a' : 'group-header-b';
+    
+    return `
+        <div class="group-card mb-4">
+            <div class="group-header ${headerClass}">
+                <span>⚽</span>
+                <span>Group ${group} Matches</span>
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            ${fixtures.map((round, roundIdx) => `
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Round ${round.round}</h3>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        ${round.matches.map((match, matchIdx) => 
+                            GroupMatchCard(match, group, round.round, matchIdx + 1)
+                        ).join('')}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 function StandingsTab() {
     const groupAStandings = state.getGroupStandings('A');
     const groupBStandings = state.getGroupStandings('B');
@@ -482,6 +650,12 @@ function SettingsTab() {
             <button onclick="setSettingsSubTab('groups')" class="settings-subtab ${subTab === 'groups' ? 'active' : 'inactive'}">
                 📋 Groups
             </button>
+            <button onclick="setSettingsSubTab('fixtures')" class="settings-subtab ${subTab === 'fixtures' ? 'active' : 'inactive'}">
+                🔄 Fixtures
+            </button>
+            <button onclick="setSettingsSubTab('courts')" class="settings-subtab ${subTab === 'courts' ? 'active' : 'inactive'}">
+                🏟️ Courts
+            </button>
             <button onclick="setSettingsSubTab('scoring')" class="settings-subtab ${subTab === 'scoring' ? 'active' : 'inactive'}">
                 ⚙️ Scoring
             </button>
@@ -494,6 +668,8 @@ function SettingsTab() {
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             ${subTab === 'teams' ? TeamsSettingsSection() : ''}
             ${subTab === 'groups' ? GroupsSettingsSection() : ''}
+            ${subTab === 'fixtures' ? FixturesSettingsSection() : ''}
+            ${subTab === 'courts' ? CourtsSettingsSection() : ''}
             ${subTab === 'scoring' ? ScoringSettingsSection() : ''}
             ${subTab === 'danger' ? DangerZoneSection() : ''}
         </div>
@@ -501,6 +677,8 @@ function SettingsTab() {
 }
 
 function TeamsSettingsSection() {
+    const editingTeamId = state.editingTeamId || null;
+    
     return `
         <h3 class="text-lg font-bold text-gray-800 mb-4">Manage Teams</h3>
         
@@ -542,17 +720,68 @@ function TeamsSettingsSection() {
             <div class="space-y-3">
                 ${state.teams.map(team => {
                     const tierClass = getTeamTierClass(team.combinedRating);
+                    const isEditing = editingTeamId === team.id;
+                    
+                    if (isEditing) {
+                        return `
+                            <div class="p-4 bg-purple-50 rounded-xl border-2 border-purple-300">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="team-mini-badge ${tierClass}">${team.id}</div>
+                                    <span class="font-semibold text-purple-700">Editing Team</span>
+                                </div>
+                                <div class="grid gap-3 md:grid-cols-2">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Player 1</label>
+                                        <input type="text" id="edit-p1-name-${team.id}" value="${team.player1Name}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Rating</label>
+                                        <input type="number" id="edit-p1-rating-${team.id}" value="${team.player1Rating}" min="0" max="5" step="0.1" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Player 2</label>
+                                        <input type="text" id="edit-p2-name-${team.id}" value="${team.player2Name}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Rating</label>
+                                        <input type="number" id="edit-p2-rating-${team.id}" value="${team.player2Rating}" min="0" max="5" step="0.1" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" />
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Team Name</label>
+                                    <input type="text" id="edit-team-name-${team.id}" value="${team.name}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" />
+                                </div>
+                                <div class="mt-3 flex gap-2">
+                                    <button onclick="saveTeamEdit(${team.id})" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium text-sm transition-colors">
+                                        ✓ Save
+                                    </button>
+                                    <button onclick="cancelTeamEdit()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium text-sm transition-colors">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
                     return `
                         <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                             <div class="team-mini-badge ${tierClass}">${team.id}</div>
                             <div class="flex-1 min-w-0">
                                 <div class="font-semibold text-gray-800">${team.name}</div>
                                 <div class="text-sm text-gray-500">${team.player1Name} (${team.player1Rating}) & ${team.player2Name} (${team.player2Rating})</div>
-                                <div class="text-xs text-gray-400">Combined: ${team.combinedRating.toFixed(1)}</div>
+                                <div class="text-xs text-gray-400">Combined: ${team.combinedRating.toFixed(1)} • Group ${team.group || 'Unassigned'}</div>
                             </div>
-                            <button onclick="removeTeam(${team.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove team">
-                                🗑️
-                            </button>
+                            <div class="flex gap-1">
+                                <button onclick="startTeamEdit(${team.id})" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Edit team">
+                                    ✏️
+                                </button>
+                                <button onclick="moveTeamGroup(${team.id})" class="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors" title="Move to other group">
+                                    🔀
+                                </button>
+                                <button onclick="removeTeam(${team.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove team">
+                                    🗑️
+                                </button>
+                            </div>
                         </div>
                     `;
                 }).join('')}
@@ -635,6 +864,208 @@ function GroupsSettingsSection() {
     `;
 }
 
+function FixturesSettingsSection() {
+    const fixturesA = state.groupAFixtures || [];
+    const fixturesB = state.groupBFixtures || [];
+    const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
+    
+    const renderFixtureList = (fixtures, group) => {
+        if (fixtures.length === 0) {
+            return `<p class="text-gray-400 text-sm py-4">No fixtures generated for Group ${group}</p>`;
+        }
+        
+        return fixtures.map((round, roundIdx) => `
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h5 class="text-sm font-semibold text-gray-600">Round ${round.round}</h5>
+                </div>
+                <div class="space-y-2">
+                    ${round.matches.map((match, matchIdx) => {
+                        const team1 = state.getTeamById(match.team1Id);
+                        const team2 = state.getTeamById(match.team2Id);
+                        const globalMatchIdx = roundIdx * 10 + matchIdx; // Unique index for swapping
+                        return `
+                            <div class="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200" data-group="${group}" data-round="${roundIdx}" data-match="${matchIdx}">
+                                <span class="text-xs text-gray-400 w-6">${matchIdx + 1}</span>
+                                <div class="flex-1 text-sm">
+                                    <span class="font-medium">${team1?.name || 'TBD'}</span>
+                                    <span class="text-gray-400 mx-2">vs</span>
+                                    <span class="font-medium">${team2?.name || 'TBD'}</span>
+                                </div>
+                                <div class="flex gap-1">
+                                    ${roundIdx > 0 ? `
+                                        <button onclick="moveFixtureUp('${group}', ${roundIdx}, ${matchIdx})" class="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded" title="Move to previous round">
+                                            ↑
+                                        </button>
+                                    ` : ''}
+                                    ${roundIdx < fixtures.length - 1 ? `
+                                        <button onclick="moveFixtureDown('${group}', ${roundIdx}, ${matchIdx})" class="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded" title="Move to next round">
+                                            ↓
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `).join('');
+    };
+    
+    return `
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Manage Fixtures</h3>
+        
+        <div class="bg-amber-50 rounded-xl p-4 mb-6">
+            <p class="text-sm text-amber-800">
+                <span class="font-semibold">💡 Tip:</span> You can move matches between rounds using the arrows. 
+                This is useful for scheduling matches on specific days or courts.
+            </p>
+        </div>
+        
+        <div class="flex flex-wrap gap-4 mb-6">
+            <button onclick="regenerateFixtures()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors">
+                🔄 Regenerate All Fixtures
+            </button>
+            <button onclick="shuffleFixtureOrder()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
+                🎲 Shuffle Match Order
+            </button>
+        </div>
+        
+        <div class="grid gap-6 ${isTwoGroups ? 'md:grid-cols-2' : ''}">
+            <!-- Group A Fixtures -->
+            <div class="bg-blue-50 rounded-xl p-4">
+                <h4 class="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded bg-blue-500 text-white flex items-center justify-center text-xs font-bold">A</span>
+                    Group A Fixtures
+                </h4>
+                ${renderFixtureList(fixturesA, 'A')}
+            </div>
+            
+            ${isTwoGroups ? `
+                <!-- Group B Fixtures -->
+                <div class="bg-purple-50 rounded-xl p-4">
+                    <h4 class="font-semibold text-purple-800 mb-3 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded bg-purple-500 text-white flex items-center justify-center text-xs font-bold">B</span>
+                        Group B Fixtures
+                    </h4>
+                    ${renderFixtureList(fixturesB, 'B')}
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function CourtsSettingsSection() {
+    // Initialize court names if not set
+    const courtNames = state.courtNames || {
+        group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
+        knockout: {
+            qf1: 'Court 1', qf2: 'Court 2', qf3: 'Court 3', qf4: 'Court 4',
+            sf1: 'Centre Court', sf2: 'Court 1',
+            thirdPlace: 'Court 1',
+            final: 'Centre Court'
+        }
+    };
+    
+    return `
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Court Names</h3>
+        
+        <p class="text-sm text-gray-600 mb-6">
+            Assign court names to matches. These will be displayed on the fixtures page.
+        </p>
+        
+        <!-- Group Stage Courts -->
+        <div class="mb-8">
+            <h4 class="font-semibold text-gray-700 mb-3">Group Stage Courts</h4>
+            <p class="text-xs text-gray-500 mb-3">Enter names for up to 4 courts used during group matches</p>
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                ${[0, 1, 2, 3].map(i => `
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Court ${i + 1}</label>
+                        <input 
+                            type="text" 
+                            id="court-group-${i}" 
+                            value="${courtNames.group?.[i] || `Court ${i + 1}`}" 
+                            onchange="updateCourtName('group', ${i}, this.value)"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none" 
+                            placeholder="Court ${i + 1}" 
+                        />
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        
+        <!-- Knockout Stage Courts -->
+        <div>
+            <h4 class="font-semibold text-gray-700 mb-3">Knockout Stage Courts</h4>
+            
+            <!-- Quarter Finals -->
+            <div class="mb-6">
+                <h5 class="text-sm font-medium text-gray-600 mb-2">Quarter Finals</h5>
+                <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    ${['qf1', 'qf2', 'qf3', 'qf4'].map((match, i) => `
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">${state.knockoutNames?.[match] || match.toUpperCase()}</label>
+                            <input 
+                                type="text" 
+                                id="court-${match}" 
+                                value="${courtNames.knockout?.[match] || `Court ${i + 1}`}" 
+                                onchange="updateCourtName('knockout', '${match}', this.value)"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" 
+                            />
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <!-- Semi Finals -->
+            <div class="mb-6">
+                <h5 class="text-sm font-medium text-gray-600 mb-2">Semi Finals</h5>
+                <div class="grid gap-4 md:grid-cols-2">
+                    ${['sf1', 'sf2'].map((match, i) => `
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">${state.knockoutNames?.[match] || match.toUpperCase()}</label>
+                            <input 
+                                type="text" 
+                                id="court-${match}" 
+                                value="${courtNames.knockout?.[match] || (i === 0 ? 'Centre Court' : 'Court 1')}" 
+                                onchange="updateCourtName('knockout', '${match}', this.value)"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" 
+                            />
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <!-- 3rd Place & Final -->
+            <div class="grid gap-4 md:grid-cols-2">
+                ${state.includeThirdPlace ? `
+                    <div>
+                        <h5 class="text-sm font-medium text-gray-600 mb-2">3rd Place Playoff</h5>
+                        <input 
+                            type="text" 
+                            id="court-thirdPlace" 
+                            value="${courtNames.knockout?.thirdPlace || 'Court 1'}" 
+                            onchange="updateCourtName('knockout', 'thirdPlace', this.value)"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" 
+                        />
+                    </div>
+                ` : ''}
+                <div>
+                    <h5 class="text-sm font-medium text-gray-600 mb-2">Final</h5>
+                    <input 
+                        type="text" 
+                        id="court-final" 
+                        value="${courtNames.knockout?.final || 'Centre Court'}" 
+                        onchange="updateCourtName('knockout', 'final', this.value)"
+                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none" 
+                    />
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 function ScoringSettingsSection() {
     return `
         <h3 class="text-lg font-bold text-gray-800 mb-4">Scoring Settings</h3>
@@ -700,7 +1131,7 @@ const TeamLeagueApp = {
             return;
         }
         
-        const currentTab = state.currentTab || 'group-a';
+        const currentTab = state.currentTab || 'fixtures';
         const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
         
         document.getElementById('app').innerHTML = `
@@ -731,14 +1162,9 @@ const TeamLeagueApp = {
                 <div class="bg-white border-b border-gray-100 sticky top-0 z-40">
                     <div class="max-w-6xl mx-auto px-4">
                         <div class="flex gap-1 overflow-x-auto py-3" style="-webkit-overflow-scrolling: touch;">
-                            <button onclick="setTab('group-a')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'group-a' ? 'tab-active' : 'tab-inactive'}">
-                                Group A
+                            <button onclick="setTab('fixtures')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'fixtures' ? 'tab-active' : 'tab-inactive'}">
+                                📋 Fixtures
                             </button>
-                            ${isTwoGroups ? `
-                                <button onclick="setTab('group-b')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'group-b' ? 'tab-active' : 'tab-inactive'}">
-                                    Group B
-                                </button>
-                            ` : ''}
                             <button onclick="setTab('standings')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'standings' ? 'tab-active' : 'tab-inactive'}">
                                 📊 Standings
                             </button>
@@ -748,17 +1174,18 @@ const TeamLeagueApp = {
                             <button onclick="setTab('partners')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'partners' ? 'tab-active' : 'tab-inactive'}">
                                 👥 Teams
                             </button>
-                            <button onclick="setTab('settings')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'settings' ? 'tab-active' : 'tab-inactive'}">
-                                ⚙️ Settings
-                            </button>
+                            ${state.canEdit() ? `
+                                <button onclick="setTab('settings')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'settings' ? 'tab-active' : 'tab-inactive'}">
+                                    ⚙️ Settings
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
                 
                 <!-- Tab Content -->
                 <div class="max-w-6xl mx-auto px-4 py-6">
-                    ${currentTab === 'group-a' ? GroupTab('A') : ''}
-                    ${currentTab === 'group-b' ? GroupTab('B') : ''}
+                    ${currentTab === 'fixtures' ? FixturesTab() : ''}
                     ${currentTab === 'standings' ? StandingsTab() : ''}
                     ${currentTab === 'knockout' ? KnockoutTab() : ''}
                     ${currentTab === 'partners' ? PartnersTab() : ''}

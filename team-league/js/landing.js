@@ -34,6 +34,56 @@ const MyTournaments = {
     }
 };
 
+// ===== WIZARD STATE =====
+const WizardState = {
+    currentStep: 1,
+    totalSteps: 4,
+    
+    // Step 1: Basic Info
+    tournamentName: '',
+    passcode: '',
+    
+    // Step 2: Team Count
+    teamCount: 8,
+    
+    // Step 3: Group Mode
+    groupMode: 'two_groups',
+    
+    // Step 4: Options
+    includeThirdPlace: true,
+    
+    // After creation - Team Entry
+    tournamentId: null,
+    organiserKey: null,
+    teams: [],
+    
+    reset() {
+        this.currentStep = 1;
+        this.tournamentName = '';
+        this.passcode = '';
+        this.teamCount = 8;
+        this.groupMode = 'two_groups';
+        this.includeThirdPlace = true;
+        this.tournamentId = null;
+        this.organiserKey = null;
+        this.teams = [];
+    },
+    
+    initTeams() {
+        this.teams = [];
+        for (let i = 1; i <= this.teamCount; i++) {
+            this.teams.push({
+                id: i,
+                name: '',
+                player1Name: '',
+                player1Rating: 2.5,
+                player2Name: '',
+                player2Rating: 2.5
+            });
+        }
+    }
+};
+
 // ===== LANDING PAGE RENDER =====
 
 function renderLandingPage() {
@@ -68,7 +118,7 @@ function renderLandingPage() {
                         <!-- Main Actions -->
                         <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
                             <button 
-                                onclick="showCreateModal()"
+                                onclick="showCreateWizard()"
                                 class="flex-1 px-8 py-4 bg-white text-purple-700 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200"
                             >
                                 <span class="mr-2">✨</span> Create Tournament
@@ -190,42 +240,758 @@ function renderLandingPage() {
     `;
 }
 
-// ===== MODALS =====
+// ===== WIZARD MODAL =====
 
-function showCreateModal() {
+function showCreateWizard() {
+    WizardState.reset();
+    renderWizardStep();
+}
+
+function renderWizardStep() {
+    const step = WizardState.currentStep;
+    
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
-            <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-slide-up">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
+                <!-- Header with Progress -->
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
-                    <h2 class="text-xl font-bold text-white">👥 Create Team League</h2>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-xl font-bold text-white">✨ Create Team League</h2>
+                        <span class="text-white/80 text-sm">Step ${step} of ${WizardState.totalSteps}</span>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="h-2 bg-white/20 rounded-full overflow-hidden">
+                        <div class="h-full bg-white rounded-full transition-all duration-300" style="width: ${(step / WizardState.totalSteps) * 100}%"></div>
+                    </div>
                 </div>
+                
                 <div class="p-6">
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament Name</label>
-                        <input type="text" id="create-name" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg" placeholder="e.g. Winter Team Championship" autofocus />
+                    ${step === 1 ? renderWizardStep1() : ''}
+                    ${step === 2 ? renderWizardStep2() : ''}
+                    ${step === 3 ? renderWizardStep3() : ''}
+                    ${step === 4 ? renderWizardStep4() : ''}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Auto-focus first input
+    setTimeout(() => {
+        const firstInput = document.querySelector('#wizard-content input:not([type="radio"]):not([type="checkbox"])');
+        if (firstInput) firstInput.focus();
+    }, 100);
+}
+
+function renderWizardStep1() {
+    return `
+        <div id="wizard-content">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Tournament Details</h3>
+            <p class="text-gray-500 text-sm mb-6">Give your tournament a name and set a passcode</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament Name</label>
+                    <input 
+                        type="text" 
+                        id="wizard-name" 
+                        value="${WizardState.tournamentName}"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg" 
+                        placeholder="e.g. Winter Team Championship"
+                    />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Organiser Passcode</label>
+                    <input 
+                        type="password" 
+                        id="wizard-passcode" 
+                        value="${WizardState.passcode}"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg" 
+                        placeholder="Create a passcode (min 4 chars)"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">You'll need this to manage the tournament</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Passcode</label>
+                    <input 
+                        type="password" 
+                        id="wizard-passcode-confirm" 
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg" 
+                        placeholder="Confirm passcode"
+                        onkeypress="if(event.key === 'Enter') wizardNext()"
+                    />
+                </div>
+            </div>
+            
+            <div id="wizard-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
+                <p id="wizard-error-text" class="text-sm text-red-600 font-medium"></p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+            <button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                Cancel
+            </button>
+            <button onclick="wizardNext()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
+                Next →
+            </button>
+        </div>
+    `;
+}
+
+function renderWizardStep2() {
+    return `
+        <div id="wizard-content">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Number of Teams</h3>
+            <p class="text-gray-500 text-sm mb-6">How many teams will participate?</p>
+            
+            <div class="mb-6">
+                <div class="flex items-center justify-center gap-4">
+                    <button onclick="adjustTeamCount(-2)" class="w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xl transition-colors">−</button>
+                    <div class="text-center">
+                        <input 
+                            type="number" 
+                            id="wizard-team-count" 
+                            value="${WizardState.teamCount}"
+                            min="4"
+                            max="32"
+                            class="w-24 text-center text-4xl font-bold text-purple-600 border-none focus:outline-none bg-transparent"
+                            onchange="updateTeamCount(this.value)"
+                        />
+                        <p class="text-sm text-gray-500">teams</p>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Organiser Passcode</label>
-                        <input type="password" id="create-passcode" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg" placeholder="Create a passcode" />
-                        <p class="text-xs text-gray-500 mt-1">You'll need this to edit the tournament</p>
+                    <button onclick="adjustTeamCount(2)" class="w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xl transition-colors">+</button>
+                </div>
+            </div>
+            
+            <!-- Quick Select -->
+            <div class="flex flex-wrap justify-center gap-2 mb-6">
+                ${[6, 8, 10, 12, 16, 20].map(n => `
+                    <button 
+                        onclick="setTeamCount(${n})" 
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${WizardState.teamCount === n ? 'bg-purple-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}"
+                    >
+                        ${n} teams
+                    </button>
+                `).join('')}
+            </div>
+            
+            <div class="bg-purple-50 rounded-xl p-4">
+                <p class="text-sm text-purple-800">
+                    <span class="font-semibold">💡 Tip:</span> 
+                    ${WizardState.teamCount % 2 === 0 
+                        ? `${WizardState.teamCount} teams can be split evenly into 2 groups of ${WizardState.teamCount / 2}.`
+                        : `Odd number - one group will have ${Math.ceil(WizardState.teamCount / 2)} teams, the other ${Math.floor(WizardState.teamCount / 2)}.`
+                    }
+                </p>
+            </div>
+            
+            <div id="wizard-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
+                <p id="wizard-error-text" class="text-sm text-red-600 font-medium"></p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+            <button onclick="wizardBack()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                ← Back
+            </button>
+            <button onclick="wizardNext()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
+                Next →
+            </button>
+        </div>
+    `;
+}
+
+function renderWizardStep3() {
+    return `
+        <div id="wizard-content">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Group Format</h3>
+            <p class="text-gray-500 text-sm mb-6">Choose how to organize the group stage</p>
+            
+            <div class="space-y-4">
+                <!-- Two Groups Option -->
+                <label class="block cursor-pointer">
+                    <div class="flex items-start gap-4 p-4 rounded-xl border-2 transition-colors ${WizardState.groupMode === 'two_groups' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                        <input 
+                            type="radio" 
+                            name="group-mode" 
+                            value="two_groups" 
+                            ${WizardState.groupMode === 'two_groups' ? 'checked' : ''}
+                            onchange="setGroupMode('two_groups')"
+                            class="mt-1 w-5 h-5 text-purple-500"
+                        />
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800 mb-1">Two Groups (Recommended)</div>
+                            <p class="text-sm text-gray-600">Teams split into Group A and Group B. Top 4 from each group advance to quarter finals.</p>
+                            <div class="mt-2 flex gap-2">
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Group A: ${Math.ceil(WizardState.teamCount / 2)} teams</span>
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Group B: ${Math.floor(WizardState.teamCount / 2)} teams</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm Passcode</label>
-                        <input type="password" id="create-passcode-confirm" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg" placeholder="Confirm passcode" onkeypress="if(event.key === 'Enter') handleCreateTournament()" />
+                </label>
+                
+                <!-- Single Group Option -->
+                <label class="block cursor-pointer">
+                    <div class="flex items-start gap-4 p-4 rounded-xl border-2 transition-colors ${WizardState.groupMode === 'single_group' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                        <input 
+                            type="radio" 
+                            name="group-mode" 
+                            value="single_group" 
+                            ${WizardState.groupMode === 'single_group' ? 'checked' : ''}
+                            onchange="setGroupMode('single_group')"
+                            class="mt-1 w-5 h-5 text-purple-500"
+                        />
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800 mb-1">Single Group</div>
+                            <p class="text-sm text-gray-600">All teams in one group. Top 8 advance to quarter finals.</p>
+                            <div class="mt-2">
+                                <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">All ${WizardState.teamCount} teams together</span>
+                            </div>
+                        </div>
                     </div>
-                    <div id="create-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
-                        <p id="create-error-text" class="text-sm text-red-600 font-medium"></p>
+                </label>
+            </div>
+            
+            <div id="wizard-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
+                <p id="wizard-error-text" class="text-sm text-red-600 font-medium"></p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+            <button onclick="wizardBack()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                ← Back
+            </button>
+            <button onclick="wizardNext()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
+                Next →
+            </button>
+        </div>
+    `;
+}
+
+function renderWizardStep4() {
+    return `
+        <div id="wizard-content">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Tournament Options</h3>
+            <p class="text-gray-500 text-sm mb-6">Final settings before creating your tournament</p>
+            
+            <div class="space-y-4">
+                <!-- 3rd Place Playoff -->
+                <label class="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-300 cursor-pointer transition-colors">
+                    <input 
+                        type="checkbox" 
+                        id="wizard-third-place"
+                        ${WizardState.includeThirdPlace ? 'checked' : ''}
+                        onchange="WizardState.includeThirdPlace = this.checked"
+                        class="w-5 h-5 text-purple-500 rounded"
+                    />
+                    <div class="flex-1">
+                        <div class="font-semibold text-gray-800">Include 3rd Place Playoff</div>
+                        <p class="text-sm text-gray-600">Semi-final losers play for 3rd place</p>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">Cancel</button>
-                        <button onclick="handleCreateTournament()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">Create</button>
+                    <span class="text-2xl">🥉</span>
+                </label>
+            </div>
+            
+            <!-- Summary -->
+            <div class="mt-6 bg-gray-50 rounded-xl p-4">
+                <h4 class="font-semibold text-gray-800 mb-3">📋 Summary</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Tournament Name</span>
+                        <span class="font-medium text-gray-800">${WizardState.tournamentName || 'Team League'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Number of Teams</span>
+                        <span class="font-medium text-gray-800">${WizardState.teamCount}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Group Format</span>
+                        <span class="font-medium text-gray-800">${WizardState.groupMode === 'two_groups' ? 'Two Groups' : 'Single Group'}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">3rd Place Playoff</span>
+                        <span class="font-medium text-gray-800">${WizardState.includeThirdPlace ? 'Yes' : 'No'}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="wizard-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
+                <p id="wizard-error-text" class="text-sm text-red-600 font-medium"></p>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+            <button onclick="wizardBack()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                ← Back
+            </button>
+            <button onclick="createTournamentFromWizard()" class="flex-1 px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl font-semibold transition-colors">
+                Create Tournament ✨
+            </button>
+        </div>
+    `;
+}
+
+// ===== WIZARD NAVIGATION =====
+
+function wizardNext() {
+    const step = WizardState.currentStep;
+    
+    if (step === 1) {
+        const name = document.getElementById('wizard-name')?.value?.trim();
+        const passcode = document.getElementById('wizard-passcode')?.value;
+        const passcodeConfirm = document.getElementById('wizard-passcode-confirm')?.value;
+        
+        if (!passcode || passcode.length < 4) {
+            showWizardError('Passcode must be at least 4 characters');
+            return;
+        }
+        
+        if (passcode !== passcodeConfirm) {
+            showWizardError('Passcodes do not match');
+            return;
+        }
+        
+        WizardState.tournamentName = name || 'Team League';
+        WizardState.passcode = passcode;
+    }
+    
+    if (step === 2) {
+        const teamCount = parseInt(document.getElementById('wizard-team-count')?.value);
+        
+        if (isNaN(teamCount) || teamCount < 4) {
+            showWizardError('Minimum 4 teams required');
+            return;
+        }
+        
+        if (teamCount > 32) {
+            showWizardError('Maximum 32 teams allowed');
+            return;
+        }
+        
+        WizardState.teamCount = teamCount;
+    }
+    
+    if (step < WizardState.totalSteps) {
+        WizardState.currentStep++;
+        renderWizardStep();
+    }
+}
+
+function wizardBack() {
+    if (WizardState.currentStep > 1) {
+        WizardState.currentStep--;
+        renderWizardStep();
+    }
+}
+
+function showWizardError(message) {
+    const errorDiv = document.getElementById('wizard-error');
+    const errorText = document.getElementById('wizard-error-text');
+    if (errorDiv && errorText) {
+        errorText.textContent = '❌ ' + message;
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+// ===== TEAM COUNT HELPERS =====
+
+function adjustTeamCount(delta) {
+    const newCount = WizardState.teamCount + delta;
+    if (newCount >= 4 && newCount <= 32) {
+        WizardState.teamCount = newCount;
+        renderWizardStep();
+    }
+}
+
+function setTeamCount(count) {
+    WizardState.teamCount = count;
+    renderWizardStep();
+}
+
+function updateTeamCount(value) {
+    const count = parseInt(value);
+    if (!isNaN(count) && count >= 4 && count <= 32) {
+        WizardState.teamCount = count;
+    }
+}
+
+function setGroupMode(mode) {
+    WizardState.groupMode = mode;
+    renderWizardStep();
+}
+
+// ===== CREATE TOURNAMENT =====
+
+async function createTournamentFromWizard() {
+    const tournamentId = Router.generateTournamentId();
+    
+    try {
+        await createTournamentInFirebase(
+            tournamentId, 
+            WizardState.passcode, 
+            WizardState.tournamentName,
+            WizardState.teamCount,
+            WizardState.groupMode,
+            WizardState.includeThirdPlace
+        );
+        
+        WizardState.tournamentId = tournamentId;
+        WizardState.organiserKey = WizardState.passcode;
+        WizardState.initTeams();
+        
+        MyTournaments.add(tournamentId, WizardState.tournamentName);
+        
+        showTeamEntryWizard();
+        
+    } catch (error) {
+        console.error('Error creating tournament:', error);
+        showWizardError('Failed to create tournament. Please try again.');
+    }
+}
+
+// ===== TEAM ENTRY WIZARD =====
+
+function showTeamEntryWizard() {
+    const teams = WizardState.teams;
+    
+    document.getElementById('modal-container').innerHTML = `
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden animate-slide-up">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-white">👥 Enter Team Details</h2>
+                            <p class="text-white/80 text-sm">Add player names and ratings for each team</p>
+                        </div>
+                        <span class="bg-white/20 px-3 py-1 rounded-full text-white text-sm font-medium">${teams.length} teams</span>
+                    </div>
+                </div>
+                
+                <div class="p-6 max-h-[60vh] overflow-y-auto">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        ${teams.map((team, idx) => `
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="w-8 h-8 rounded-lg bg-purple-500 text-white flex items-center justify-center font-bold text-sm">${team.id}</span>
+                                    <input 
+                                        type="text" 
+                                        id="team-name-${team.id}" 
+                                        value="${team.name}"
+                                        placeholder="Team Name (optional)"
+                                        class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <input 
+                                            type="text" 
+                                            id="team-${team.id}-p1-name" 
+                                            value="${team.player1Name}"
+                                            placeholder="Player 1 Name"
+                                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none mb-2"
+                                        />
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-500">Rating:</span>
+                                            <input 
+                                                type="number" 
+                                                id="team-${team.id}-p1-rating" 
+                                                value="${team.player1Rating}"
+                                                min="0" max="5" step="0.1"
+                                                class="w-16 px-2 py-1 border border-gray-200 rounded text-sm text-center focus:border-purple-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <input 
+                                            type="text" 
+                                            id="team-${team.id}-p2-name" 
+                                            value="${team.player2Name}"
+                                            placeholder="Player 2 Name"
+                                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-purple-500 focus:outline-none mb-2"
+                                        />
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-500">Rating:</span>
+                                            <input 
+                                                type="number" 
+                                                id="team-${team.id}-p2-rating" 
+                                                value="${team.player2Rating}"
+                                                min="0" max="5" step="0.1"
+                                                class="w-16 px-2 py-1 border border-gray-200 rounded text-sm text-center focus:border-purple-500 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                    <button onclick="skipTeamEntry()" class="flex-1 px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors">
+                        Skip (Use Defaults)
+                    </button>
+                    <button onclick="saveTeamsAndContinue()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
+                        Continue →
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function collectTeamData() {
+    WizardState.teams.forEach(team => {
+        const nameInput = document.getElementById(`team-name-${team.id}`);
+        const p1NameInput = document.getElementById(`team-${team.id}-p1-name`);
+        const p1RatingInput = document.getElementById(`team-${team.id}-p1-rating`);
+        const p2NameInput = document.getElementById(`team-${team.id}-p2-name`);
+        const p2RatingInput = document.getElementById(`team-${team.id}-p2-rating`);
+        
+        team.name = nameInput?.value?.trim() || '';
+        team.player1Name = p1NameInput?.value?.trim() || `Player ${team.id}A`;
+        team.player1Rating = parseFloat(p1RatingInput?.value) || 2.5;
+        team.player2Name = p2NameInput?.value?.trim() || `Player ${team.id}B`;
+        team.player2Rating = parseFloat(p2RatingInput?.value) || 2.5;
+        
+        if (!team.name) {
+            team.name = `${team.player1Name} & ${team.player2Name}`;
+        }
+    });
+}
+
+function skipTeamEntry() {
+    WizardState.teams.forEach(team => {
+        team.player1Name = `Player ${team.id}A`;
+        team.player1Rating = 2.5;
+        team.player2Name = `Player ${team.id}B`;
+        team.player2Rating = 2.5;
+        team.name = `Team ${team.id}`;
+    });
+    
+    if (WizardState.groupMode === 'two_groups') {
+        showGroupAssignmentWizard();
+    } else {
+        finishWizardAndOpen();
+    }
+}
+
+function saveTeamsAndContinue() {
+    collectTeamData();
+    
+    if (WizardState.groupMode === 'two_groups') {
+        showGroupAssignmentWizard();
+    } else {
+        finishWizardAndOpen();
+    }
+}
+
+// ===== GROUP ASSIGNMENT WIZARD =====
+
+function showGroupAssignmentWizard() {
+    WizardState.teams.forEach(team => {
+        team.combinedRating = team.player1Rating + team.player2Rating;
+    });
+    
+    document.getElementById('modal-container').innerHTML = `
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
+                    <h2 class="text-xl font-bold text-white">📊 Group Assignment</h2>
+                    <p class="text-white/80 text-sm">How would you like to split teams into groups?</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <!-- Auto Balance Option -->
+                        <button onclick="autoAssignGroups()" class="w-full text-left p-4 rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl">⚖️</div>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-800">Auto Balance (Recommended)</div>
+                                    <p class="text-sm text-gray-600">Snake draft by rating for balanced groups</p>
+                                </div>
+                                <span class="text-purple-500">→</span>
+                            </div>
+                        </button>
+                        
+                        <!-- Manual Option -->
+                        <button onclick="showManualGroupAssignment()" class="w-full text-left p-4 rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-colors">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-2xl">✋</div>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-800">Manual Assignment</div>
+                                    <p class="text-sm text-gray-600">Choose which teams go to each group</p>
+                                </div>
+                                <span class="text-gray-400">→</span>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     `;
-    setTimeout(() => document.getElementById('create-name')?.focus(), 100);
 }
+
+function autoAssignGroups() {
+    const sorted = [...WizardState.teams].sort((a, b) => b.combinedRating - a.combinedRating);
+    
+    sorted.forEach((team, index) => {
+        const round = Math.floor(index / 2);
+        const isEvenRound = round % 2 === 0;
+        const isFirstInPair = index % 2 === 0;
+        
+        if ((isEvenRound && isFirstInPair) || (!isEvenRound && !isFirstInPair)) {
+            team.group = 'A';
+        } else {
+            team.group = 'B';
+        }
+    });
+    
+    WizardState.teams.forEach(team => {
+        const sortedTeam = sorted.find(t => t.id === team.id);
+        team.group = sortedTeam.group;
+    });
+    
+    finishWizardAndOpen();
+}
+
+function showManualGroupAssignment() {
+    WizardState.teams.forEach(team => {
+        if (!team.group) team.group = 'A';
+    });
+    
+    renderManualGroupAssignment();
+}
+
+function renderManualGroupAssignment() {
+    const groupA = WizardState.teams.filter(t => t.group === 'A');
+    const groupB = WizardState.teams.filter(t => t.group === 'B');
+    const targetPerGroup = Math.ceil(WizardState.teams.length / 2);
+    
+    document.getElementById('modal-container').innerHTML = `
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden animate-slide-up">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
+                    <h2 class="text-xl font-bold text-white">✋ Manual Group Assignment</h2>
+                    <p class="text-white/80 text-sm">Click teams to move them between groups</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Group A -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center font-bold">A</span>
+                                <span class="font-semibold text-gray-800">Group A</span>
+                                <span class="text-sm text-gray-500">(${groupA.length}/${targetPerGroup})</span>
+                            </div>
+                            <div class="space-y-2 min-h-[200px] bg-blue-50 rounded-xl p-3">
+                                ${groupA.map(team => `
+                                    <button onclick="moveTeamToGroup(${team.id}, 'B')" class="w-full text-left p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                        <div class="font-medium text-gray-800">${team.name}</div>
+                                        <div class="text-xs text-gray-500">${team.player1Name} & ${team.player2Name} • ${team.combinedRating.toFixed(1)}</div>
+                                    </button>
+                                `).join('') || '<p class="text-center text-gray-400 py-8">No teams</p>'}
+                            </div>
+                        </div>
+                        
+                        <!-- Group B -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="w-8 h-8 rounded-lg bg-purple-500 text-white flex items-center justify-center font-bold">B</span>
+                                <span class="font-semibold text-gray-800">Group B</span>
+                                <span class="text-sm text-gray-500">(${groupB.length}/${Math.floor(WizardState.teams.length / 2)})</span>
+                            </div>
+                            <div class="space-y-2 min-h-[200px] bg-purple-50 rounded-xl p-3">
+                                ${groupB.map(team => `
+                                    <button onclick="moveTeamToGroup(${team.id}, 'A')" class="w-full text-left p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                        <div class="font-medium text-gray-800">${team.name}</div>
+                                        <div class="text-xs text-gray-500">${team.player1Name} & ${team.player2Name} • ${team.combinedRating.toFixed(1)}</div>
+                                    </button>
+                                `).join('') || '<p class="text-center text-gray-400 py-8">No teams</p>'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Balance indicator -->
+                    <div class="mt-4 p-3 rounded-xl ${Math.abs(groupA.length - groupB.length) <= 1 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}">
+                        <p class="text-sm font-medium">
+                            ${Math.abs(groupA.length - groupB.length) <= 1 
+                                ? '✓ Groups are balanced' 
+                                : '⚠️ Groups are unbalanced - try to even them out'}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
+                    <button onclick="showGroupAssignmentWizard()" class="flex-1 px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors">
+                        ← Back
+                    </button>
+                    <button onclick="finishWizardAndOpen()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors" ${groupB.length === 0 ? 'disabled' : ''}>
+                        Continue →
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function moveTeamToGroup(teamId, newGroup) {
+    const team = WizardState.teams.find(t => t.id === teamId);
+    if (team) {
+        team.group = newGroup;
+        renderManualGroupAssignment();
+    }
+}
+
+// ===== FINISH WIZARD =====
+
+async function finishWizardAndOpen() {
+    try {
+        const teams = WizardState.teams.map(team => ({
+            id: team.id,
+            name: team.name,
+            player1Name: team.player1Name,
+            player1Rating: team.player1Rating,
+            player2Name: team.player2Name,
+            player2Rating: team.player2Rating,
+            combinedRating: team.player1Rating + team.player2Rating,
+            group: team.group || 'A'
+        }));
+        
+        const groupA = teams.filter(t => t.group === 'A').map(t => t.id);
+        const groupB = teams.filter(t => t.group === 'B').map(t => t.id);
+        
+        const groupATeams = teams.filter(t => t.group === 'A');
+        const groupBTeams = teams.filter(t => t.group === 'B');
+        
+        const groupAFixtures = generateRoundRobinFixtures(groupATeams);
+        const groupBFixtures = WizardState.groupMode === 'two_groups' ? generateRoundRobinFixtures(groupBTeams) : [];
+        
+        const basePath = `team-tournaments/${WizardState.tournamentId}`;
+        await database.ref(basePath).update({
+            teams: teams,
+            groupA: groupA,
+            groupB: groupB,
+            groupAFixtures: groupAFixtures,
+            groupBFixtures: groupBFixtures
+        });
+        
+        closeModal();
+        Router.navigate('tournament', WizardState.tournamentId, WizardState.organiserKey);
+        
+    } catch (error) {
+        console.error('Error saving teams:', error);
+        showToast('❌ Error saving teams. Please try again.');
+    }
+}
+
+// ===== JOIN MODAL =====
 
 function showJoinModal() {
     document.getElementById('modal-container').innerHTML = `
@@ -253,93 +1019,7 @@ function showJoinModal() {
     setTimeout(() => document.getElementById('join-code')?.focus(), 100);
 }
 
-function showCreatedModal(tournamentId, organiserKey, name) {
-    const playerLink = Router.getPlayerLink(tournamentId);
-    const organiserLink = Router.getOrganiserLink(tournamentId, organiserKey);
-    
-    document.getElementById('modal-container').innerHTML = `
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
-                <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-5">
-                    <h2 class="text-xl font-bold text-white">🎉 Tournament Created!</h2>
-                </div>
-                <div class="p-6">
-                    <div class="text-center mb-6">
-                        <div class="text-6xl mb-4">✅</div>
-                        <p class="text-gray-600">${name}</p>
-                    </div>
-                    
-                    <div class="space-y-4 mb-6">
-                        <div class="bg-purple-50 rounded-xl p-4">
-                            <div class="text-sm font-semibold text-purple-800 mb-2">📋 Tournament Code</div>
-                            <div class="font-mono text-2xl font-bold text-purple-600 tracking-wider">${tournamentId.toUpperCase()}</div>
-                        </div>
-                        
-                        <div class="bg-gray-50 rounded-xl p-4">
-                            <div class="text-sm font-semibold text-gray-700 mb-2">🔗 Player Link</div>
-                            <div class="flex items-center gap-2">
-                                <input type="text" value="${playerLink}" readonly class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-mono" />
-                                <button onclick="copyToClipboard('${playerLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600">Copy</button>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-amber-50 rounded-xl p-4">
-                            <div class="text-sm font-semibold text-amber-800 mb-2">🔑 Organiser Link (keep secret!)</div>
-                            <div class="flex items-center gap-2">
-                                <input type="text" value="${organiserLink}" readonly class="flex-1 px-3 py-2 bg-white border border-amber-200 rounded-lg text-sm font-mono" />
-                                <button onclick="copyToClipboard('${organiserLink}'); showToast('✅ Copied!')" class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">Copy</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button onclick="closeModal(); Router.navigate('tournament', '${tournamentId}', '${organiserKey}')" class="w-full px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors">
-                        Open Tournament →
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
 // ===== HANDLERS =====
-
-async function handleCreateTournament() {
-    const name = document.getElementById('create-name')?.value?.trim() || 'Team League';
-    const passcode = document.getElementById('create-passcode')?.value;
-    const passcodeConfirm = document.getElementById('create-passcode-confirm')?.value;
-    const errorDiv = document.getElementById('create-error');
-    const errorText = document.getElementById('create-error-text');
-    
-    // Validation
-    if (!passcode || passcode.length < 4) {
-        errorText.textContent = '❌ Passcode must be at least 4 characters';
-        errorDiv?.classList.remove('hidden');
-        return;
-    }
-    
-    if (passcode !== passcodeConfirm) {
-        errorText.textContent = '❌ Passcodes do not match';
-        errorDiv?.classList.remove('hidden');
-        return;
-    }
-    
-    const tournamentId = Router.generateTournamentId();
-    
-    try {
-        // Create in Firebase
-        await createTournamentInFirebase(tournamentId, passcode, name);
-        
-        // Add to local storage
-        MyTournaments.add(tournamentId, name);
-        
-        // Show success
-        showCreatedModal(tournamentId, passcode, name);
-    } catch (error) {
-        console.error('Error creating tournament:', error);
-        errorText.textContent = '❌ Failed to create tournament. Please try again.';
-        errorDiv?.classList.remove('hidden');
-    }
-}
 
 async function handleJoinTournament() {
     const code = document.getElementById('join-code')?.value?.trim().toLowerCase();
@@ -374,7 +1054,7 @@ function removeFromMyTournaments(tournamentId) {
 
 // ===== FIREBASE OPERATIONS =====
 
-async function createTournamentInFirebase(tournamentId, organiserKey, name) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace) {
     const data = {
         meta: {
             name: name,
@@ -383,9 +1063,9 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name) {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         },
-        teamCount: CONFIG.DEFAULT_TEAM_COUNT,
-        groupMode: CONFIG.DEFAULT_GROUP_MODE,
-        includeThirdPlace: CONFIG.INCLUDE_THIRD_PLACE,
+        teamCount: teamCount,
+        groupMode: groupMode,
+        includeThirdPlace: includeThirdPlace,
         teams: [],
         groupA: [],
         groupB: [],

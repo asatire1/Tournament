@@ -6,8 +6,10 @@ class TeamLeagueState {
         this.formatType = CONFIG.FORMAT_TYPE;
         
         // UI State
-        this.currentTab = 'group-a'; // group-a, group-b, knockout, standings, partners, settings
+        this.currentTab = 'fixtures'; // fixtures, knockout, standings, partners, settings
         this.settingsSubTab = 'teams';
+        this.fixturesViewMode = 'side-by-side'; // side-by-side, group-a, group-b
+        this.editingTeamId = null;
         this.isInitialized = false;
         this.isSaving = false;
         
@@ -71,6 +73,17 @@ class TeamLeagueState {
         this.semiMaxScore = CONFIG.SEMI_MAX_SCORE;
         this.thirdPlaceMaxScore = CONFIG.THIRD_PLACE_MAX_SCORE;
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
+        
+        // Court names
+        this.courtNames = {
+            group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
+            knockout: {
+                qf1: 'Court 1', qf2: 'Court 2', qf3: 'Court 3', qf4: 'Court 4',
+                sf1: 'Centre Court', sf2: 'Court 1',
+                thirdPlace: 'Court 1',
+                final: 'Centre Court'
+            }
+        };
         
         // Match naming
         this.knockoutNames = {
@@ -189,6 +202,17 @@ class TeamLeagueState {
                 // Names
                 this.knockoutNames = data.knockoutNames || this.knockoutNames;
                 
+                // Court names
+                this.courtNames = data.courtNames || {
+                    group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
+                    knockout: {
+                        qf1: 'Court 1', qf2: 'Court 2', qf3: 'Court 3', qf4: 'Court 4',
+                        sf1: 'Centre Court', sf2: 'Court 1',
+                        thirdPlace: 'Court 1',
+                        final: 'Centre Court'
+                    }
+                };
+                
                 // Versions
                 this.savedVersions = data.savedVersions || [];
             } else {
@@ -239,6 +263,7 @@ class TeamLeagueState {
         updates[`${basePath}/thirdPlaceMaxScore`] = this.thirdPlaceMaxScore;
         updates[`${basePath}/finalMaxScore`] = this.finalMaxScore;
         updates[`${basePath}/knockoutNames`] = this.knockoutNames;
+        updates[`${basePath}/courtNames`] = this.courtNames;
         updates[`${basePath}/savedVersions`] = this.savedVersions;
         
         database.ref().update(updates).then(() => {
@@ -285,6 +310,39 @@ class TeamLeagueState {
         if (!this.canEdit()) return;
         
         database.ref(`${this.getBasePath()}/${key}`).set(value);
+        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
+    }
+
+    saveTeamsToFirebase() {
+        if (!this.canEdit()) return;
+        
+        database.ref(`${this.getBasePath()}/teams`).set(this.teams);
+        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
+    }
+
+    saveGroupsToFirebase() {
+        if (!this.canEdit()) return;
+        
+        const basePath = this.getBasePath();
+        database.ref(`${basePath}/groupA`).set(this.groupA);
+        database.ref(`${basePath}/groupB`).set(this.groupB);
+        database.ref(`${basePath}/teams`).set(this.teams);
+        database.ref(`${basePath}/meta/updatedAt`).set(new Date().toISOString());
+    }
+
+    saveFixturesToFirebase() {
+        if (!this.canEdit()) return;
+        
+        const basePath = this.getBasePath();
+        database.ref(`${basePath}/groupAFixtures`).set(this.groupAFixtures);
+        database.ref(`${basePath}/groupBFixtures`).set(this.groupBFixtures);
+        database.ref(`${basePath}/meta/updatedAt`).set(new Date().toISOString());
+    }
+
+    saveCourtNamesToFirebase() {
+        if (!this.canEdit()) return;
+        
+        database.ref(`${this.getBasePath()}/courtNames`).set(this.courtNames);
         database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
     }
 

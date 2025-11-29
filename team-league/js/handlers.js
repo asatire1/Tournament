@@ -14,6 +14,12 @@ function setSettingsSubTab(subTab) {
     renderTeamLeague();
 }
 
+function setFixturesViewMode(mode) {
+    if (!state) return;
+    state.fixturesViewMode = mode;
+    renderTeamLeague();
+}
+
 // ===== SCORE HANDLERS =====
 
 function handleGroupScore(group, team1Id, team2Id, team1Score, team2Score) {
@@ -122,6 +128,181 @@ function removeTeam(teamId) {
         showToast('✅ Team removed');
         renderTeamLeague();
     }
+}
+
+// ===== TEAM EDITING =====
+
+function startTeamEdit(teamId) {
+    if (!state || !state.canEdit()) return;
+    state.editingTeamId = teamId;
+    renderTeamLeague();
+}
+
+function cancelTeamEdit() {
+    if (!state) return;
+    state.editingTeamId = null;
+    renderTeamLeague();
+}
+
+function saveTeamEdit(teamId) {
+    if (!state || !state.canEdit()) return;
+    
+    const p1Name = document.getElementById(`edit-p1-name-${teamId}`)?.value?.trim();
+    const p1Rating = parseFloat(document.getElementById(`edit-p1-rating-${teamId}`)?.value) || 2.5;
+    const p2Name = document.getElementById(`edit-p2-name-${teamId}`)?.value?.trim();
+    const p2Rating = parseFloat(document.getElementById(`edit-p2-rating-${teamId}`)?.value) || 2.5;
+    const teamName = document.getElementById(`edit-team-name-${teamId}`)?.value?.trim();
+    
+    if (!p1Name || !p2Name) {
+        showToast('❌ Player names required');
+        return;
+    }
+    
+    const team = state.getTeamById(teamId);
+    if (!team) return;
+    
+    // Update team
+    team.player1Name = p1Name;
+    team.player1Rating = Math.min(5, Math.max(0, p1Rating));
+    team.player2Name = p2Name;
+    team.player2Rating = Math.min(5, Math.max(0, p2Rating));
+    team.combinedRating = team.player1Rating + team.player2Rating;
+    team.name = teamName || `${p1Name} & ${p2Name}`;
+    
+    state.editingTeamId = null;
+    state.saveTeamsToFirebase();
+    showToast('✅ Team updated');
+    renderTeamLeague();
+}
+
+function moveTeamGroup(teamId) {
+    if (!state || !state.canEdit()) return;
+    
+    const team = state.getTeamById(teamId);
+    if (!team) return;
+    
+    const currentGroup = team.group;
+    const newGroup = currentGroup === 'A' ? 'B' : 'A';
+    
+    // Move team
+    if (currentGroup === 'A') {
+        state.groupA = state.groupA.filter(id => id !== teamId);
+        state.groupB.push(teamId);
+    } else {
+        state.groupB = state.groupB.filter(id => id !== teamId);
+        state.groupA.push(teamId);
+    }
+    
+    team.group = newGroup;
+    
+    state.saveGroupsToFirebase();
+    showToast(`✅ Team moved to Group ${newGroup}`);
+    renderTeamLeague();
+}
+
+// ===== FIXTURE MANAGEMENT =====
+
+function moveFixtureUp(group, roundIdx, matchIdx) {
+    if (!state || !state.canEdit()) return;
+    if (roundIdx === 0) return;
+    
+    const fixtures = group === 'A' ? state.groupAFixtures : state.groupBFixtures;
+    const currentRound = fixtures[roundIdx];
+    const prevRound = fixtures[roundIdx - 1];
+    
+    // Remove match from current round
+    const match = currentRound.matches.splice(matchIdx, 1)[0];
+    // Add to previous round
+    prevRound.matches.push(match);
+    
+    state.saveFixturesToFirebase();
+    showToast('✅ Match moved');
+    renderTeamLeague();
+}
+
+function moveFixtureDown(group, roundIdx, matchIdx) {
+    if (!state || !state.canEdit()) return;
+    
+    const fixtures = group === 'A' ? state.groupAFixtures : state.groupBFixtures;
+    if (roundIdx >= fixtures.length - 1) return;
+    
+    const currentRound = fixtures[roundIdx];
+    const nextRound = fixtures[roundIdx + 1];
+    
+    // Remove match from current round
+    const match = currentRound.matches.splice(matchIdx, 1)[0];
+    // Add to next round
+    nextRound.matches.push(match);
+    
+    state.saveFixturesToFirebase();
+    showToast('✅ Match moved');
+    renderTeamLeague();
+}
+
+function regenerateFixtures() {
+    if (!state || !state.canEdit()) return;
+    
+    if (!confirm('This will regenerate all fixtures and clear all scores. Continue?')) {
+        return;
+    }
+    
+    const success = state.generateFixtures();
+    if (success) {
+        showToast('✅ Fixtures regenerated');
+        renderTeamLeague();
+    }
+}
+
+function shuffleFixtureOrder() {
+    if (!state || !state.canEdit()) return;
+    
+    // Shuffle matches within each round
+    const shuffle = (array) => {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    };
+    
+    state.groupAFixtures.forEach(round => {
+        round.matches = shuffle(round.matches);
+    });
+    
+    state.groupBFixtures.forEach(round => {
+        round.matches = shuffle(round.matches);
+    });
+    
+    state.saveFixturesToFirebase();
+    showToast('✅ Match order shuffled');
+    renderTeamLeague();
+}
+
+// ===== COURT NAMES =====
+
+function updateCourtName(type, key, value) {
+    if (!state || !state.canEdit()) return;
+    
+    // Initialize court names if not exist
+    if (!state.courtNames) {
+        state.courtNames = {
+            group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
+            knockout: {
+                qf1: 'Court 1', qf2: 'Court 2', qf3: 'Court 3', qf4: 'Court 4',
+                sf1: 'Centre Court', sf2: 'Court 1',
+                thirdPlace: 'Court 1',
+                final: 'Centre Court'
+            }
+        };
+    }
+    
+    if (type === 'group') {
+        state.courtNames.group[key] = value;
+    } else if (type === 'knockout') {
+        state.courtNames.knockout[key] = value;
+    }
+    
+    state.saveCourtNamesToFirebase();
 }
 
 // ===== GROUP MANAGEMENT =====
