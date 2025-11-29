@@ -68,6 +68,8 @@ function handleGroupScore(group, team1Id, team2Id, team1Score, team2Score) {
     if (score1 !== null && score2 !== null) {
         state.updateGroupScore(group, team1Id, team2Id, score1, score2);
         showToast('✅ Score saved');
+        // Re-render to update knockout bracket preview
+        setTimeout(() => renderTeamLeague(), 100);
     }
 }
 
