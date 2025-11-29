@@ -112,6 +112,46 @@ function getTeamTierClass(combinedRating) {
 }
 
 /**
+ * 24 distinct team colours - assigned by team ID for visual variety
+ * Ordered from "strongest looking" to softer colours
+ */
+const TEAM_COLOURS = [
+    'team-color-1',   // Red
+    'team-color-2',   // Purple
+    'team-color-3',   // Blue
+    'team-color-4',   // Green
+    'team-color-5',   // Orange
+    'team-color-6',   // Teal
+    'team-color-7',   // Pink
+    'team-color-8',   // Indigo
+    'team-color-9',   // Emerald
+    'team-color-10',  // Amber
+    'team-color-11',  // Cyan
+    'team-color-12',  // Rose
+    'team-color-13',  // Violet
+    'team-color-14',  // Lime
+    'team-color-15',  // Fuchsia
+    'team-color-16',  // Sky
+    'team-color-17',  // Yellow
+    'team-color-18',  // Slate
+    'team-color-19',  // Stone
+    'team-color-20',  // Zinc
+    'team-color-21',  // Red Light
+    'team-color-22',  // Blue Light
+    'team-color-23',  // Green Light
+    'team-color-24',  // Purple Light
+];
+
+/**
+ * Get team colour class based on team ID
+ * Team 1 gets the "strongest" colour (red), Team 24 gets the last colour
+ */
+function getTeamColourClass(teamId) {
+    const index = ((teamId - 1) % 24);
+    return TEAM_COLOURS[index];
+}
+
+/**
  * Generate default team name from two player names
  */
 function generateTeamName(player1Name, player2Name) {

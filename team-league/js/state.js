@@ -525,6 +525,39 @@ class TeamLeagueState {
             team1Score !== null ? parseInt(team1Score) : null, 
             team2Score !== null ? parseInt(team2Score) : null
         );
+        
+        // Auto-update knockout bracket based on current standings
+        this.autoUpdateKnockoutBracket();
+    }
+    
+    /**
+     * Auto-populate knockout bracket based on current standings
+     * This shows potential matchups even before group stage is complete
+     */
+    autoUpdateKnockoutBracket() {
+        const groupAStandings = this.getGroupStandings('A');
+        const groupBStandings = this.getGroupStandings('B');
+        
+        if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
+            if (groupAStandings.length >= 8) {
+                const seeding = CONFIG.SINGLE_GROUP_SEEDING;
+                this.knockoutTeams.qf1 = { team1: groupAStandings[seeding.qf1.team1 - 1]?.teamId || null, team2: groupAStandings[seeding.qf1.team2 - 1]?.teamId || null };
+                this.knockoutTeams.qf2 = { team1: groupAStandings[seeding.qf2.team1 - 1]?.teamId || null, team2: groupAStandings[seeding.qf2.team2 - 1]?.teamId || null };
+                this.knockoutTeams.qf3 = { team1: groupAStandings[seeding.qf3.team1 - 1]?.teamId || null, team2: groupAStandings[seeding.qf3.team2 - 1]?.teamId || null };
+                this.knockoutTeams.qf4 = { team1: groupAStandings[seeding.qf4.team1 - 1]?.teamId || null, team2: groupAStandings[seeding.qf4.team2 - 1]?.teamId || null };
+            }
+        } else {
+            // Two groups mode
+            if (groupAStandings.length >= 4 && groupBStandings.length >= 4) {
+                this.knockoutTeams.qf1 = { team1: groupAStandings[0]?.teamId || null, team2: groupBStandings[3]?.teamId || null };
+                this.knockoutTeams.qf2 = { team1: groupAStandings[1]?.teamId || null, team2: groupBStandings[2]?.teamId || null };
+                this.knockoutTeams.qf3 = { team1: groupAStandings[2]?.teamId || null, team2: groupBStandings[1]?.teamId || null };
+                this.knockoutTeams.qf4 = { team1: groupAStandings[3]?.teamId || null, team2: groupBStandings[0]?.teamId || null };
+            }
+        }
+        
+        // Save knockout teams to Firebase
+        database.ref(`${this.getBasePath()}/knockoutTeams`).set(this.knockoutTeams);
     }
 
     clearGroupScore(group, team1Id, team2Id) {
@@ -535,6 +568,9 @@ class TeamLeagueState {
         if (this.groupMatchScores[group] && this.groupMatchScores[group][matchKey]) {
             delete this.groupMatchScores[group][matchKey];
             database.ref(`${this.getBasePath()}/groupMatchScores/${group}/${matchKey}`).remove();
+            
+            // Auto-update knockout bracket based on new standings
+            this.autoUpdateKnockoutBracket();
         }
     }
 

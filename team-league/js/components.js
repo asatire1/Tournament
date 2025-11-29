@@ -5,11 +5,12 @@
 function TeamBadge(team, size = 'full') {
     if (!team) return '<div class="text-gray-400 text-sm">TBD</div>';
     
-    const tierClass = getTeamTierClass(team.combinedRating);
+    // Use team ID-based colour for visual variety
+    const colourClass = getTeamColourClass(team.id);
     
     if (size === 'mini') {
         return `
-            <div class="team-mini-badge ${tierClass}" title="${team.name}">
+            <div class="team-mini-badge ${colourClass}" title="${team.name}">
                 ${team.name.substring(0, 2).toUpperCase()}
             </div>
         `;
@@ -17,7 +18,7 @@ function TeamBadge(team, size = 'full') {
     
     if (size === 'compact') {
         return `
-            <div class="team-badge-compact ${tierClass}">
+            <div class="team-badge-compact ${colourClass}">
                 <span class="team-name">${team.name}</span>
                 <span class="team-players">${team.player1Name} & ${team.player2Name}</span>
             </div>
@@ -26,7 +27,7 @@ function TeamBadge(team, size = 'full') {
     
     // Full size
     return `
-        <div class="team-badge ${tierClass}">
+        <div class="team-badge ${colourClass}">
             <span class="team-badge-name">${team.name}</span>
             <span class="team-badge-players">${team.player1Name} & ${team.player2Name}</span>
             <span class="team-badge-rating">${team.combinedRating.toFixed(1)} combined</span>
@@ -453,13 +454,13 @@ function StandingsTab() {
                     <tbody>
                         ${standings.map((row, idx) => {
                             const isQualified = idx < qualifyCount;
-                            const tierClass = getTeamTierClass(row.team.combinedRating);
+                            const colourClass = getTeamColourClass(row.team.id);
                             return `
                                 <tr>
                                     <td class="position ${isQualified ? 'qualified' : ''}">${idx + 1}</td>
                                     <td>
                                         <div class="team-cell">
-                                            <div class="team-mini-badge ${tierClass}">${row.team.name.substring(0, 2).toUpperCase()}</div>
+                                            <div class="team-mini-badge ${colourClass}">${row.team.name.substring(0, 2).toUpperCase()}</div>
                                             <div class="team-info">
                                                 <div class="team-name">${row.team.name}</div>
                                                 <div class="team-players-small">${row.team.player1Name} & ${row.team.player2Name}</div>
@@ -653,29 +654,33 @@ function PartnersTab() {
     return `
         <div class="partners-grid">
             ${teams.map((team, idx) => {
-                const tierClass = getTeamTierClass(team.combinedRating);
+                const colourClass = getTeamColourClass(team.id);
                 const tierName = getTeamTierName(team.combinedRating);
                 return `
                     <div class="partner-card">
-                        <div class="team-number">Team ${team.id}</div>
-                        <div class="team-name-large">${team.name}</div>
-                        <div class="players-list">
-                            <div class="player-row">
-                                <span class="player-name">${team.player1Name}</span>
-                                <span class="player-rating">${team.player1Rating.toFixed(1)}</span>
-                            </div>
-                            <div class="player-row">
-                                <span class="player-name">${team.player2Name}</span>
-                                <span class="player-rating">${team.player2Rating.toFixed(1)}</span>
-                            </div>
+                        <div class="partner-card-header ${colourClass}">
+                            <span class="team-number-badge">${team.id}</span>
+                            <span class="team-name-header">${team.name}</span>
                         </div>
-                        <div class="combined-rating">
-                            <span class="combined-label">Combined Rating</span>
-                            <span class="combined-value">${team.combinedRating.toFixed(1)}</span>
+                        <div class="partner-card-body">
+                            <div class="players-list">
+                                <div class="player-row">
+                                    <span class="player-name">${team.player1Name}</span>
+                                    <span class="player-rating">${team.player1Rating.toFixed(1)}</span>
+                                </div>
+                                <div class="player-row">
+                                    <span class="player-name">${team.player2Name}</span>
+                                    <span class="player-rating">${team.player2Rating.toFixed(1)}</span>
+                                </div>
+                            </div>
+                            <div class="combined-rating">
+                                <span class="combined-label">Combined Rating</span>
+                                <span class="combined-value">${team.combinedRating.toFixed(1)}</span>
+                            </div>
+                            ${team.group ? `
+                                <span class="group-badge group-${team.group.toLowerCase()}">Group ${team.group}</span>
+                            ` : ''}
                         </div>
-                        ${team.group ? `
-                            <span class="group-badge group-${team.group.toLowerCase()}">Group ${team.group}</span>
-                        ` : ''}
                     </div>
                 `;
             }).join('')}
@@ -778,14 +783,14 @@ function TeamsSettingsSection() {
         ` : `
             <div class="space-y-3">
                 ${state.teams.map(team => {
-                    const tierClass = getTeamTierClass(team.combinedRating);
+                    const colourClass = getTeamColourClass(team.id);
                     const isEditing = editingTeamId === team.id;
                     
                     if (isEditing) {
                         return `
                             <div class="p-4 bg-purple-50 rounded-xl border-2 border-purple-300">
                                 <div class="flex items-center gap-2 mb-3">
-                                    <div class="team-mini-badge ${tierClass}">${team.id}</div>
+                                    <div class="team-mini-badge ${colourClass}">${team.id}</div>
                                     <span class="font-semibold text-purple-700">Editing Team</span>
                                 </div>
                                 <div class="grid gap-3 md:grid-cols-2">
@@ -824,7 +829,7 @@ function TeamsSettingsSection() {
                     
                     return `
                         <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                            <div class="team-mini-badge ${tierClass}">${team.id}</div>
+                            <div class="team-mini-badge ${colourClass}">${team.id}</div>
                             <div class="flex-1 min-w-0">
                                 <div class="font-semibold text-gray-800">${team.name}</div>
                                 <div class="text-sm text-gray-500">${team.player1Name} (${team.player1Rating}) & ${team.player2Name} (${team.player2Rating})</div>
