@@ -76,12 +76,13 @@ body {
 }
 
 /* ===== TEAM TIER COLORS (based on combined rating) ===== */
-.team-tier-elite { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); }
-.team-tier-advanced { background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%); }
-.team-tier-intermediate-plus { background: linear-gradient(135deg, #CA8A04 0%, #A16207 100%); }
-.team-tier-intermediate { background: linear-gradient(135deg, #16A34A 0%, #15803D 100%); }
-.team-tier-beginner-plus { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); }
-.team-tier-beginner { background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); }
+/* Each tier has a distinct colour family for easy visual identification */
+.team-tier-elite { background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); } /* Red - top tier */
+.team-tier-advanced { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%); } /* Purple */
+.team-tier-intermediate-plus { background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); } /* Blue */
+.team-tier-intermediate { background: linear-gradient(135deg, #059669 0%, #047857 100%); } /* Green */
+.team-tier-beginner-plus { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); } /* Amber */
+.team-tier-beginner { background: linear-gradient(135deg, #64748B 0%, #475569 100%); } /* Slate grey */
 
 /* ===== TEAM BADGE (Full size) ===== */
 .team-badge {
