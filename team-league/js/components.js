@@ -1242,7 +1242,11 @@ const TeamLeagueApp = {
                                 <button onclick="setTab('settings')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'settings' ? 'tab-active' : 'tab-inactive'}">
                                     ⚙️ Settings
                                 </button>
-                            ` : ''}
+                            ` : `
+                                <button onclick="showOrganiserLoginModal()" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all bg-purple-100 text-purple-700 hover:bg-purple-200">
+                                    🔑 Organiser Login
+                                </button>
+                            `}
                         </div>
                     </div>
                 </div>
