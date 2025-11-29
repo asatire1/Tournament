@@ -17,10 +17,46 @@ function setSettingsSubTab(subTab) {
 function setFixturesViewMode(mode) {
     if (!state) return;
     state.fixturesViewMode = mode;
+    // Save preference to localStorage
+    localStorage.setItem('teamLeague_fixturesViewMode', mode);
+    renderTeamLeague();
+}
+
+function setStandingsViewMode(mode) {
+    if (!state) return;
+    state.standingsViewMode = mode;
+    // Save preference to localStorage
+    localStorage.setItem('teamLeague_standingsViewMode', mode);
     renderTeamLeague();
 }
 
 // ===== SCORE HANDLERS =====
+
+/**
+ * Auto-fill the other score based on max score
+ * When user enters a score, automatically calculate the opponent's score
+ */
+function autoFillScore(changedInputId, otherInputId, maxScore) {
+    const changedInput = document.getElementById(changedInputId);
+    const otherInput = document.getElementById(otherInputId);
+    
+    if (!changedInput || !otherInput) return;
+    
+    const enteredValue = changedInput.value;
+    
+    // Only auto-fill if:
+    // 1. A value was entered
+    // 2. The other input is empty
+    // 3. The entered value is valid (0 to maxScore)
+    if (enteredValue !== '' && otherInput.value === '') {
+        const score = parseInt(enteredValue);
+        if (!isNaN(score) && score >= 0 && score <= maxScore) {
+            // Calculate other score: maxScore - enteredScore
+            const otherScore = maxScore - score;
+            otherInput.value = otherScore;
+        }
+    }
+}
 
 function handleGroupScore(group, team1Id, team2Id, team1Score, team2Score) {
     if (!state || !state.canEdit()) return;
@@ -48,14 +84,12 @@ function clearGroupScore(group, team1Id, team2Id) {
 function handleKnockoutScore(matchId, team1Score, team2Score) {
     if (!state || !state.canEdit()) return;
     
-    const currentScore = state.getKnockoutScore(matchId);
-    
     const score1 = team1Score !== null && team1Score !== '' 
         ? parseInt(team1Score) 
-        : currentScore.team1Score;
+        : null;
     const score2 = team2Score !== null && team2Score !== '' 
         ? parseInt(team2Score) 
-        : currentScore.team2Score;
+        : null;
     
     // Only save if both scores are entered
     if (score1 !== null && score2 !== null) {

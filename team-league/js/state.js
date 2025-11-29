@@ -5,10 +5,11 @@ class TeamLeagueState {
         this.tournamentId = tournamentId;
         this.formatType = CONFIG.FORMAT_TYPE;
         
-        // UI State
+        // UI State - load preferences from localStorage
         this.currentTab = 'fixtures'; // fixtures, knockout, standings, partners, settings
         this.settingsSubTab = 'teams';
-        this.fixturesViewMode = 'side-by-side'; // side-by-side, group-a, group-b
+        this.fixturesViewMode = localStorage.getItem('teamLeague_fixturesViewMode') || 'side-by-side'; // side-by-side, group-a, group-b
+        this.standingsViewMode = localStorage.getItem('teamLeague_standingsViewMode') || 'both'; // both, group-a, group-b
         this.editingTeamId = null;
         this.isInitialized = false;
         this.isSaving = false;

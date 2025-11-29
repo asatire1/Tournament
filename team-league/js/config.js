@@ -7,7 +7,7 @@ const CONFIG = {
     // Team Settings
     DEFAULT_TEAM_COUNT: 22,
     MIN_TEAMS: 4,
-    MAX_TEAMS: 32,
+    MAX_TEAMS: 24,
     
     // Group Settings
     GROUP_MODES: {

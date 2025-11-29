@@ -367,7 +367,7 @@ function renderWizardStep2() {
             
             <!-- Quick Select -->
             <div class="flex flex-wrap justify-center gap-2 mb-6">
-                ${[6, 8, 10, 12, 16, 20].map(n => `
+                ${[6, 8, 10, 12, 16, 20, 24].map(n => `
                     <button 
                         onclick="setTeamCount(${n})" 
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${WizardState.teamCount === n ? 'bg-purple-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}"
@@ -565,8 +565,8 @@ function wizardNext() {
             return;
         }
         
-        if (teamCount > 32) {
-            showWizardError('Maximum 32 teams allowed');
+        if (teamCount > 24) {
+            showWizardError('Maximum 24 teams allowed');
             return;
         }
         
@@ -599,7 +599,7 @@ function showWizardError(message) {
 
 function adjustTeamCount(delta) {
     const newCount = WizardState.teamCount + delta;
-    if (newCount >= 4 && newCount <= 32) {
+    if (newCount >= 4 && newCount <= 24) {
         WizardState.teamCount = newCount;
         renderWizardStep();
     }
@@ -612,7 +612,7 @@ function setTeamCount(count) {
 
 function updateTeamCount(value) {
     const count = parseInt(value);
-    if (!isNaN(count) && count >= 4 && count <= 32) {
+    if (!isNaN(count) && count >= 4 && count <= 24) {
         WizardState.teamCount = count;
     }
 }

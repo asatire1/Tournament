@@ -205,11 +205,12 @@ body {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    table-layout: fixed;
 }
 
 .standings-table th {
     text-align: left;
-    padding: 12px 16px;
+    padding: 12px 8px;
     font-weight: 600;
     color: #6B7280;
     font-size: 0.75rem;
@@ -219,13 +220,23 @@ body {
     background: #F9FAFB;
 }
 
+/* Fixed column widths for alignment */
+.standings-table th:nth-child(1),
+.standings-table td:nth-child(1) { width: 36px; } /* # */
+.standings-table th:nth-child(2),
+.standings-table td:nth-child(2) { width: auto; } /* Team - takes remaining space */
+.standings-table th:nth-child(n+3),
+.standings-table td:nth-child(n+3) { width: 36px; } /* Stats columns */
+.standings-table th:last-child,
+.standings-table td:last-child { width: 42px; } /* Pts - slightly wider */
+
 .standings-table th.text-center,
 .standings-table td.text-center {
     text-align: center;
 }
 
 .standings-table td {
-    padding: 14px 16px;
+    padding: 10px 8px;
     border-bottom: 1px solid #F3F4F6;
     vertical-align: middle;
 }
@@ -241,7 +252,7 @@ body {
 .standings-table .position {
     font-weight: 700;
     color: #1F2937;
-    width: 40px;
+    text-align: center;
 }
 
 .standings-table .position.qualified {
@@ -251,24 +262,27 @@ body {
 .standings-table .team-cell {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    min-width: 0;
 }
 
 .standings-table .team-mini-badge {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     flex-shrink: 0;
 }
 
 .standings-table .team-info {
     min-width: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
 .standings-table .team-name {
@@ -277,24 +291,28 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.8125rem;
 }
 
 .standings-table .team-players-small {
-    font-size: 0.6875rem;
+    font-size: 0.625rem;
     color: #9CA3AF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .standings-table .stat {
     font-weight: 500;
     color: #4B5563;
     text-align: center;
-    min-width: 32px;
 }
 
 .standings-table .points {
     font-weight: 700;
     color: #1F2937;
     font-size: 1rem;
+    text-align: center;
 }
 
 /* ===== QUALIFICATION BADGE ===== */
@@ -765,18 +783,38 @@ select {
     }
     
     .standings-table {
-        font-size: 0.8125rem;
+        font-size: 0.75rem;
     }
     
     .standings-table th,
     .standings-table td {
-        padding: 10px 8px;
+        padding: 8px 4px;
     }
     
+    .standings-table th:nth-child(n+3),
+    .standings-table td:nth-child(n+3) { width: 28px; }
+    
     .standings-table .team-mini-badge {
-        width: 30px;
-        height: 30px;
-        font-size: 0.6875rem;
+        width: 26px;
+        height: 26px;
+        font-size: 0.625rem;
+        border-radius: 6px;
+    }
+    
+    .standings-table .team-cell {
+        gap: 6px;
+    }
+    
+    .standings-table .team-name {
+        font-size: 0.75rem;
+    }
+    
+    .standings-table .team-players-small {
+        font-size: 0.5625rem;
+    }
+    
+    .standings-table .points {
+        font-size: 0.875rem;
     }
     
     .partners-grid {

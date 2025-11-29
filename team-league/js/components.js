@@ -42,6 +42,7 @@ function GroupMatchCard(match, group, roundNum, matchNum) {
     const score = state.getGroupScore(group, match.team1Id, match.team2Id);
     const isComplete = score.team1Score !== null && score.team2Score !== null;
     const canEdit = state.canEdit();
+    const maxScore = state.groupMaxScore;
     
     let team1Winner = false;
     let team2Winner = false;
@@ -49,6 +50,9 @@ function GroupMatchCard(match, group, roundNum, matchNum) {
         team1Winner = score.team1Score > score.team2Score;
         team2Winner = score.team2Score > score.team1Score;
     }
+    
+    const inputId1 = `score-${group}-${match.team1Id}-${match.team2Id}-1`;
+    const inputId2 = `score-${group}-${match.team1Id}-${match.team2Id}-2`;
     
     return `
         <div class="team-match-card ${isComplete ? 'complete' : ''}" data-group="${group}" data-team1="${match.team1Id}" data-team2="${match.team2Id}">
@@ -72,21 +76,25 @@ function GroupMatchCard(match, group, roundNum, matchNum) {
                         <div class="score-inputs">
                             ${canEdit ? `
                                 <input type="number" 
+                                    id="${inputId1}"
                                     class="score-input" 
                                     value="${score.team1Score !== null ? score.team1Score : ''}" 
                                     placeholder="-"
                                     min="0" 
-                                    max="${state.groupMaxScore}"
-                                    onchange="handleGroupScore('${group}', ${match.team1Id}, ${match.team2Id}, this.value, this.parentElement.querySelector('input:last-of-type').value)"
+                                    max="${maxScore}"
+                                    oninput="autoFillScore('${inputId1}', '${inputId2}', ${maxScore})"
+                                    onchange="handleGroupScore('${group}', ${match.team1Id}, ${match.team2Id}, this.value, document.getElementById('${inputId2}').value)"
                                 />
                                 <span class="score-divider">:</span>
                                 <input type="number" 
+                                    id="${inputId2}"
                                     class="score-input" 
                                     value="${score.team2Score !== null ? score.team2Score : ''}" 
                                     placeholder="-"
                                     min="0" 
-                                    max="${state.groupMaxScore}"
-                                    onchange="handleGroupScore('${group}', ${match.team1Id}, ${match.team2Id}, this.parentElement.querySelector('input:first-of-type').value, this.value)"
+                                    max="${maxScore}"
+                                    oninput="autoFillScore('${inputId2}', '${inputId1}', ${maxScore})"
+                                    onchange="handleGroupScore('${group}', ${match.team1Id}, ${match.team2Id}, document.getElementById('${inputId1}').value, this.value)"
                                 />
                             ` : `
                                 <span class="score-display">${score.team1Score !== null ? score.team1Score : '-'}</span>
@@ -122,6 +130,8 @@ function KnockoutMatchCard(matchId, title, maxScore) {
     }
     
     const matchName = state.knockoutNames[matchId] || title;
+    const inputId1 = `ko-score-${matchId}-1`;
+    const inputId2 = `ko-score-${matchId}-2`;
     
     return `
         <div class="team-knockout-match" data-match="${matchId}">
@@ -145,12 +155,14 @@ function KnockoutMatchCard(matchId, title, maxScore) {
                         </div>
                         ${canEdit && team1 && team2 ? `
                             <input type="number" 
+                                id="${inputId1}"
                                 class="ko-score-input" 
                                 value="${score.team1Score !== null ? score.team1Score : ''}" 
                                 placeholder="-"
                                 min="0" 
                                 max="${maxScore}"
-                                onchange="handleKnockoutScore('${matchId}', this.value, null)"
+                                oninput="autoFillScore('${inputId1}', '${inputId2}', ${maxScore})"
+                                onchange="handleKnockoutScore('${matchId}', this.value, document.getElementById('${inputId2}').value)"
                             />
                         ` : `
                             <div class="ko-score-display">${score.team1Score !== null ? score.team1Score : '-'}</div>
@@ -168,12 +180,14 @@ function KnockoutMatchCard(matchId, title, maxScore) {
                         </div>
                         ${canEdit && team1 && team2 ? `
                             <input type="number" 
+                                id="${inputId2}"
                                 class="ko-score-input" 
                                 value="${score.team2Score !== null ? score.team2Score : ''}" 
                                 placeholder="-"
                                 min="0" 
                                 max="${maxScore}"
-                                onchange="handleKnockoutScore('${matchId}', null, this.value)"
+                                oninput="autoFillScore('${inputId2}', '${inputId1}', ${maxScore})"
+                                onchange="handleKnockoutScore('${matchId}', document.getElementById('${inputId1}').value, this.value)"
                             />
                         ` : `
                             <div class="ko-score-display">${score.team2Score !== null ? score.team2Score : '-'}</div>
@@ -486,8 +500,51 @@ function StandingsTab() {
         `;
     }
     
+    // Two groups - show view toggle
+    const viewMode = state.standingsViewMode || 'both';
+    
     return `
-        <div class="grid gap-6 lg:grid-cols-2">
+        <!-- View Mode Toggle -->
+        <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
+            <h2 class="text-xl font-bold text-gray-800">Standings</h2>
+            <div class="flex bg-gray-100 rounded-lg p-1">
+                <button onclick="setStandingsViewMode('both')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'both' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+                    Both Groups
+                </button>
+                <button onclick="setStandingsViewMode('group-a')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-a' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+                    Group A
+                </button>
+                <button onclick="setStandingsViewMode('group-b')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-b' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+                    Group B
+                </button>
+            </div>
+        </div>
+        
+        ${viewMode === 'both' ? `
+            <div class="grid gap-6 lg:grid-cols-2">
+                <div class="group-card">
+                    <div class="group-header group-header-a">
+                        <span>📊</span>
+                        <span>Group A Standings</span>
+                    </div>
+                    <div class="p-4">
+                        ${renderStandingsTable(groupAStandings, 'A')}
+                    </div>
+                </div>
+                
+                <div class="group-card">
+                    <div class="group-header group-header-b">
+                        <span>📊</span>
+                        <span>Group B Standings</span>
+                    </div>
+                    <div class="p-4">
+                        ${renderStandingsTable(groupBStandings, 'B')}
+                    </div>
+                </div>
+            </div>
+        ` : ''}
+        
+        ${viewMode === 'group-a' ? `
             <div class="group-card">
                 <div class="group-header group-header-a">
                     <span>📊</span>
@@ -497,7 +554,9 @@ function StandingsTab() {
                     ${renderStandingsTable(groupAStandings, 'A')}
                 </div>
             </div>
-            
+        ` : ''}
+        
+        ${viewMode === 'group-b' ? `
             <div class="group-card">
                 <div class="group-header group-header-b">
                     <span>📊</span>
@@ -507,7 +566,7 @@ function StandingsTab() {
                     ${renderStandingsTable(groupBStandings, 'B')}
                 </div>
             </div>
-        </div>
+        ` : ''}
     `;
 }
 
