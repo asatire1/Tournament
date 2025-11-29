@@ -245,8 +245,8 @@ function FixturesTab() {
     const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
     const fixturesA = state.groupAFixtures || [];
     const fixturesB = state.groupBFixtures || [];
-    const teamsA = state.getGroupTeams('A');
-    const teamsB = state.getGroupTeams('B');
+    const teamsA = state.getTeamsInGroup('A');
+    const teamsB = state.getTeamsInGroup('B');
     
     // View toggle state (stored in state object)
     const viewMode = state.fixturesViewMode || 'side-by-side';
