@@ -35,6 +35,7 @@ function setStandingsViewMode(mode) {
 /**
  * Auto-fill the other score based on max score
  * When user enters a score, automatically calculate the opponent's score
+ * Also enforces max score limit
  */
 function autoFillScore(changedInputId, otherInputId, maxScore) {
     const changedInput = document.getElementById(changedInputId);
@@ -42,19 +43,29 @@ function autoFillScore(changedInputId, otherInputId, maxScore) {
     
     if (!changedInput || !otherInput) return;
     
-    const enteredValue = changedInput.value;
+    let enteredValue = changedInput.value;
     
-    // Only auto-fill if:
-    // 1. A value was entered
-    // 2. The other input is empty
-    // 3. The entered value is valid (0 to maxScore)
-    if (enteredValue !== '' && otherInput.value === '') {
-        const score = parseInt(enteredValue);
-        if (!isNaN(score) && score >= 0 && score <= maxScore) {
-            // Calculate other score: maxScore - enteredScore
-            const otherScore = maxScore - score;
-            otherInput.value = otherScore;
+    // If empty, clear both and return
+    if (enteredValue === '') {
+        return;
+    }
+    
+    let score = parseInt(enteredValue);
+    
+    // Enforce max score limit
+    if (!isNaN(score)) {
+        if (score > maxScore) {
+            score = maxScore;
+            changedInput.value = maxScore;
         }
+        if (score < 0) {
+            score = 0;
+            changedInput.value = 0;
+        }
+        
+        // Always calculate and set the other score
+        const otherScore = maxScore - score;
+        otherInput.value = otherScore;
     }
 }
 
