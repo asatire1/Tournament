@@ -1,13 +1,14 @@
 // ===== FIREBASE CONFIGURATION =====
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCLHcMdXwrSvLRwcgOqO0Devk3F29qQhJM",
-    authDomain: "stretford-padel.firebaseapp.com",
-    databaseURL: "https://stretford-padel-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "stretford-padel",
-    storageBucket: "stretford-padel.firebasestorage.app",
-    messagingSenderId: "175838008731",
-    appId: "1:175838008731:web:4499871a8d7fcbf5e26554"
+    apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+    authDomain: "stretford-padel-tournament.firebaseapp.com",
+    databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "stretford-padel-tournament",
+    storageBucket: "stretford-padel-tournament.firebasestorage.app",
+    messagingSenderId: "596263602058",
+    appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73",
+    measurementId: "G-TGJ6CZ4DZ0"
 };
 
 // Initialize Firebase
