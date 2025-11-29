@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team League - Stretford Padel</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./css/styles.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
+    <!-- Main App Container -->
+    <div id="app"></div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+    
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- JavaScript Files - Load in correct order -->
+    <script src="./js/config.js"></script>
+    <script src="./js/firebase-config.js"></script>
+    <script src="./js/router.js"></script>
+    <script src="./js/state.js"></script>
+    <script src="./js/components.js"></script>
+    <script src="./js/handlers.js"></script>
+    <script src="./js/landing.js"></script>
+    <script src="./js/main.js"></script>
+</body>
+</html>
