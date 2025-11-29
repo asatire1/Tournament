@@ -110,6 +110,14 @@
             border-color: rgba(139, 92, 246, 0.3);
         }
         
+        .format-card-pink:hover {
+            border-color: rgba(236, 72, 153, 0.3);
+        }
+        
+        .format-card-pink:hover::before {
+            background: linear-gradient(135deg, #8B5CF6, #EC4899);
+        }
+        
         /* Tournament Cards */
         .tournament-card {
             background: white;
@@ -204,8 +212,8 @@
                     Choose your format and get started in seconds.
                 </p>
                 
-                <!-- Format Selection Cards -->
-                <div class="animate-fade-in-up animate-delay-400 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <!-- Format Selection Cards - 3 columns -->
+                <div class="animate-fade-in-up animate-delay-400 grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                     
                     <!-- 24-Player Tournament Card -->
                     <a href="./tournament/" class="format-card format-card-blue group text-left cursor-pointer block">
@@ -214,13 +222,8 @@
                                 👥
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-xl font-bold text-gray-900 mb-1">24-Player Tournament</h3>
-                                <p class="text-sm text-gray-500">League format with knockout</p>
-                            </div>
-                            <div class="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-2 transition-all">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">24-Player Tournament</h3>
+                                <p class="text-sm text-gray-500">League + knockout</p>
                             </div>
                         </div>
                         <div class="space-y-2 text-sm text-gray-600">
@@ -230,16 +233,51 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                <span>13 rounds of fixtures + knockout stage</span>
+                                <span>13 rounds + knockout stage</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                <span>Multi-device real-time sync</span>
+                                <span>Real-time sync</span>
                             </div>
                         </div>
                         <div class="mt-4 pt-4 border-t border-gray-100">
                             <span class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 group-hover:gap-3 transition-all">
                                 Start Tournament
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                            </span>
+                        </div>
+                    </a>
+                    
+                    <!-- Team League Card - NEW -->
+                    <a href="./team-league/" class="format-card format-card-pink group text-left cursor-pointer block">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-2xl shadow-lg shadow-pink-500/30 group-hover:scale-110 transition-transform">
+                                🏆
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Team League</h3>
+                                <p class="text-sm text-gray-500">Fixed pairs format</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-sm text-gray-600">
+                            <div class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                                <span>Fixed partner teams</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                                <span>Groups + knockout</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                                <span>Any team count</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <span class="inline-flex items-center gap-2 text-sm font-semibold text-pink-600 group-hover:gap-3 transition-all">
+                                Start Team League
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                 </svg>
@@ -254,27 +292,22 @@
                                 🔄
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-xl font-bold text-gray-900 mb-1">Americano Format</h3>
-                                <p class="text-sm text-gray-500">Rotating partners system</p>
-                            </div>
-                            <div class="text-gray-300 group-hover:text-purple-500 group-hover:translate-x-2 transition-all">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Americano Format</h3>
+                                <p class="text-sm text-gray-500">Rotating partners</p>
                             </div>
                         </div>
                         <div class="space-y-2 text-sm text-gray-600">
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                <span>5-9 players, flexible setup</span>
+                                <span>5-9 players, flexible</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                <span>Everyone plays with everyone</span>
+                                <span>Everyone plays together</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                                <span>Perfect for casual sessions</span>
+                                <span>Perfect for casuals</span>
                             </div>
                         </div>
                         <div class="mt-4 pt-4 border-t border-gray-100">
@@ -320,8 +353,8 @@
             </button>
         </div>
         
-        <!-- Tournament Lists -->
-        <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Tournament Lists - 3 columns -->
+        <div class="grid lg:grid-cols-3 gap-8">
             
             <!-- 24-Player Tournaments -->
             <div>
@@ -332,6 +365,28 @@
                     <h3 class="font-semibold text-gray-800">24-Player Tournaments</h3>
                 </div>
                 <div id="tournament-list-24" class="space-y-3">
+                    <!-- Loading skeleton -->
+                    <div class="tournament-card">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl skeleton"></div>
+                            <div class="flex-1">
+                                <div class="h-5 w-32 skeleton rounded mb-2"></div>
+                                <div class="h-4 w-24 skeleton rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Team League Tournaments - NEW -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center">
+                        <span class="text-sm">🏆</span>
+                    </div>
+                    <h3 class="font-semibold text-gray-800">Team Leagues</h3>
+                </div>
+                <div id="tournament-list-team" class="space-y-3">
                     <!-- Loading skeleton -->
                     <div class="tournament-card">
                         <div class="flex items-center gap-4">
@@ -383,7 +438,7 @@
                         1️⃣
                     </div>
                     <h3 class="font-semibold text-gray-900 mb-2">Choose Format</h3>
-                    <p class="text-gray-600 text-sm">24-player league with knockout, or Americano rotating partners. Pick what suits your group.</p>
+                    <p class="text-gray-600 text-sm">24-player league, Team League with fixed pairs, or Americano rotating partners.</p>
                 </div>
                 
                 <div class="text-center group">
@@ -509,6 +564,34 @@
                 render24PlayerTournaments([]);
             }
             
+            // Load Team League Tournaments - NEW
+            try {
+                const snapshot = await database.ref('team-tournaments')
+                    .orderByChild('meta/updatedAt')
+                    .limitToLast(5)
+                    .once('value');
+                
+                const tournaments = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data && data.meta) {
+                        tournaments.push({
+                            id: child.key,
+                            name: data.meta.name || 'Unnamed League',
+                            updatedAt: data.meta.updatedAt || data.meta.createdAt,
+                            teamCount: data.teams ? data.teams.length : 0,
+                            type: 'team-league'
+                        });
+                    }
+                });
+                
+                tournaments.reverse(); // Newest first
+                renderTeamLeagueTournaments(tournaments);
+            } catch (error) {
+                console.error('Error loading team league tournaments:', error);
+                renderTeamLeagueTournaments([]);
+            }
+            
             // Load Americano Tournaments
             try {
                 const snapshot = await database.ref('americano')
@@ -567,6 +650,47 @@
                             </div>
                         </div>
                         <div class="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+        }
+        
+        // NEW: Render Team League Tournaments
+        function renderTeamLeagueTournaments(tournaments) {
+            const container = document.getElementById('tournament-list-team');
+            
+            if (tournaments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="text-4xl mb-3 opacity-50">🏆</div>
+                        <p class="text-gray-500 text-sm">No team leagues yet</p>
+                        <a href="./team-league/" class="text-pink-600 text-sm font-medium hover:underline">Create your first →</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = tournaments.map(t => `
+                <a href="./team-league/#/t/${t.id}" class="tournament-card block group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                            ${t.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate group-hover:text-pink-600 transition-colors">${t.name}</h4>
+                            <div class="flex items-center gap-2 text-sm text-gray-500">
+                                <span class="font-mono font-medium text-pink-600">${t.id.toUpperCase()}</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${t.teamCount} teams</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${formatTimeAgo(t.updatedAt)}</span>
+                            </div>
+                        </div>
+                        <div class="text-gray-300 group-hover:text-pink-500 group-hover:translate-x-1 transition-all">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
@@ -684,6 +808,17 @@
                 }
             } catch (e) {
                 console.error('Error checking 24-player:', e);
+            }
+            
+            // Check if it's a Team League tournament - NEW
+            try {
+                const snapshotTeam = await database.ref(`team-tournaments/${code}/meta`).once('value');
+                if (snapshotTeam.exists()) {
+                    window.location.href = `./team-league/#/t/${code}`;
+                    return;
+                }
+            } catch (e) {
+                console.error('Error checking team-league:', e);
             }
             
             // Check if it's an Americano tournament
