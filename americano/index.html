@@ -244,12 +244,144 @@
             border: 1px solid #F59E0B;
         }
         
-        /* ===== LEADERBOARD ===== */
-        .leaderboard-row {
-            transition: all 0.3s ease;
+        /* ===== LEADERBOARD (Team League Style) ===== */
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
-        .leaderboard-row:hover {
+        
+        .standings-table th {
+            text-align: left;
+            padding: 12px 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #E5E7EB;
+        }
+        
+        .standings-table th.stat {
+            text-align: center;
+            width: 50px;
+        }
+        
+        .standings-table th.pts {
+            text-align: center;
+            width: 60px;
+        }
+        
+        .standings-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #F3F4F6;
+            vertical-align: middle;
+        }
+        
+        .standings-table td.position {
+            font-weight: 700;
+            color: #9CA3AF;
+            text-align: center;
+            width: 36px;
+        }
+        
+        .standings-table td.position.top-3 {
+            color: #3B82F6;
+        }
+        
+        .standings-table td.stat {
+            text-align: center;
+            font-weight: 500;
+            color: #6B7280;
+        }
+        
+        .standings-table td.pts {
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: #3B82F6;
+        }
+        
+        .standings-table tr:hover {
             background: #F9FAFB;
+        }
+        
+        .standings-table .team-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        
+        .standings-table .player-name {
+            font-weight: 600;
+            color: #1F2937;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .player-mini-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Player colours by position */
+        .player-color-1 { background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); }
+        .player-color-2 { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%); }
+        .player-color-3 { background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); }
+        .player-color-4 { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+        .player-color-5 { background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%); }
+        .player-color-6 { background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%); }
+        .player-color-7 { background: linear-gradient(135deg, #DB2777 0%, #BE185D 100%); }
+        .player-color-8 { background: linear-gradient(135deg, #4F46E5 0%, #3730A3 100%); }
+        .player-color-9 { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+        
+        /* Medal badges */
+        .medal-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        .medal-gold { background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); }
+        .medal-silver { background: linear-gradient(135deg, #F3F4F6 0%, #D1D5DB 100%); }
+        .medal-bronze { background: linear-gradient(135deg, #FED7AA 0%, #FDBA74 100%); }
+        
+        @media (max-width: 640px) {
+            .standings-table th, .standings-table td {
+                padding: 8px 4px;
+                font-size: 0.75rem;
+            }
+            .standings-table th.stat, .standings-table td.stat {
+                width: 36px;
+            }
+            .standings-table td.pts {
+                font-size: 1rem;
+            }
+            .player-mini-badge {
+                width: 32px;
+                height: 32px;
+                font-size: 0.625rem;
+            }
+            .standings-table .player-name {
+                font-size: 0.75rem;
+            }
         }
         
         /* ===== ROUND BUTTONS ===== */
@@ -948,30 +1080,58 @@
         // ===== RESULTS TAB =====
         function renderResultsTab() {
             const standings = state.calculateStandings();
+            const totalRounds = (FIXTURES[state.playerCount] || []).length;
+            
             return `
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
-                        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2"><span>🏆</span> Leaderboard</h2>
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2"><span>🏆</span> Leaderboard</h2>
+                            <span class="text-sm text-gray-500">${state.countCompletedRounds()}/${totalRounds} rounds complete</span>
+                        </div>
                     </div>
-                    <div class="divide-y divide-gray-100">
-                        ${standings.map((player, rank) => {
-                            let medal = '', bgClass = '';
-                            if (rank === 0) { medal = '🥇'; bgClass = 'bg-yellow-50'; }
-                            else if (rank === 1) { medal = '🥈'; bgClass = 'bg-gray-50'; }
-                            else if (rank === 2) { medal = '🥉'; bgClass = 'bg-orange-50'; }
-                            return `
-                                <div class="leaderboard-row flex items-center justify-between px-6 py-4 ${bgClass}">
-                                    <div class="flex items-center gap-4">
-                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold">${medal || (rank + 1)}</div>
-                                        <div>
-                                            <div class="font-semibold text-gray-900">${player.name}</div>
-                                            <div class="text-xs text-gray-500">${player.gamesPlayed} games played</div>
-                                        </div>
-                                    </div>
-                                    <div class="text-2xl font-bold text-blue-600">${player.score}</div>
-                                </div>
-                            `;
-                        }).join('')}
+                    <div class="overflow-x-auto">
+                        <table class="standings-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 36px; text-align: center;">#</th>
+                                    <th>Player</th>
+                                    <th class="stat">P</th>
+                                    <th class="pts">Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${standings.map((player, rank) => {
+                                    const isTop3 = rank < 3;
+                                    const playerColorClass = `player-color-${player.index}`;
+                                    
+                                    let positionContent;
+                                    if (rank === 0) {
+                                        positionContent = `<div class="medal-badge medal-gold">🥇</div>`;
+                                    } else if (rank === 1) {
+                                        positionContent = `<div class="medal-badge medal-silver">🥈</div>`;
+                                    } else if (rank === 2) {
+                                        positionContent = `<div class="medal-badge medal-bronze">🥉</div>`;
+                                    } else {
+                                        positionContent = `<div class="player-mini-badge ${playerColorClass}">${player.index}</div>`;
+                                    }
+                                    
+                                    return `
+                                        <tr>
+                                            <td class="position ${isTop3 ? 'top-3' : ''}">${rank + 1}</td>
+                                            <td>
+                                                <div class="team-cell">
+                                                    ${positionContent}
+                                                    <span class="player-name">${player.name}</span>
+                                                </div>
+                                            </td>
+                                            <td class="stat">${player.gamesPlayed}</td>
+                                            <td class="pts">${player.score}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             `;
