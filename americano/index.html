@@ -693,22 +693,53 @@
             }
             
             calculateStandings() {
-                const playerScores = Array(this.playerCount).fill(0);
-                const gamesPlayed = Array(this.playerCount).fill(0);
+                const playerStats = Array(this.playerCount).fill(null).map(() => ({
+                    score: 0,
+                    gamesPlayed: 0,
+                    wins: 0,
+                    losses: 0,
+                    pointsFor: 0,
+                    pointsAgainst: 0
+                }));
+                
                 const fixtures = FIXTURES[this.playerCount] || [];
                 fixtures.forEach((fixture, roundIndex) => {
                     const score = this.scores[roundIndex];
                     if (score && score.team1 !== null && score.team2 !== null) {
-                        fixture.teams[0].forEach(playerNum => { playerScores[playerNum - 1] += score.team1; gamesPlayed[playerNum - 1]++; });
-                        fixture.teams[1].forEach(playerNum => { playerScores[playerNum - 1] += score.team2; gamesPlayed[playerNum - 1]++; });
+                        // Team 1 players
+                        fixture.teams[0].forEach(playerNum => {
+                            const idx = playerNum - 1;
+                            playerStats[idx].score += score.team1;
+                            playerStats[idx].gamesPlayed++;
+                            playerStats[idx].pointsFor += score.team1;
+                            playerStats[idx].pointsAgainst += score.team2;
+                            if (score.team1 > score.team2) playerStats[idx].wins++;
+                            else if (score.team1 < score.team2) playerStats[idx].losses++;
+                        });
+                        // Team 2 players
+                        fixture.teams[1].forEach(playerNum => {
+                            const idx = playerNum - 1;
+                            playerStats[idx].score += score.team2;
+                            playerStats[idx].gamesPlayed++;
+                            playerStats[idx].pointsFor += score.team2;
+                            playerStats[idx].pointsAgainst += score.team1;
+                            if (score.team2 > score.team1) playerStats[idx].wins++;
+                            else if (score.team2 < score.team1) playerStats[idx].losses++;
+                        });
                     }
                 });
+                
                 return this.playerNames.map((name, index) => ({
                     name: name || `Player ${index + 1}`,
                     index: index + 1,
-                    score: playerScores[index],
-                    gamesPlayed: gamesPlayed[index]
-                })).sort((a, b) => b.score - a.score);
+                    score: playerStats[index].score,
+                    gamesPlayed: playerStats[index].gamesPlayed,
+                    wins: playerStats[index].wins,
+                    losses: playerStats[index].losses,
+                    pointsFor: playerStats[index].pointsFor,
+                    pointsAgainst: playerStats[index].pointsAgainst,
+                    pointsDiff: playerStats[index].pointsFor - playerStats[index].pointsAgainst
+                })).sort((a, b) => b.score - a.score || b.pointsDiff - a.pointsDiff);
             }
             
             countCompletedRounds() {
@@ -1071,6 +1102,9 @@
                                     <th class="text-center">#</th>
                                     <th>Player</th>
                                     <th class="text-center">P</th>
+                                    <th class="text-center">W</th>
+                                    <th class="text-center">L</th>
+                                    <th class="text-center">PD</th>
                                     <th class="text-center">Pts</th>
                                 </tr>
                             </thead>
@@ -1079,6 +1113,7 @@
                                     const isTop3 = rank < 3;
                                     const colorIndex = ((player.index - 1) % 9) + 1;
                                     const playerColorClass = 'player-color-' + colorIndex;
+                                    const pdDisplay = player.pointsDiff > 0 ? '+' + player.pointsDiff : player.pointsDiff;
                                     
                                     return '<tr>' +
                                         '<td class="position ' + (isTop3 ? 'qualified' : '') + '">' + (rank + 1) + '</td>' +
@@ -1091,6 +1126,9 @@
                                             '</div>' +
                                         '</td>' +
                                         '<td class="stat">' + player.gamesPlayed + '</td>' +
+                                        '<td class="stat">' + player.wins + '</td>' +
+                                        '<td class="stat">' + player.losses + '</td>' +
+                                        '<td class="stat">' + pdDisplay + '</td>' +
                                         '<td class="points">' + player.score + '</td>' +
                                     '</tr>';
                                 }).join('')}
