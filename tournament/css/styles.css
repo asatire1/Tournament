@@ -431,6 +431,102 @@ select {
     background: #E5E7EB;
 }
 
+/* ===== STANDINGS TABLE (Team League Style) ===== */
+.standings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.standings-table th {
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #E5E7EB;
+    text-align: left;
+}
+
+.standings-table th.text-center {
+    text-align: center;
+}
+
+.standings-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #F3F4F6;
+    vertical-align: middle;
+}
+
+.standings-table td.position {
+    font-weight: 700;
+    color: #9CA3AF;
+    text-align: center;
+    width: 48px;
+}
+
+.standings-table td.position.qualified {
+    color: #3B82F6;
+}
+
+.standings-table td.stat {
+    text-align: center;
+    font-weight: 500;
+    color: #6B7280;
+}
+
+.standings-table td.points {
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: #3B82F6;
+}
+
+.standings-table tr:hover {
+    background: #F9FAFB;
+}
+
+.standings-table .team-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.standings-table .team-info {
+    min-width: 0;
+}
+
+.standings-table .team-name {
+    font-weight: 600;
+    color: #1F2937;
+    font-size: 0.9375rem;
+}
+
+.team-mini-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Player colours */
+.player-color-1 { background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); }
+.player-color-2 { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%); }
+.player-color-3 { background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); }
+.player-color-4 { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+.player-color-5 { background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%); }
+.player-color-6 { background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%); }
+.player-color-7 { background: linear-gradient(135deg, #DB2777 0%, #BE185D 100%); }
+.player-color-8 { background: linear-gradient(135deg, #4F46E5 0%, #3730A3 100%); }
+.player-color-9 { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); }
+
 /* ===== SCROLLBAR ===== */
 .overflow-x-auto::-webkit-scrollbar {
     height: 6px;
@@ -501,6 +597,22 @@ select {
 
     .match-row {
         gap: 5px;
+    }
+
+    .standings-table th, .standings-table td {
+        padding: 10px 8px;
+        font-size: 0.75rem;
+    }
+    .standings-table td.points {
+        font-size: 1rem;
+    }
+    .team-mini-badge {
+        width: 32px;
+        height: 32px;
+        font-size: 0.625rem;
+    }
+    .standings-table .team-name {
+        font-size: 0.8125rem;
     }
 }
 
