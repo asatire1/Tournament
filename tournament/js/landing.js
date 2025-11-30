@@ -73,7 +73,7 @@ function renderLandingPage() {
                         </div>
                         
                         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6" style="letter-spacing: -2px; line-height: 1.1;">
-                            24-Player<br>Tournament
+                            Mixed<br>Tournament
                         </h1>
                         
                         <p class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-12" style="line-height: 1.6;">
