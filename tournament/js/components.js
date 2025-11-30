@@ -192,84 +192,49 @@ function TournamentFixturesTab() {
 // ===== RESULTS TAB =====
 function ResultsTab() {
     const standings = state.calculateStandings();
-    const completedMatches = state.countCompletedMatches();
-    const totalMatches = CONFIG.TOTAL_ROUNDS * CONFIG.MATCHES_PER_ROUND;
-    
     return `
         <div class="space-y-6">
-            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                        <h3 class="font-semibold text-blue-900 mb-1">🏆 Tournament Standings</h3>
-                        <div class="text-sm text-blue-800"><strong>Win:</strong> 3 points | <strong>Draw:</strong> 1 point | <strong>Loss:</strong> 0 points</div>
-                    </div>
-                    <div class="text-sm text-blue-700 font-medium">${completedMatches}/${totalMatches} matches complete</div>
-                </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 class="font-semibold text-blue-900 mb-2">Tournament Point System</h3>
+                <div class="text-sm text-blue-800"><strong>Win:</strong> 3 points | <strong>Draw:</strong> 1 point | <strong>Loss:</strong> 0 points</div>
             </div>
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="standings-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 40px; text-align: center;">#</th>
-                                <th>Player</th>
-                                <th class="stat">Pts</th>
-                                <th class="stat">M</th>
-                                <th class="stat">W</th>
-                                <th class="stat">D</th>
-                                <th class="stat">L</th>
-                                <th class="stat hide-mobile">Win%</th>
-                                <th class="stat hide-mobile">+/-</th>
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 border-b-2">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Rank</th>
+                            <th class="px-4 py-3 text-left">Player</th>
+                            <th class="px-4 py-3 text-center">Pts</th>
+                            <th class="px-4 py-3 text-center">M</th>
+                            <th class="px-4 py-3 text-center">W</th>
+                            <th class="px-4 py-3 text-center">D</th>
+                            <th class="px-4 py-3 text-center">L</th>
+                            <th class="px-4 py-3 text-center">Win%</th>
+                            <th class="px-4 py-3 text-center">For</th>
+                            <th class="px-4 py-3 text-center">Ag</th>
+                            <th class="px-4 py-3 text-center">Diff</th>
+                            <th class="px-4 py-3 text-center">Partners</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${standings.map((player, idx) => `
+                            <tr class="border-b hover:bg-gray-50 ${idx < 3 ? 'bg-yellow-50' : ''}">
+                                <td class="px-4 py-3 font-semibold">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}</td>
+                                <td class="px-4 py-3">${PlayerBadge(player.playerId, true)}</td>
+                                <td class="px-4 py-3 text-center font-bold">${player.tournamentPoints}</td>
+                                <td class="px-4 py-3 text-center">${player.matches}</td>
+                                <td class="px-4 py-3 text-center text-green-600 font-medium">${player.wins}</td>
+                                <td class="px-4 py-3 text-center text-gray-600">${player.draws}</td>
+                                <td class="px-4 py-3 text-center text-red-600 font-medium">${player.losses}</td>
+                                <td class="px-4 py-3 text-center">${player.winRate}%</td>
+                                <td class="px-4 py-3 text-center">${player.pointsFor}</td>
+                                <td class="px-4 py-3 text-center">${player.pointsAgainst}</td>
+                                <td class="px-4 py-3 text-center ${player.pointsDiff > 0 ? 'text-green-600 font-medium' : player.pointsDiff < 0 ? 'text-red-600 font-medium' : ''}">${player.pointsDiff > 0 ? '+' : ''}${player.pointsDiff}</td>
+                                <td class="px-4 py-3 text-center">${player.uniquePartners}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            ${standings.map((player, idx) => {
-                                const isTop3 = idx < 3;
-                                const isTop16 = idx < 16;
-                                const playerColorClass = `player-color-${((player.playerId - 1) % 24) + 1}`;
-                                
-                                let positionContent;
-                                if (idx === 0) {
-                                    positionContent = `<div class="medal-badge medal-gold">🥇</div>`;
-                                } else if (idx === 1) {
-                                    positionContent = `<div class="medal-badge medal-silver">🥈</div>`;
-                                } else if (idx === 2) {
-                                    positionContent = `<div class="medal-badge medal-bronze">🥉</div>`;
-                                } else {
-                                    positionContent = `<div class="player-mini-badge ${playerColorClass}">${player.playerId}</div>`;
-                                }
-                                
-                                return `
-                                    <tr class="${isTop16 ? 'qualified-row' : ''}">
-                                        <td class="position ${isTop3 ? 'top-3' : ''}">${idx + 1}</td>
-                                        <td>
-                                            <div class="team-cell">
-                                                ${positionContent}
-                                                <div class="player-info">
-                                                    <span class="player-name">${state.playerNames[player.playerId - 1]}</span>
-                                                    <span class="player-rating">${state.skillRatings[player.playerId]?.toFixed(1) || '0.0'}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="stat pts">${player.tournamentPoints}</td>
-                                        <td class="stat">${player.matches}</td>
-                                        <td class="stat win">${player.wins}</td>
-                                        <td class="stat">${player.draws}</td>
-                                        <td class="stat loss">${player.losses}</td>
-                                        <td class="stat hide-mobile">${player.winRate}%</td>
-                                        <td class="stat hide-mobile ${player.pointsDiff > 0 ? 'positive' : player.pointsDiff < 0 ? 'negative' : ''}">${player.pointsDiff > 0 ? '+' : ''}${player.pointsDiff}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="px-4 py-3 bg-gray-50 border-t border-gray-100">
-                    <div class="flex items-center gap-2 text-xs text-gray-500">
-                        <span class="inline-block w-3 h-3 bg-blue-50 border border-blue-200 rounded"></span>
-                        <span>Top 16 qualify for knockout</span>
-                    </div>
-                </div>
+                        `).join('')}
+                    </tbody>
+                </table>
             </div>
         </div>
     `;
