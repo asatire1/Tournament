@@ -194,47 +194,53 @@ function ResultsTab() {
     const standings = state.calculateStandings();
     return `
         <div class="space-y-6">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 class="font-semibold text-blue-900 mb-2">Tournament Point System</h3>
-                <div class="text-sm text-blue-800"><strong>Win:</strong> 3 points | <strong>Draw:</strong> 1 point | <strong>Loss:</strong> 0 points</div>
-            </div>
-            <div class="bg-white rounded-lg shadow overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-100 border-b-2">
-                        <tr>
-                            <th class="px-4 py-3 text-left">Rank</th>
-                            <th class="px-4 py-3 text-left">Player</th>
-                            <th class="px-4 py-3 text-center">Pts</th>
-                            <th class="px-4 py-3 text-center">M</th>
-                            <th class="px-4 py-3 text-center">W</th>
-                            <th class="px-4 py-3 text-center">D</th>
-                            <th class="px-4 py-3 text-center">L</th>
-                            <th class="px-4 py-3 text-center">Win%</th>
-                            <th class="px-4 py-3 text-center">For</th>
-                            <th class="px-4 py-3 text-center">Ag</th>
-                            <th class="px-4 py-3 text-center">Diff</th>
-                            <th class="px-4 py-3 text-center">Partners</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${standings.map((player, idx) => `
-                            <tr class="border-b hover:bg-gray-50 ${idx < 3 ? 'bg-yellow-50' : ''}">
-                                <td class="px-4 py-3 font-semibold">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}</td>
-                                <td class="px-4 py-3">${PlayerBadge(player.playerId, true)}</td>
-                                <td class="px-4 py-3 text-center font-bold">${player.tournamentPoints}</td>
-                                <td class="px-4 py-3 text-center">${player.matches}</td>
-                                <td class="px-4 py-3 text-center text-green-600 font-medium">${player.wins}</td>
-                                <td class="px-4 py-3 text-center text-gray-600">${player.draws}</td>
-                                <td class="px-4 py-3 text-center text-red-600 font-medium">${player.losses}</td>
-                                <td class="px-4 py-3 text-center">${player.winRate}%</td>
-                                <td class="px-4 py-3 text-center">${player.pointsFor}</td>
-                                <td class="px-4 py-3 text-center">${player.pointsAgainst}</td>
-                                <td class="px-4 py-3 text-center ${player.pointsDiff > 0 ? 'text-green-600 font-medium' : player.pointsDiff < 0 ? 'text-red-600 font-medium' : ''}">${player.pointsDiff > 0 ? '+' : ''}${player.pointsDiff}</td>
-                                <td class="px-4 py-3 text-center">${player.uniquePartners}</td>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-amber-50">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2"><span>🏆</span> Leaderboard</h2>
+                        <div class="text-sm text-gray-500">Win: 3pts | Draw: 1pt | Loss: 0pts</div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="standings-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center">#</th>
+                                <th>Player</th>
+                                <th class="text-center">P</th>
+                                <th class="text-center">W</th>
+                                <th class="text-center">L</th>
+                                <th class="text-center">PD</th>
+                                <th class="text-center">Pts</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            ${standings.map((player, idx) => {
+                                const isTop3 = idx < 3;
+                                const colorIndex = ((player.playerId - 1) % 9) + 1;
+                                const playerColorClass = 'player-color-' + colorIndex;
+                                const pdDisplay = player.pointsDiff > 0 ? '+' + player.pointsDiff : player.pointsDiff;
+                                
+                                return '<tr>' +
+                                    '<td class="position ' + (isTop3 ? 'qualified' : '') + '">' + (idx + 1) + '</td>' +
+                                    '<td>' +
+                                        '<div class="team-cell">' +
+                                            '<div class="team-mini-badge ' + playerColorClass + '">' + player.playerId + '</div>' +
+                                            '<div class="team-info">' +
+                                                '<div class="team-name">' + state.playerNames[player.playerId - 1] + '</div>' +
+                                            '</div>' +
+                                        '</div>' +
+                                    '</td>' +
+                                    '<td class="stat">' + player.matches + '</td>' +
+                                    '<td class="stat">' + player.wins + '</td>' +
+                                    '<td class="stat">' + player.losses + '</td>' +
+                                    '<td class="stat">' + pdDisplay + '</td>' +
+                                    '<td class="points">' + player.tournamentPoints + '</td>' +
+                                '</tr>';
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     `;
