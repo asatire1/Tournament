@@ -601,7 +601,7 @@ function renderPlayersSettings(canEdit) {
  * Render courts settings with ability to change court count
  */
 function renderCourtsSettings(canEdit) {
-    const maxCourts = Math.min(CONFIG.MAX_COURTS, Math.floor(state.playerCount / 4));
+    const maxCourts = getMaxCourts(state.playerCount);
     const totalTimeslots = state.getTotalTimeslots();
     
     return `

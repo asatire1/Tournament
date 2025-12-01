@@ -69,8 +69,8 @@ function goToWizardStep2() {
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg appearance-none">
                         ${Array.from({ length: CONFIG.MAX_PLAYERS - CONFIG.MIN_PLAYERS + 1 }, (_, i) => {
                             const count = CONFIG.MIN_PLAYERS + i;
-                            const info = TOURNAMENT_INFO[count] || { rounds: 15, gamesPerPlayer: 4 };
-                            return `<option value="${count}" ${count === 6 ? 'selected' : ''}>${count} players (${info.rounds} rounds)</option>`;
+                            const info = TOURNAMENT_INFO[count];
+                            return `<option value="${count}" ${count === 6 ? 'selected' : ''}>${count} players (${info.fixtures} matches)</option>`;
                         }).join('')}
                     </select>
                     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
@@ -100,9 +100,15 @@ function goToWizardStep3() {
     const playerCount = parseInt(document.getElementById('create-player-count').value);
     window._createWizardData.playerCount = playerCount;
     
-    // Calculate max courts (can't have more courts than matches per timeslot)
-    // For 2 courts, need at least 8 players (2 matches × 4 players)
-    const maxCourts = Math.min(CONFIG.MAX_COURTS, Math.floor(playerCount / 4));
+    // Get max courts from fixtures data
+    const maxCourts = getMaxCourts(playerCount);
+    
+    // If only 1 court allowed, skip to step 4
+    if (maxCourts === 1) {
+        window._createWizardData.courtCount = 1;
+        goToWizardStep4();
+        return;
+    }
     
     document.getElementById('create-wizard-content').innerHTML = `
         <div class="space-y-4">
@@ -116,12 +122,14 @@ function goToWizardStep3() {
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg appearance-none">
                         ${Array.from({ length: maxCourts }, (_, i) => {
                             const count = i + 1;
-                            return `<option value="${count}">${count} court${count > 1 ? 's' : ''} (${count} match${count > 1 ? 'es' : ''} per timeslot)</option>`;
+                            const playersPerRound = count * 4;
+                            const resting = playerCount - playersPerRound;
+                            return `<option value="${count}">${count} court${count > 1 ? 's' : ''} (${resting === 0 ? 'everyone plays' : resting + ' resting'})</option>`;
                         }).join('')}
                     </select>
                     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                 </div>
-                <p class="text-xs text-gray-500 mt-2">More courts = faster tournament, fewer players resting per timeslot</p>
+                <p class="text-xs text-gray-500 mt-2">More courts = fewer rounds, more players active per round</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="goBackToWizardStep2()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">← Back</button>
@@ -147,8 +155,8 @@ function goBackToWizardStep2() {
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg appearance-none">
                         ${Array.from({ length: CONFIG.MAX_PLAYERS - CONFIG.MIN_PLAYERS + 1 }, (_, i) => {
                             const count = CONFIG.MIN_PLAYERS + i;
-                            const info = TOURNAMENT_INFO[count] || { rounds: 15, gamesPerPlayer: 4 };
-                            return `<option value="${count}" ${count === window._createWizardData.playerCount ? 'selected' : ''}>${count} players (${info.rounds} rounds)</option>`;
+                            const info = TOURNAMENT_INFO[count];
+                            return `<option value="${count}" ${count === window._createWizardData.playerCount ? 'selected' : ''}>${count} players (${info.fixtures} matches)</option>`;
                         }).join('')}
                     </select>
                     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
@@ -197,7 +205,13 @@ function goToWizardStep4() {
  */
 function goBackToWizardStep3() {
     const playerCount = window._createWizardData.playerCount;
-    const maxCourts = Math.min(CONFIG.MAX_COURTS, Math.floor(playerCount / 4));
+    const maxCourts = getMaxCourts(playerCount);
+    
+    // If only 1 court allowed, go back to step 2 instead
+    if (maxCourts === 1) {
+        goBackToWizardStep2();
+        return;
+    }
     
     document.getElementById('create-wizard-content').innerHTML = `
         <div class="space-y-4">
@@ -211,12 +225,14 @@ function goBackToWizardStep3() {
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg appearance-none">
                         ${Array.from({ length: maxCourts }, (_, i) => {
                             const count = i + 1;
-                            return `<option value="${count}" ${count === window._createWizardData.courtCount ? 'selected' : ''}>${count} court${count > 1 ? 's' : ''} (${count} match${count > 1 ? 'es' : ''} per timeslot)</option>`;
+                            const playersPerRound = count * 4;
+                            const resting = playerCount - playersPerRound;
+                            return `<option value="${count}" ${count === window._createWizardData.courtCount ? 'selected' : ''}>${count} court${count > 1 ? 's' : ''} (${resting === 0 ? 'everyone plays' : resting + ' resting'})</option>`;
                         }).join('')}
                     </select>
                     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                 </div>
-                <p class="text-xs text-gray-500 mt-2">More courts = faster tournament, fewer players resting per timeslot</p>
+                <p class="text-xs text-gray-500 mt-2">More courts = fewer rounds, more players active per round</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="goBackToWizardStep2()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">← Back</button>

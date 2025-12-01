@@ -4,13 +4,13 @@
  */
 
 const CONFIG = {
-    // Player limits
+    // Player limits (5-9 supported)
     MIN_PLAYERS: 5,
-    MAX_PLAYERS: 24,
+    MAX_PLAYERS: 9,
     
-    // Court limits
+    // Court limits (max 2 courts, depends on player count)
     MIN_COURTS: 1,
-    MAX_COURTS: 10,
+    MAX_COURTS: 2,
     
     // Default settings
     DEFAULT_PLAYERS: 6,
@@ -33,10 +33,10 @@ const CONFIG = {
     FIREBASE_ROOT: 'americano',
     
     // UI settings
-    MAX_ROUNDS_DISPLAY: 15  // Ideally no more than 15 rounds
+    MAX_ROUNDS_DISPLAY: 17  // Max rounds for 9 players
 };
 
-// Player colour classes for badges
+// Player colour classes for badges (9 players max)
 const PLAYER_COLORS = [
     'player-color-1',  // Red
     'player-color-2',  // Purple
@@ -46,22 +46,7 @@ const PLAYER_COLORS = [
     'player-color-6',  // Teal
     'player-color-7',  // Pink
     'player-color-8',  // Indigo
-    'player-color-9',  // Amber
-    'player-color-10', // Cyan
-    'player-color-11', // Rose
-    'player-color-12', // Emerald
-    'player-color-13', // Sky
-    'player-color-14', // Fuchsia
-    'player-color-15', // Lime
-    'player-color-16', // Violet
-    'player-color-17', // Slate
-    'player-color-18', // Stone
-    'player-color-19', // Red light
-    'player-color-20', // Blue light
-    'player-color-21', // Green light
-    'player-color-22', // Purple light
-    'player-color-23', // Orange light
-    'player-color-24'  // Teal light
+    'player-color-9'   // Amber
 ];
 
 /**
