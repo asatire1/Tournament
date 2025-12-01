@@ -4,13 +4,13 @@
  */
 
 const CONFIG = {
-    // Player limits (5-20 supported)
+    // Player limits (5-24 supported)
     MIN_PLAYERS: 5,
-    MAX_PLAYERS: 20,
+    MAX_PLAYERS: 24,
     
-    // Court limits (max 5 courts for 20 players)
+    // Court limits (max 6 courts for 24 players)
     MIN_COURTS: 1,
-    MAX_COURTS: 5,
+    MAX_COURTS: 6,
     
     // Default settings
     DEFAULT_PLAYERS: 6,
@@ -33,10 +33,10 @@ const CONFIG = {
     FIREBASE_ROOT: 'americano',
     
     // UI settings
-    MAX_ROUNDS_DISPLAY: 19  // Max rounds (20 players, 5 courts - optimized)
+    MAX_ROUNDS_DISPLAY: 23  // Max rounds (24 players, 6 courts - optimized)
 };
 
-// Player colour classes for badges (20 players max)
+// Player colour classes for badges (24 players max)
 const PLAYER_COLORS = [
     'player-color-1',  // Red
     'player-color-2',  // Purple
@@ -57,7 +57,11 @@ const PLAYER_COLORS = [
     'player-color-17', // Yellow
     'player-color-18', // Slate
     'player-color-19', // Stone
-    'player-color-20'  // Zinc
+    'player-color-20', // Zinc
+    'player-color-21', // Coral
+    'player-color-22', // Mint
+    'player-color-23', // Lavender
+    'player-color-24'  // Gold
 ];
 
 /**
