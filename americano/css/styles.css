@@ -354,7 +354,7 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* ===== PLAYER COLOURS (12 max players) ===== */
+/* ===== PLAYER COLOURS (17 max players) ===== */
 .player-color-1 { background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); }
 .player-color-2 { background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%); }
 .player-color-3 { background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); }
@@ -367,6 +367,14 @@ body {
 .player-color-10 { background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%); }
 .player-color-11 { background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%); }
 .player-color-12 { background: linear-gradient(135deg, #84CC16 0%, #65A30D 100%); }
+.player-color-13 { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); }
+.player-color-14 { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
+.player-color-15 { background: linear-gradient(135deg, #D946EF 0%, #C026D3 100%); }
+.player-color-16 { background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%); }
+.player-color-17 { background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%); }
+.player-color-18 { background: linear-gradient(135deg, #64748B 0%, #475569 100%); }
+.player-color-19 { background: linear-gradient(135deg, #78716C 0%, #57534E 100%); }
+.player-color-20 { background: linear-gradient(135deg, #71717A 0%, #52525B 100%); }
 
 /* ===== ROUND BUTTONS ===== */
 .round-btn {
