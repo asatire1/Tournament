@@ -21,10 +21,6 @@
  * - 18 players: 1-4 courts (4-16 play, 2-14 rest)
  * - 19 players: 1-4 courts (4-16 play, 3-15 rest)
  * - 20 players: 1-5 courts (4-20 play, 0-16 rest) - 5 courts = MAGIC NUMBER!
- * - 21 players: 1-5 courts (4-20 play, 1-17 rest)
- * - 22 players: 1-5 courts (4-20 play, 2-18 rest)
- * - 23 players: 1-5 courts (4-20 play, 3-19 rest)
- * - 24 players: 1-6 courts (4-24 play, 0-20 rest) - 6 courts = MAGIC NUMBER!
  */
 
 const FIXTURES = {
@@ -2681,9 +2677,9 @@ const FIXTURES = {
     },
 
     // 21 Players - Multiple court configurations
-    // 21 = 20 + 1, so max 5 courts (20 play, 1 rests)
+    // 21 players: 1-5 courts (4-20 play, 1-17 rest)
     21: {
-        // 1 court: 105 fixtures, 20 games each
+        // 1 court: 105 fixtures, 105 rounds, ~20 games each
         1: [
             { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21] },
             { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21] },
@@ -2791,7 +2787,7 @@ const FIXTURES = {
             { teams: [[8,19],[9,20]], rest: [1,2,3,4,5,6,7,10,11,12,13,14,15,16,17,18,21] },
             { teams: [[10,18],[11,21]], rest: [1,2,3,4,5,6,7,8,9,12,13,14,15,16,17,19,20] }
         ],
-        // 2 courts: 105 fixtures, 20 games each
+        // 2 courts: 105 fixtures, 53 rounds, ~20 games each
         2: [
             { teams: [[1,2],[3,4]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21] },
             { teams: [[5,6],[7,8]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21] },
@@ -2899,7 +2895,7 @@ const FIXTURES = {
             { teams: [[8,19],[9,20]], rest: [1,2,3,4,7,10,11,12,13,14,15,18,21] },
             { teams: [[10,18],[11,21]], rest: [1,2,3,4,5,6,7,8,9,12,13,14,15,16,17,19,20] }
         ],
-        // 3 courts: 105 fixtures, 20 games each
+        // 3 courts: 105 fixtures, 35 rounds, ~20 games each
         3: [
             { teams: [[1,2],[3,4]], rest: [13,14,15,16,17,18,19,20,21] },
             { teams: [[5,6],[7,8]], rest: [13,14,15,16,17,18,19,20,21] },
@@ -3007,7 +3003,7 @@ const FIXTURES = {
             { teams: [[8,19],[9,21]], rest: [1,2,3,4,7,12,13,14,15] },
             { teams: [[10,18],[11,20]], rest: [1,2,3,4,7,12,13,14,15] }
         ],
-        // 4 courts: 105 fixtures, 20 games each
+        // 4 courts: 105 fixtures, 27 rounds, ~20 games each
         4: [
             { teams: [[1,2],[3,4]], rest: [17,18,19,20,21] },
             { teams: [[5,6],[7,8]], rest: [17,18,19,20,21] },
@@ -3115,7 +3111,7 @@ const FIXTURES = {
             { teams: [[7,17],[10,21]], rest: [4,8,11,12,20] },
             { teams: [[11,20],[12,19]], rest: [1,2,3,4,5,6,7,8,9,10,13,14,15,16,17,18,21] }
         ],
-        // 5 courts: 105 fixtures, 20 games each
+        // 5 courts: 105 fixtures, 24 rounds, ~20 games each
         5: [
             { teams: [[1,2],[3,4]], rest: [21] },
             { teams: [[5,6],[7,8]], rest: [21] },
@@ -3226,9 +3222,9 @@ const FIXTURES = {
     },
 
     // 22 Players - Multiple court configurations
-    // 22 = 20 + 2, so max 5 courts (20 play, 2 rest)
+    // 22 players: 1-5 courts (4-20 play, 2-18 rest)
     22: {
-        // 1 court: 115 fixtures, ~21 games each
+        // 1 court: 115 fixtures, 115 rounds, ~21 games each
         1: [
             { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22] },
             { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21,22] },
@@ -3346,7 +3342,7 @@ const FIXTURES = {
             { teams: [[6,17],[9,20]], rest: [1,2,3,4,5,7,8,10,11,12,13,14,15,16,18,19,21,22] },
             { teams: [[10,19],[11,22]], rest: [1,2,3,4,5,6,7,8,9,12,13,14,15,16,17,18,20,21] }
         ],
-        // 2 courts: 115 fixtures, ~21 games each
+        // 2 courts: 115 fixtures, 58 rounds, ~21 games each
         2: [
             { teams: [[1,2],[3,4]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21,22] },
             { teams: [[5,6],[7,8]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21,22] },
@@ -3464,7 +3460,7 @@ const FIXTURES = {
             { teams: [[7,19],[8,17]], rest: [1,2,3,4,9,10,11,12,13,14,16,20,21,22] },
             { teams: [[9,20],[11,21]], rest: [1,2,3,4,5,6,7,8,10,12,13,14,15,16,17,18,19,22] }
         ],
-        // 3 courts: 115 fixtures, ~21 games each
+        // 3 courts: 115 fixtures, 39 rounds, ~21 games each
         3: [
             { teams: [[1,2],[3,4]], rest: [13,14,15,16,17,18,19,20,21,22] },
             { teams: [[5,6],[7,8]], rest: [13,14,15,16,17,18,19,20,21,22] },
@@ -3582,7 +3578,7 @@ const FIXTURES = {
             { teams: [[7,19],[8,17]], rest: [1,2,9,10,11,12,13,20,21,22] },
             { teams: [[9,21],[10,20]], rest: [1,2,3,4,5,6,7,8,11,12,13,14,15,16,17,18,19,22] }
         ],
-        // 4 courts: 115 fixtures, ~21 games each
+        // 4 courts: 115 fixtures, 29 rounds, ~21 games each
         4: [
             { teams: [[1,2],[3,4]], rest: [17,18,19,20,21,22] },
             { teams: [[5,6],[7,8]], rest: [17,18,19,20,21,22] },
@@ -3700,7 +3696,7 @@ const FIXTURES = {
             { teams: [[7,18],[8,20]], rest: [1,2,3,4,6,11,13,14,16,17] },
             { teams: [[9,19],[12,21]], rest: [1,2,3,4,6,11,13,14,16,17] }
         ],
-        // 5 courts: 115 fixtures, ~21 games each
+        // 5 courts: 115 fixtures, 25 rounds, ~21 games each
         5: [
             { teams: [[1,2],[3,4]], rest: [21,22] },
             { teams: [[5,6],[7,8]], rest: [21,22] },
@@ -3821,9 +3817,9 @@ const FIXTURES = {
     },
 
     // 23 Players - Multiple court configurations
-    // 23 = 20 + 3, so max 5 courts (20 play, 3 rest)
+    // 23 players: 1-5 courts (4-20 play, 3-19 rest)
     23: {
-        // 1 court: 126 fixtures, ~22 games each
+        // 1 court: 126 fixtures, 126 rounds, ~22 games each
         1: [
             { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] },
             { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] },
@@ -3952,7 +3948,7 @@ const FIXTURES = {
             { teams: [[7,19],[8,20]], rest: [1,2,3,4,5,6,9,10,11,12,13,14,15,16,17,18,21,22,23] },
             { teams: [[10,21],[11,22]], rest: [1,2,3,4,5,6,7,8,9,12,13,14,15,16,17,18,19,20,23] }
         ],
-        // 2 courts: 126 fixtures, ~22 games each
+        // 2 courts: 126 fixtures, 63 rounds, ~22 games each
         2: [
             { teams: [[1,2],[3,4]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] },
             { teams: [[5,6],[7,8]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] },
@@ -4081,7 +4077,7 @@ const FIXTURES = {
             { teams: [[7,19],[8,20]], rest: [1,2,3,4,5,6,9,12,13,14,15,16,17,18,23] },
             { teams: [[10,21],[11,22]], rest: [1,2,3,4,5,6,9,12,13,14,15,16,17,18,23] }
         ],
-        // 3 courts: 126 fixtures, ~22 games each
+        // 3 courts: 126 fixtures, 42 rounds, ~22 games each
         3: [
             { teams: [[1,2],[3,4]], rest: [13,14,15,16,17,18,19,20,21,22,23] },
             { teams: [[5,6],[7,8]], rest: [13,14,15,16,17,18,19,20,21,22,23] },
@@ -4210,7 +4206,7 @@ const FIXTURES = {
             { teams: [[8,19],[9,20]], rest: [1,3,4,6,7,12,13,15,17,18,23] },
             { teams: [[10,21],[11,22]], rest: [1,3,4,6,7,12,13,15,17,18,23] }
         ],
-        // 4 courts: 126 fixtures, ~22 games each
+        // 4 courts: 126 fixtures, 32 rounds, ~22 games each
         4: [
             { teams: [[1,2],[3,4]], rest: [17,18,19,20,21,22,23] },
             { teams: [[5,6],[7,8]], rest: [17,18,19,20,21,22,23] },
@@ -4339,7 +4335,7 @@ const FIXTURES = {
             { teams: [[2,14],[9,20]], rest: [1,3,4,5,6,7,8,12,13,15,16,17,18,19,23] },
             { teams: [[10,21],[11,22]], rest: [1,3,4,5,6,7,8,12,13,15,16,17,18,19,23] }
         ],
-        // 5 courts: 126 fixtures, ~22 games each
+        // 5 courts: 126 fixtures, 26 rounds, ~22 games each
         5: [
             { teams: [[1,2],[3,4]], rest: [21,22,23] },
             { teams: [[5,6],[7,8]], rest: [21,22,23] },
@@ -4471,9 +4467,9 @@ const FIXTURES = {
     },
 
     // 24 Players - Multiple court configurations
-    // 24 = 24, so max 6 courts (all 24 play, 0 rest) - MAGIC NUMBER!
+    // 24 players: 1-6 courts (4-24 play, 0-20 rest) - 6 courts = MAGIC NUMBER!
     24: {
-        // 1 court: 138 fixtures, 23 games each
+        // 1 court: 138 fixtures, 138 rounds, ~23 games each
         1: [
             { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] },
             { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] },
@@ -4614,7 +4610,7 @@ const FIXTURES = {
             { teams: [[13,20],[14,19]], rest: [1,2,3,4,5,6,7,8,9,10,11,12,15,16,17,18,21,22,23,24] },
             { teams: [[15,18],[16,17]], rest: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,19,20,21,22,23,24] }
         ],
-        // 2 courts: 138 fixtures, 23 games each
+        // 2 courts: 138 fixtures, 69 rounds, ~23 games each
         2: [
             { teams: [[1,2],[3,4]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] },
             { teams: [[5,6],[7,8]], rest: [9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] },
@@ -4755,7 +4751,7 @@ const FIXTURES = {
             { teams: [[13,20],[14,19]], rest: [1,2,3,4,5,6,7,8,9,10,11,12,21,22,23,24] },
             { teams: [[15,18],[16,17]], rest: [1,2,3,4,5,6,7,8,9,10,11,12,21,22,23,24] }
         ],
-        // 3 courts: 138 fixtures, 23 games each
+        // 3 courts: 138 fixtures, 46 rounds, ~23 games each
         3: [
             { teams: [[1,2],[3,4]], rest: [13,14,15,16,17,18,19,20,21,22,23,24] },
             { teams: [[5,6],[7,8]], rest: [13,14,15,16,17,18,19,20,21,22,23,24] },
@@ -4896,7 +4892,7 @@ const FIXTURES = {
             { teams: [[13,20],[14,19]], rest: [1,2,3,4,5,6,7,8,9,10,23,24] },
             { teams: [[15,18],[16,17]], rest: [1,2,3,4,5,6,7,8,9,10,23,24] }
         ],
-        // 4 courts: 138 fixtures, 23 games each
+        // 4 courts: 138 fixtures, 35 rounds, ~23 games each
         4: [
             { teams: [[1,2],[3,4]], rest: [17,18,19,20,21,22,23,24] },
             { teams: [[5,6],[7,8]], rest: [17,18,19,20,21,22,23,24] },
@@ -5037,7 +5033,7 @@ const FIXTURES = {
             { teams: [[9,24],[10,23]], rest: [1,2,3,4,5,6,7,8,13,14,15,16,17,18,19,20] },
             { teams: [[11,22],[12,21]], rest: [1,2,3,4,5,6,7,8,13,14,15,16,17,18,19,20] }
         ],
-        // 5 courts: 138 fixtures, 23 games each
+        // 5 courts: 138 fixtures, 28 rounds, ~23 games each
         5: [
             { teams: [[1,2],[3,4]], rest: [21,22,23,24] },
             { teams: [[5,6],[7,8]], rest: [21,22,23,24] },
@@ -5178,7 +5174,7 @@ const FIXTURES = {
             { teams: [[9,22],[10,21]], rest: [1,2,3,4,5,6,11,12,15,16,19,20] },
             { teams: [[13,24],[14,23]], rest: [1,2,3,4,5,6,11,12,15,16,19,20] }
         ],
-        // 6 courts: 138 fixtures, 23 games each
+        // 6 courts: 138 fixtures, 23 rounds, ~23 games each - all play!
         6: [
             { teams: [[1,2],[3,4]], rest: [] },
             { teams: [[5,6],[7,8]], rest: [] },
@@ -5222,105 +5218,104 @@ const FIXTURES = {
             { teams: [[11,14],[12,13]], rest: [] },
             { teams: [[17,24],[18,23]], rest: [] },
             { teams: [[19,22],[20,21]], rest: [] },
-            { teams: [[1,9],[2,10]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,11],[4,12]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,13],[6,14]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,15],[8,16]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,17],[2,18]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,19],[4,20]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,21],[6,22]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,23],[8,24]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,17],[10,18]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,19],[12,20]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,21],[14,22]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,23],[16,24]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[1,10],[2,9]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,12],[4,11]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,14],[6,13]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,16],[8,15]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,18],[2,17]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,20],[4,19]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,22],[6,21]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,24],[8,23]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,18],[10,17]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,20],[12,19]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,22],[14,21]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,24],[16,23]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[1,11],[2,12]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,9],[4,10]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,15],[6,16]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,13],[8,14]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,19],[2,20]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,17],[4,18]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,23],[6,24]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,21],[8,22]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,19],[10,20]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,17],[12,18]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,23],[14,24]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,21],[16,22]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[1,12],[2,11]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,10],[4,9]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,16],[6,15]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,14],[8,13]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,20],[2,19]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,18],[4,17]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,24],[6,23]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,22],[8,21]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,20],[10,19]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,18],[12,17]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,24],[14,23]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,22],[16,21]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[1,13],[2,14]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,15],[4,16]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,9],[6,10]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,11],[8,12]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,21],[2,22]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,23],[4,24]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,17],[6,18]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,19],[8,20]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,21],[10,22]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,23],[12,24]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,17],[14,18]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,19],[16,20]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[1,14],[2,13]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,16],[4,15]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,10],[6,9]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,12],[8,11]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,22],[2,21]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,24],[4,23]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,18],[6,17]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,20],[8,19]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,22],[10,21]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,24],[12,23]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,18],[14,17]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,20],[16,19]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[1,15],[2,16]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,13],[4,14]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,11],[6,12]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,9],[8,10]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,23],[2,24]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,21],[4,22]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,19],[6,20]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,17],[8,18]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,23],[10,24]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,21],[12,22]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,19],[14,20]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,17],[16,18]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[1,16],[2,15]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[3,14],[4,13]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[5,12],[6,11]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[7,10],[8,9]], rest: [17,18,19,20,21,22,23,24] },
-            { teams: [[1,24],[2,23]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[3,22],[4,21]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[5,20],[6,19]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[7,18],[8,17]], rest: [9,10,11,12,13,14,15,16] },
-            { teams: [[9,24],[10,23]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[11,22],[12,21]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[13,20],[14,19]], rest: [1,2,3,4,5,6,7,8] },
-            { teams: [[15,18],[16,17]], rest: [1,2,3,4,5,6,7,8] }
+            { teams: [[1,9],[2,10]], rest: [] },
+            { teams: [[3,11],[4,12]], rest: [] },
+            { teams: [[5,17],[6,18]], rest: [] },
+            { teams: [[7,19],[8,20]], rest: [] },
+            { teams: [[13,21],[14,22]], rest: [] },
+            { teams: [[15,23],[16,24]], rest: [] },
+            { teams: [[1,10],[2,9]], rest: [] },
+            { teams: [[3,12],[4,11]], rest: [] },
+            { teams: [[5,18],[6,17]], rest: [] },
+            { teams: [[7,20],[8,19]], rest: [] },
+            { teams: [[13,22],[14,21]], rest: [] },
+            { teams: [[15,24],[16,23]], rest: [] },
+            { teams: [[1,11],[2,12]], rest: [] },
+            { teams: [[3,9],[4,10]], rest: [] },
+            { teams: [[5,19],[6,20]], rest: [] },
+            { teams: [[7,17],[8,18]], rest: [] },
+            { teams: [[13,23],[14,24]], rest: [] },
+            { teams: [[15,21],[16,22]], rest: [] },
+            { teams: [[1,12],[2,11]], rest: [] },
+            { teams: [[3,10],[4,9]], rest: [] },
+            { teams: [[5,20],[6,19]], rest: [] },
+            { teams: [[7,18],[8,17]], rest: [] },
+            { teams: [[13,24],[14,23]], rest: [] },
+            { teams: [[15,22],[16,21]], rest: [] },
+            { teams: [[1,13],[2,14]], rest: [] },
+            { teams: [[3,15],[4,16]], rest: [] },
+            { teams: [[5,21],[6,22]], rest: [] },
+            { teams: [[7,23],[8,24]], rest: [] },
+            { teams: [[9,17],[10,18]], rest: [] },
+            { teams: [[11,19],[12,20]], rest: [] },
+            { teams: [[1,14],[2,13]], rest: [] },
+            { teams: [[3,16],[4,15]], rest: [] },
+            { teams: [[5,22],[6,21]], rest: [] },
+            { teams: [[7,24],[8,23]], rest: [] },
+            { teams: [[9,18],[10,17]], rest: [] },
+            { teams: [[11,20],[12,19]], rest: [] },
+            { teams: [[1,15],[2,16]], rest: [] },
+            { teams: [[3,13],[4,14]], rest: [] },
+            { teams: [[5,23],[6,24]], rest: [] },
+            { teams: [[7,21],[8,22]], rest: [] },
+            { teams: [[9,19],[10,20]], rest: [] },
+            { teams: [[11,17],[12,18]], rest: [] },
+            { teams: [[1,16],[2,15]], rest: [] },
+            { teams: [[3,14],[4,13]], rest: [] },
+            { teams: [[5,24],[6,23]], rest: [] },
+            { teams: [[7,22],[8,21]], rest: [] },
+            { teams: [[9,20],[10,19]], rest: [] },
+            { teams: [[11,18],[12,17]], rest: [] },
+            { teams: [[1,17],[2,18]], rest: [] },
+            { teams: [[3,19],[4,20]], rest: [] },
+            { teams: [[5,13],[6,14]], rest: [] },
+            { teams: [[7,15],[8,16]], rest: [] },
+            { teams: [[9,21],[10,22]], rest: [] },
+            { teams: [[11,23],[12,24]], rest: [] },
+            { teams: [[1,18],[2,17]], rest: [] },
+            { teams: [[3,20],[4,19]], rest: [] },
+            { teams: [[5,14],[6,13]], rest: [] },
+            { teams: [[7,16],[8,15]], rest: [] },
+            { teams: [[9,22],[10,21]], rest: [] },
+            { teams: [[11,24],[12,23]], rest: [] },
+            { teams: [[1,19],[2,20]], rest: [] },
+            { teams: [[3,17],[4,18]], rest: [] },
+            { teams: [[5,15],[6,16]], rest: [] },
+            { teams: [[7,13],[8,14]], rest: [] },
+            { teams: [[9,23],[10,24]], rest: [] },
+            { teams: [[11,21],[12,22]], rest: [] },
+            { teams: [[1,20],[2,19]], rest: [] },
+            { teams: [[3,18],[4,17]], rest: [] },
+            { teams: [[5,16],[6,15]], rest: [] },
+            { teams: [[7,14],[8,13]], rest: [] },
+            { teams: [[9,24],[10,23]], rest: [] },
+            { teams: [[11,22],[12,21]], rest: [] },
+            { teams: [[1,21],[2,22]], rest: [] },
+            { teams: [[3,23],[4,24]], rest: [] },
+            { teams: [[5,9],[6,10]], rest: [] },
+            { teams: [[7,11],[8,12]], rest: [] },
+            { teams: [[13,17],[14,18]], rest: [] },
+            { teams: [[15,19],[16,20]], rest: [] },
+            { teams: [[1,22],[2,21]], rest: [] },
+            { teams: [[3,24],[4,23]], rest: [] },
+            { teams: [[5,10],[6,9]], rest: [] },
+            { teams: [[7,12],[8,11]], rest: [] },
+            { teams: [[13,18],[14,17]], rest: [] },
+            { teams: [[15,20],[16,19]], rest: [] },
+            { teams: [[1,23],[2,24]], rest: [] },
+            { teams: [[3,21],[4,22]], rest: [] },
+            { teams: [[5,11],[6,12]], rest: [] },
+            { teams: [[7,9],[8,10]], rest: [] },
+            { teams: [[13,19],[14,20]], rest: [] },
+            { teams: [[15,17],[16,18]], rest: [] },
+            { teams: [[1,24],[2,23]], rest: [] },
+            { teams: [[3,22],[4,21]], rest: [] },
+            { teams: [[5,12],[6,11]], rest: [] },
+            { teams: [[7,10],[8,9]], rest: [] },
+            { teams: [[13,20],[14,19]], rest: [] },
+            { teams: [[15,18],[16,17]], rest: [] }
         ]
     }
-
 };
 
 /**
@@ -5334,99 +5329,99 @@ const TOURNAMENT_INFO = {
     8: { fixtures: 14, maxCourts: 2, gamesPerPlayer: 7 },
     9: { fixtures: 18, maxCourts: 2, gamesPerPlayer: 8 },
     10: { fixtures: 30, maxCourts: 2, gamesPerPlayer: 12 },
-    11: { fixtures: 32, maxCourts: 2, gamesPerPlayer: 11 },  // 11-12 games, slight variance
+    11: { fixtures: 32, maxCourts: 2, gamesPerPlayer: 11 },
     12: {
         maxCourts: 3,
-        1: { fixtures: 33, gamesPerPlayer: 11 },  // 11 games, 8 resting
-        2: { fixtures: 38, gamesPerPlayer: 12 },  // 12-13 games, 4 resting
-        3: { fixtures: 33, gamesPerPlayer: 11 }   // Perfect: 11 games, 0 resting
+        1: { fixtures: 33, gamesPerPlayer: 11 },
+        2: { fixtures: 38, gamesPerPlayer: 12 },
+        3: { fixtures: 33, gamesPerPlayer: 11 }
     },
     13: {
         maxCourts: 3,
-        1: { fixtures: 39, gamesPerPlayer: 12 },  // 12 games, 9 resting
-        2: { fixtures: 40, gamesPerPlayer: 12 },  // 12-13 games, 5 resting
-        3: { fixtures: 42, gamesPerPlayer: 12 }   // 12-13 games, 1 resting
+        1: { fixtures: 39, gamesPerPlayer: 12 },
+        2: { fixtures: 40, gamesPerPlayer: 12 },
+        3: { fixtures: 42, gamesPerPlayer: 12 }
     },
     14: {
         maxCourts: 3,
-        1: { fixtures: 46, gamesPerPlayer: 13 },  // 13-14 games, 10 resting
-        2: { fixtures: 48, gamesPerPlayer: 13 },  // 13-14 games, 6 resting
-        3: { fixtures: 54, gamesPerPlayer: 15 }   // 15-16 games, 2 resting
+        1: { fixtures: 46, gamesPerPlayer: 13 },
+        2: { fixtures: 48, gamesPerPlayer: 13 },
+        3: { fixtures: 54, gamesPerPlayer: 15 }
     },
     15: {
         maxCourts: 3,
-        1: { fixtures: 54, gamesPerPlayer: 14 },  // 14-17 games, 11 resting
-        2: { fixtures: 58, gamesPerPlayer: 15 },  // 15-16 games, 7 resting
-        3: { fixtures: 57, gamesPerPlayer: 15 }   // 15-16 games, 3 resting
+        1: { fixtures: 54, gamesPerPlayer: 14 },
+        2: { fixtures: 58, gamesPerPlayer: 15 },
+        3: { fixtures: 57, gamesPerPlayer: 15 }
     },
     16: {
         maxCourts: 4,
-        1: { fixtures: 60, gamesPerPlayer: 15 },  // 15 games, 12 resting
-        2: { fixtures: 66, gamesPerPlayer: 16 },  // 16-17 games, 8 resting
-        3: { fixtures: 69, gamesPerPlayer: 17 },  // 17-18 games, 4 resting
-        4: { fixtures: 60, gamesPerPlayer: 15 }   // Perfect: 16 games, 0 resting!
+        1: { fixtures: 60, gamesPerPlayer: 15 },
+        2: { fixtures: 66, gamesPerPlayer: 16 },
+        3: { fixtures: 69, gamesPerPlayer: 17 },
+        4: { fixtures: 60, gamesPerPlayer: 15 }
     },
     17: {
         maxCourts: 4,
-        1: { fixtures: 69, gamesPerPlayer: 16 },  // 16 games, 13 resting
-        2: { fixtures: 74, gamesPerPlayer: 17 },  // 17-18 games, 9 resting
-        3: { fixtures: 81, gamesPerPlayer: 19 },  // 19-20 games, 5 resting
-        4: { fixtures: 88, gamesPerPlayer: 20 }   // 20-21 games, 1 resting
+        1: { fixtures: 69, gamesPerPlayer: 16 },
+        2: { fixtures: 74, gamesPerPlayer: 17 },
+        3: { fixtures: 81, gamesPerPlayer: 19 },
+        4: { fixtures: 88, gamesPerPlayer: 20 }
     },
     18: {
         maxCourts: 4,
-        1: { fixtures: 77, gamesPerPlayer: 17 },  // 17 games, 14 resting
-        2: { fixtures: 92, gamesPerPlayer: 20 },  // 20-21 games, 10 resting
-        3: { fixtures: 93, gamesPerPlayer: 20 },  // 20-21 games, 6 resting
-        4: { fixtures: 92, gamesPerPlayer: 20 }   // 20-21 games, 2 resting
+        1: { fixtures: 77, gamesPerPlayer: 17 },
+        2: { fixtures: 92, gamesPerPlayer: 20 },
+        3: { fixtures: 93, gamesPerPlayer: 20 },
+        4: { fixtures: 92, gamesPerPlayer: 20 }
     },
     19: {
         maxCourts: 4,
-        1: { fixtures: 87, gamesPerPlayer: 18 },  // 18 games, 15 resting
-        2: { fixtures: 102, gamesPerPlayer: 21 }, // 21-22 games, 11 resting
-        3: { fixtures: 102, gamesPerPlayer: 21 }, // 21-22 games, 7 resting
-        4: { fixtures: 96, gamesPerPlayer: 20 }   // 20-21 games, 3 resting
+        1: { fixtures: 87, gamesPerPlayer: 18 },
+        2: { fixtures: 102, gamesPerPlayer: 21 },
+        3: { fixtures: 102, gamesPerPlayer: 21 },
+        4: { fixtures: 96, gamesPerPlayer: 20 }
     },
     20: {
         maxCourts: 5,
-        1: { fixtures: 95, gamesPerPlayer: 19 },   // 19 games, 16 resting
-        2: { fixtures: 95, gamesPerPlayer: 19 },  // 24-25 games, 12 resting
-        3: { fixtures: 95, gamesPerPlayer: 19 },  // 24-25 games, 8 resting
-        4: { fixtures: 95, gamesPerPlayer: 19 },  // 23-24 games, 4 resting
-        5: { fixtures: 95, gamesPerPlayer: 19 }   // 23 games, 0 resting - MAGIC!
+        1: { fixtures: 95, gamesPerPlayer: 19 },
+        2: { fixtures: 95, gamesPerPlayer: 19 },
+        3: { fixtures: 95, gamesPerPlayer: 19 },
+        4: { fixtures: 95, gamesPerPlayer: 19 },
+        5: { fixtures: 95, gamesPerPlayer: 19 }
     },
     21: {
         maxCourts: 5,
-        1: { fixtures: 105, gamesPerPlayer: 20 },  // 20 games, 17 resting
-        2: { fixtures: 105, gamesPerPlayer: 20 },  // 20 games, 13 resting
-        3: { fixtures: 105, gamesPerPlayer: 20 },  // 20 games, 9 resting
-        4: { fixtures: 105, gamesPerPlayer: 20 },  // 20 games, 5 resting
-        5: { fixtures: 105, gamesPerPlayer: 20 }   // 20 games, 1 resting
+        1: { fixtures: 105, gamesPerPlayer: 20 },
+        2: { fixtures: 105, gamesPerPlayer: 20 },
+        3: { fixtures: 105, gamesPerPlayer: 20 },
+        4: { fixtures: 105, gamesPerPlayer: 20 },
+        5: { fixtures: 105, gamesPerPlayer: 20 }
     },
     22: {
         maxCourts: 5,
-        1: { fixtures: 115, gamesPerPlayer: 21 },  // 20-21 games, 18 resting
-        2: { fixtures: 115, gamesPerPlayer: 21 },  // 20-21 games, 14 resting
-        3: { fixtures: 115, gamesPerPlayer: 21 },  // 20-21 games, 10 resting
-        4: { fixtures: 115, gamesPerPlayer: 21 },  // 20-21 games, 6 resting
-        5: { fixtures: 115, gamesPerPlayer: 21 }   // 20-21 games, 2 resting
+        1: { fixtures: 115, gamesPerPlayer: 21 },
+        2: { fixtures: 115, gamesPerPlayer: 21 },
+        3: { fixtures: 115, gamesPerPlayer: 21 },
+        4: { fixtures: 115, gamesPerPlayer: 21 },
+        5: { fixtures: 115, gamesPerPlayer: 21 }
     },
     23: {
         maxCourts: 5,
-        1: { fixtures: 126, gamesPerPlayer: 22 },  // 21-22 games, 19 resting
-        2: { fixtures: 126, gamesPerPlayer: 22 },  // 21-22 games, 15 resting
-        3: { fixtures: 126, gamesPerPlayer: 22 },  // 21-22 games, 11 resting
-        4: { fixtures: 126, gamesPerPlayer: 22 },  // 21-22 games, 7 resting
-        5: { fixtures: 126, gamesPerPlayer: 22 }   // 21-22 games, 3 resting
+        1: { fixtures: 126, gamesPerPlayer: 22 },
+        2: { fixtures: 126, gamesPerPlayer: 22 },
+        3: { fixtures: 126, gamesPerPlayer: 22 },
+        4: { fixtures: 126, gamesPerPlayer: 22 },
+        5: { fixtures: 126, gamesPerPlayer: 22 }
     },
     24: {
         maxCourts: 6,
-        1: { fixtures: 138, gamesPerPlayer: 23 },  // 23 games, 20 resting
-        2: { fixtures: 138, gamesPerPlayer: 23 },  // 23 games, 16 resting
-        3: { fixtures: 138, gamesPerPlayer: 23 },  // 23 games, 12 resting
-        4: { fixtures: 138, gamesPerPlayer: 23 },  // 23 games, 8 resting
-        5: { fixtures: 138, gamesPerPlayer: 23 },  // 23 games, 4 resting
-        6: { fixtures: 138, gamesPerPlayer: 23 }   // 23 games, 0 resting - MAGIC!
+        1: { fixtures: 138, gamesPerPlayer: 23 },
+        2: { fixtures: 138, gamesPerPlayer: 23 },
+        3: { fixtures: 138, gamesPerPlayer: 23 },
+        4: { fixtures: 138, gamesPerPlayer: 23 },
+        5: { fixtures: 138, gamesPerPlayer: 23 },
+        6: { fixtures: 138, gamesPerPlayer: 23 }
     }
 };
 
@@ -5435,9 +5430,8 @@ const TOURNAMENT_INFO = {
  */
 function getFixtures(playerCount, courtCount) {
     if (playerCount >= 12 && playerCount <= 24) {
-        // For 12-24 players, return fixtures based on court count
         const maxCourts = TOURNAMENT_INFO[playerCount].maxCourts;
-        const courts = courtCount || maxCourts;  // Default to max courts (optimal)
+        const courts = courtCount || maxCourts;
         return FIXTURES[playerCount][courts] || FIXTURES[playerCount][maxCourts];
     }
     return FIXTURES[playerCount] || [];
@@ -5472,10 +5466,9 @@ function getMaxCourts(playerCount) {
 
 /**
  * Get minimum courts for a player count
- * All player counts can use 1 court (though impractical for 12+)
  */
 function getMinCourts(playerCount) {
-    return 1;  // Always allow 1 court
+    return 1;
 }
 
 /**

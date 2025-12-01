@@ -33,7 +33,7 @@ const CONFIG = {
     FIREBASE_ROOT: 'americano',
     
     // UI settings
-    MAX_ROUNDS_DISPLAY: 23  // Max rounds (24 players, 6 courts - optimized)
+    MAX_ROUNDS_DISPLAY: 26  // Max rounds (23 players, 5 courts)
 };
 
 // Player colour classes for badges (24 players max)
