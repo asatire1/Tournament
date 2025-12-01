@@ -1,6 +1,10 @@
 /**
  * state.js - Tournament State Management
  * Handles all tournament state, Firebase sync, and standings calculation
+ * 
+ * Phase 2: Multi-court scheduling - fixtures are grouped into timeslots
+ * where no player appears in multiple matches simultaneously.
+ * Scores are now keyed by fixture index (f_0, f_1, etc.) for stability.
  */
 
 class AmericanoState {
@@ -24,8 +28,8 @@ class AmericanoState {
         this.fixedPoints = CONFIG.DEFAULT_FIXED_POINTS;
         this.totalPoints = CONFIG.DEFAULT_TOTAL_POINTS;
         
-        // Match scores - keyed by "roundIndex_matchIndex"
-        // For multi-court: each timeslot has multiple matches
+        // Match scores - keyed by "f_{fixtureIndex}" for stability
+        // This allows court count changes without losing scores
         this.scores = {};
         
         // Tournament status
@@ -39,6 +43,11 @@ class AmericanoState {
         // Firebase references
         this.firebaseRef = null;
         this.unsubscribe = null;
+        
+        // Cached timeslots (recalculated when court count changes)
+        this._cachedTimeslots = null;
+        this._cachedCourtCount = null;
+        this._cachedPlayerCount = null;
     }
     
     /**
@@ -107,11 +116,13 @@ class AmericanoState {
                 this.fixedPoints = data.fixedPoints !== undefined ? data.fixedPoints : CONFIG.DEFAULT_FIXED_POINTS;
                 this.totalPoints = data.totalPoints || CONFIG.DEFAULT_TOTAL_POINTS;
                 
-                // Scores - convert from Firebase format
+                // Scores - convert from Firebase format and handle migration
                 if (data.scores) {
                     this.scores = {};
                     Object.entries(data.scores).forEach(([key, value]) => {
-                        this.scores[key] = {
+                        // Migrate old format (roundIndex_matchIndex) to new format (f_fixtureIndex)
+                        const newKey = this._migrateScoreKey(key, data.courtCount || CONFIG.DEFAULT_COURTS);
+                        this.scores[newKey] = {
                             team1: value?.team1 === -1 ? null : value?.team1,
                             team2: value?.team2 === -1 ? null : value?.team2
                         };
@@ -124,10 +135,36 @@ class AmericanoState {
                 this.tournamentStarted = data.tournamentStarted || false;
                 this.isInitialized = true;
                 
+                // Invalidate cache
+                this._cachedTimeslots = null;
+                
                 // Re-render UI
                 render();
             }
         });
+    }
+    
+    /**
+     * Migrate old score key format to new format
+     * Old: "roundIndex_matchIndex" (e.g., "0_0", "1_2")
+     * New: "f_fixtureIndex" (e.g., "f_0", "f_5")
+     */
+    _migrateScoreKey(key, oldCourtCount) {
+        // Already in new format
+        if (key.startsWith('f_')) {
+            return key;
+        }
+        
+        // Convert old format to fixture index
+        const parts = key.split('_');
+        if (parts.length === 2) {
+            const roundIndex = parseInt(parts[0]);
+            const matchIndex = parseInt(parts[1]);
+            const fixtureIndex = roundIndex * oldCourtCount + matchIndex;
+            return `f_${fixtureIndex}`;
+        }
+        
+        return key;
     }
     
     /**
@@ -145,6 +182,15 @@ class AmericanoState {
     saveToFirebase() {
         if (!this.tournamentId) return;
         
+        // Convert scores to Firebase format
+        const firebaseScores = {};
+        Object.entries(this.scores).forEach(([key, value]) => {
+            firebaseScores[key] = {
+                team1: value.team1 === null ? -1 : value.team1,
+                team2: value.team2 === null ? -1 : value.team2
+            };
+        });
+        
         database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).update({
             meta: {
                 name: this.tournamentName,
@@ -157,18 +203,18 @@ class AmericanoState {
             courtNames: this.courtNames,
             fixedPoints: this.fixedPoints,
             totalPoints: this.totalPoints,
-            scores: this.scores,
+            scores: firebaseScores,
             tournamentStarted: this.tournamentStarted
         });
     }
     
     /**
-     * Save a single match score to Firebase
+     * Save a single match score to Firebase using fixture index
      */
-    saveMatchScoreToFirebase(roundIndex, matchIndex, team1Score, team2Score) {
+    saveMatchScoreToFirebase(fixtureIndex, team1Score, team2Score) {
         if (!this.tournamentId) return;
         
-        const key = `${roundIndex}_${matchIndex}`;
+        const key = `f_${fixtureIndex}`;
         database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/scores/${key}`).set({
             team1: team1Score === null ? -1 : team1Score,
             team2: team2Score === null ? -1 : team2Score
@@ -177,12 +223,12 @@ class AmericanoState {
     }
     
     /**
-     * Update a match score
+     * Update a match score by fixture index
      */
-    updateScore(roundIndex, matchIndex, team, value) {
+    updateScoreByFixture(fixtureIndex, team, value) {
         if (!this.canEdit()) return;
         
-        const key = `${roundIndex}_${matchIndex}`;
+        const key = `f_${fixtureIndex}`;
         if (!this.scores[key]) {
             this.scores[key] = { team1: null, team2: null };
         }
@@ -196,30 +242,56 @@ class AmericanoState {
         }
         
         this.saveMatchScoreToFirebase(
-            roundIndex, 
-            matchIndex, 
+            fixtureIndex,
             this.scores[key].team1, 
             this.scores[key].team2
         );
     }
     
     /**
-     * Clear a match score
+     * Clear a match score by fixture index
      */
-    clearScore(roundIndex, matchIndex) {
+    clearScoreByFixture(fixtureIndex) {
         if (!this.canEdit()) return;
         
-        const key = `${roundIndex}_${matchIndex}`;
+        const key = `f_${fixtureIndex}`;
         this.scores[key] = { team1: null, team2: null };
-        this.saveMatchScoreToFirebase(roundIndex, matchIndex, null, null);
+        this.saveMatchScoreToFirebase(fixtureIndex, null, null);
     }
     
     /**
-     * Get score for a specific match
+     * Get score for a specific fixture
      */
-    getScore(roundIndex, matchIndex) {
-        const key = `${roundIndex}_${matchIndex}`;
+    getScoreByFixture(fixtureIndex) {
+        const key = `f_${fixtureIndex}`;
         return this.scores[key] || { team1: null, team2: null };
+    }
+    
+    // Legacy methods for backward compatibility
+    updateScore(roundIndex, matchIndex, team, value) {
+        // Convert to fixture index using current timeslot structure
+        const timeslots = this.getRounds();
+        if (timeslots[roundIndex] && timeslots[roundIndex].matches[matchIndex]) {
+            const fixtureIndex = timeslots[roundIndex].matches[matchIndex].fixtureIndex;
+            this.updateScoreByFixture(fixtureIndex, team, value);
+        }
+    }
+    
+    clearScore(roundIndex, matchIndex) {
+        const timeslots = this.getRounds();
+        if (timeslots[roundIndex] && timeslots[roundIndex].matches[matchIndex]) {
+            const fixtureIndex = timeslots[roundIndex].matches[matchIndex].fixtureIndex;
+            this.clearScoreByFixture(fixtureIndex);
+        }
+    }
+    
+    getScore(roundIndex, matchIndex) {
+        const timeslots = this.getRounds();
+        if (timeslots[roundIndex] && timeslots[roundIndex].matches[matchIndex]) {
+            const fixtureIndex = timeslots[roundIndex].matches[matchIndex].fixtureIndex;
+            return this.getScoreByFixture(fixtureIndex);
+        }
+        return { team1: null, team2: null };
     }
     
     /**
@@ -245,48 +317,102 @@ class AmericanoState {
      */
     updateSettings(settings) {
         if (!this.canEdit()) return;
+        
+        // Check if court count is changing
+        if (settings.courtCount !== undefined && settings.courtCount !== this.courtCount) {
+            // Invalidate cache
+            this._cachedTimeslots = null;
+            
+            // Ensure court names array is updated
+            const newCourtCount = settings.courtCount;
+            if (newCourtCount > this.courtNames.length) {
+                // Add new court names
+                for (let i = this.courtNames.length; i < newCourtCount; i++) {
+                    this.courtNames.push(`Court ${i + 1}`);
+                }
+            }
+        }
+        
         Object.assign(this, settings);
         this.saveToFirebase();
     }
     
     /**
-     * Get rounds (fixtures grouped by court count)
-     * Each round contains `courtCount` matches happening simultaneously
+     * Get timeslots (rounds) - fixtures grouped so no player plays twice in same timeslot
+     * Each timeslot contains up to `courtCount` matches happening simultaneously
+     * 
+     * This is the core multi-court scheduling algorithm.
      */
     getRounds() {
-        const fixtures = FIXTURES[this.playerCount] || [];
-        const rounds = [];
-        
-        // Group fixtures into rounds based on court count
-        for (let i = 0; i < fixtures.length; i += this.courtCount) {
-            const roundMatches = fixtures.slice(i, i + this.courtCount);
-            
-            // Calculate resting players for this round
-            const playingPlayers = new Set();
-            roundMatches.forEach(match => {
-                match.teams[0].forEach(p => playingPlayers.add(p));
-                match.teams[1].forEach(p => playingPlayers.add(p));
-            });
-            
-            const allPlayers = Array.from({ length: this.playerCount }, (_, i) => i + 1);
-            const restingPlayers = allPlayers.filter(p => !playingPlayers.has(p));
-            
-            rounds.push({
-                matches: roundMatches,
-                resting: restingPlayers,
-                index: rounds.length
-            });
+        // Return cached result if valid
+        if (this._cachedTimeslots && 
+            this._cachedCourtCount === this.courtCount &&
+            this._cachedPlayerCount === this.playerCount) {
+            return this._cachedTimeslots;
         }
         
-        return rounds;
+        const fixtures = FIXTURES[this.playerCount] || [];
+        const timeslots = [];
+        const usedFixtureIndices = new Set();
+        
+        // Keep grouping fixtures into timeslots until all are used
+        while (usedFixtureIndices.size < fixtures.length) {
+            const timeslot = {
+                matches: [],
+                resting: new Set(Array.from({length: this.playerCount}, (_, i) => i + 1)),
+                index: timeslots.length
+            };
+            
+            // Track which players are already in this timeslot
+            const playersInTimeslot = new Set();
+            
+            // Find compatible fixtures for this timeslot
+            for (let i = 0; i < fixtures.length && timeslot.matches.length < this.courtCount; i++) {
+                if (usedFixtureIndices.has(i)) continue;
+                
+                const fixture = fixtures[i];
+                const playersInMatch = [...fixture.teams[0], ...fixture.teams[1]];
+                
+                // Check if any player is already playing in this timeslot
+                const hasConflict = playersInMatch.some(p => playersInTimeslot.has(p));
+                
+                if (!hasConflict) {
+                    // Add this fixture to the timeslot
+                    timeslot.matches.push({
+                        teams: fixture.teams,
+                        rest: fixture.rest,
+                        fixtureIndex: i  // Store original fixture index for scoring
+                    });
+                    usedFixtureIndices.add(i);
+                    
+                    // Mark these players as playing
+                    playersInMatch.forEach(p => {
+                        playersInTimeslot.add(p);
+                        timeslot.resting.delete(p);
+                    });
+                }
+            }
+            
+            // Convert resting set to sorted array
+            timeslot.resting = Array.from(timeslot.resting).sort((a, b) => a - b);
+            timeslots.push(timeslot);
+        }
+        
+        // Cache the result
+        this._cachedTimeslots = timeslots;
+        this._cachedCourtCount = this.courtCount;
+        this._cachedPlayerCount = this.playerCount;
+        
+        return timeslots;
     }
     
     /**
      * Calculate standings with W/L/PD (Team League style)
+     * Uses fixture-based scoring for accurate results
      */
     calculateStandings() {
         const playerStats = Array(this.playerCount).fill(null).map(() => ({
-            score: 0,
+            totalScore: 0,
             gamesPlayed: 0,
             wins: 0,
             losses: 0,
@@ -297,19 +423,15 @@ class AmericanoState {
         
         const fixtures = FIXTURES[this.playerCount] || [];
         
-        // Iterate through all fixtures and their scores
+        // Iterate through all fixtures using fixture index
         fixtures.forEach((fixture, fixtureIndex) => {
-            // Determine which round and match index this fixture belongs to
-            const roundIndex = Math.floor(fixtureIndex / this.courtCount);
-            const matchIndex = fixtureIndex % this.courtCount;
-            
-            const score = this.getScore(roundIndex, matchIndex);
+            const score = this.getScoreByFixture(fixtureIndex);
             
             if (score.team1 !== null && score.team2 !== null) {
                 // Team 1 players
                 fixture.teams[0].forEach(playerNum => {
                     const idx = playerNum - 1;
-                    playerStats[idx].score += score.team1;
+                    playerStats[idx].totalScore += score.team1;
                     playerStats[idx].gamesPlayed++;
                     playerStats[idx].pointsFor += score.team1;
                     playerStats[idx].pointsAgainst += score.team2;
@@ -326,7 +448,7 @@ class AmericanoState {
                 // Team 2 players
                 fixture.teams[1].forEach(playerNum => {
                     const idx = playerNum - 1;
-                    playerStats[idx].score += score.team2;
+                    playerStats[idx].totalScore += score.team2;
                     playerStats[idx].gamesPlayed++;
                     playerStats[idx].pointsFor += score.team2;
                     playerStats[idx].pointsAgainst += score.team1;
@@ -343,21 +465,41 @@ class AmericanoState {
         });
         
         // Build standings array and sort
-        return this.playerNames.map((name, index) => ({
-            name: name || `Player ${index + 1}`,
-            playerNum: index + 1,
-            score: playerStats[index].score,
-            gamesPlayed: playerStats[index].gamesPlayed,
-            wins: playerStats[index].wins,
-            losses: playerStats[index].losses,
-            draws: playerStats[index].draws,
-            pointsFor: playerStats[index].pointsFor,
-            pointsAgainst: playerStats[index].pointsAgainst,
-            pointsDiff: playerStats[index].pointsFor - playerStats[index].pointsAgainst
-        })).sort((a, b) => {
-            // Sort by total score, then by point difference
-            if (b.score !== a.score) return b.score - a.score;
-            return b.pointsDiff - a.pointsDiff;
+        return this.playerNames.map((name, index) => {
+            const stats = playerStats[index];
+            const avgScore = stats.gamesPlayed > 0 
+                ? stats.totalScore / stats.gamesPlayed 
+                : 0;
+            const pointsDiff = stats.pointsFor - stats.pointsAgainst;
+            const avgPointsDiff = stats.gamesPlayed > 0 
+                ? pointsDiff / stats.gamesPlayed 
+                : 0;
+            
+            return {
+                name: name || `Player ${index + 1}`,
+                playerNum: index + 1,
+                score: stats.totalScore,        // Total score (legacy)
+                avgScore: avgScore,             // Average score per game
+                gamesPlayed: stats.gamesPlayed,
+                wins: stats.wins,
+                losses: stats.losses,
+                draws: stats.draws,
+                pointsFor: stats.pointsFor,
+                pointsAgainst: stats.pointsAgainst,
+                pointsDiff: pointsDiff,
+                avgPointsDiff: avgPointsDiff    // Average point diff per game
+            };
+        }).sort((a, b) => {
+            // Primary sort: Average score (fairest when game counts differ)
+            if (Math.abs(b.avgScore - a.avgScore) > 0.01) {
+                return b.avgScore - a.avgScore;
+            }
+            // Secondary sort: Average point difference
+            if (Math.abs(b.avgPointsDiff - a.avgPointsDiff) > 0.01) {
+                return b.avgPointsDiff - a.avgPointsDiff;
+            }
+            // Tertiary sort: Total score (tiebreaker for equal averages)
+            return b.score - a.score;
         });
     }
     
@@ -365,14 +507,40 @@ class AmericanoState {
      * Count completed matches
      */
     countCompletedMatches() {
-        return Object.values(this.scores).filter(s => s && s.team1 !== null && s.team2 !== null).length;
+        let count = 0;
+        const fixtures = FIXTURES[this.playerCount] || [];
+        fixtures.forEach((_, fixtureIndex) => {
+            const score = this.getScoreByFixture(fixtureIndex);
+            if (score.team1 !== null && score.team2 !== null) {
+                count++;
+            }
+        });
+        return count;
     }
     
     /**
-     * Get total number of matches
+     * Get total number of matches (fixtures)
      */
     getTotalMatches() {
         return (FIXTURES[this.playerCount] || []).length;
+    }
+    
+    /**
+     * Get total number of timeslots (rounds)
+     */
+    getTotalTimeslots() {
+        return this.getRounds().length;
+    }
+    
+    /**
+     * Get games per player range for current configuration
+     */
+    getGamesPerPlayerRange() {
+        const info = getTournamentInfo(this.playerCount);
+        return {
+            min: info.gamesPerPlayerMin,
+            max: info.gamesPerPlayerMax
+        };
     }
     
     /**

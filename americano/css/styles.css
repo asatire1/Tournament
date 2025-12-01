@@ -234,6 +234,41 @@ body {
     border: 1px solid #F59E0B;
 }
 
+/* ===== RESTING PLAYER BADGES ===== */
+.resting-player-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    opacity: 0.7;
+}
+
+.resting-count {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    color: #92400E;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid #F59E0B;
+}
+
+/* ===== SCORE BOX COMPLETE STATE ===== */
+.score-box-horizontal.score-complete {
+    background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+/* ===== WINNER HIGHLIGHT ===== */
+.team-stack.winner .player-badge-compact {
+    transform: scale(1.02);
+}
+
 /* ===== STANDINGS TABLE (Team League Style) ===== */
 .standings-table {
     width: 100%;
@@ -430,6 +465,26 @@ body {
     .match-row { 
         gap: 5px; 
     }
+    
+    /* Improved touch targets */
+    .round-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .settings-subtab {
+        padding: 10px 16px;
+        font-size: 0.8125rem;
+    }
+    
+    /* Summary card adjustments */
+    .grid.grid-cols-2.sm\\:grid-cols-4 > div {
+        padding: 12px 8px;
+    }
+    
+    .grid.grid-cols-2.sm\\:grid-cols-4 > div .text-2xl {
+        font-size: 1.5rem;
+    }
 }
 
 @media (max-width: 380px) {
@@ -448,4 +503,49 @@ body {
         font-size: 1.35rem; 
         width: 38px; 
     }
+    
+    /* Hide player names on very small screens */
+    .resting-player-badge span:last-child {
+        display: none;
+    }
+}
+
+/* ===== ADDITIONAL ANIMATIONS ===== */
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-scale-in { animation: scaleIn 0.3s ease-out; }
+.animate-slide-in { animation: slideIn 0.3s ease-out; }
+
+/* Stagger animation for list items */
+.animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+    animation-fill-mode: both;
+}
+
+/* ===== FOCUS STATES FOR ACCESSIBILITY ===== */
+.round-btn:focus-visible,
+.settings-subtab:focus-visible,
+button:focus-visible {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
+}
+
+input:focus-visible {
+    outline: 2px solid #3B82F6;
+    outline-offset: 1px;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    .sticky { position: static; }
+    button { display: none; }
+    .shadow-sm, .shadow-lg { box-shadow: none; }
 }

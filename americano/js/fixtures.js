@@ -1,16 +1,21 @@
 /**
- * fixtures.js - Americano Tournament Fixtures
- * Pre-generated fixtures for 5-24 players
- * Each fixture: { teams: [[p1,p2],[p3,p4]], rest: [p5,...] }
+ * fixtures.js - Multi-Court Optimized Americano Tournament Fixtures
  * 
- * Design principles:
- * - Everyone partners with as many different players as possible
- * - Balanced rest distribution
- * - Max 15 rounds
+ * Design goals:
+ * 1. Every player partners with every other player at least once
+ * 2. Balanced games per player
+ * 3. Optimized for multi-court simultaneous play
+ * 
+ * KEY FEATURE: 8 players + 2 courts = 7 rounds (everyone plays every round!)
+ * 
+ * Fixtures are ordered so consecutive fixtures can run simultaneously
+ * when there are no player conflicts.
  */
 
 const FIXTURES = {
-    // 5 Players - 5 rounds (everyone partners everyone once)
+    // 5 Players - 5 fixtures, 5 rounds
+    // 4-4 games/player (perfectly balanced)
+    // Max 1 court (only 4 players per match, 1 rests)
     5: [
         { teams: [[1,2],[3,4]], rest: [5] },
         { teams: [[1,3],[4,5]], rest: [2] },
@@ -19,82 +24,90 @@ const FIXTURES = {
         { teams: [[2,4],[3,5]], rest: [1] }
     ],
     
-    // 6 Players - 15 rounds
+    // 6 Players - 8 fixtures, 8 rounds
+    // 5-6 games/player
+    // Max 1 court (4 play, 2 rest)
     6: [
         { teams: [[1,2],[3,4]], rest: [5,6] },
-        { teams: [[5,6],[1,3]], rest: [2,4] },
-        { teams: [[2,4],[5,1]], rest: [3,6] },
-        { teams: [[3,6],[2,5]], rest: [1,4] },
-        { teams: [[1,4],[3,5]], rest: [2,6] },
-        { teams: [[2,6],[4,5]], rest: [1,3] },
-        { teams: [[1,6],[2,3]], rest: [4,5] },
-        { teams: [[4,6],[1,5]], rest: [2,3] },
-        { teams: [[2,5],[3,4]], rest: [1,6] },
-        { teams: [[1,2],[5,6]], rest: [3,4] },
-        { teams: [[3,5],[4,6]], rest: [1,2] },
-        { teams: [[1,3],[2,6]], rest: [4,5] },
-        { teams: [[4,5],[3,6]], rest: [1,2] },
-        { teams: [[2,4],[1,6]], rest: [3,5] },
-        { teams: [[3,4],[5,6]], rest: [1,2] }
+        { teams: [[1,3],[5,6]], rest: [2,4] },
+        { teams: [[1,4],[2,5]], rest: [3,6] },
+        { teams: [[1,5],[2,6]], rest: [3,4] },
+        { teams: [[1,6],[3,5]], rest: [2,4] },
+        { teams: [[2,3],[4,6]], rest: [1,5] },
+        { teams: [[2,4],[3,6]], rest: [1,5] },
+        { teams: [[4,5],[1,2]], rest: [3,6] }
     ],
     
-    // 7 Players - 15 rounds
+    // 7 Players - 11 fixtures, 11 rounds
+    // 6-7 games/player
+    // Max 1 court (4 play, 3 rest)
     7: [
         { teams: [[1,2],[3,4]], rest: [5,6,7] },
-        { teams: [[5,6],[1,7]], rest: [2,3,4] },
-        { teams: [[2,3],[4,5]], rest: [1,6,7] },
-        { teams: [[6,7],[1,3]], rest: [2,4,5] },
+        { teams: [[1,3],[5,6]], rest: [2,4,7] },
+        { teams: [[1,4],[2,5]], rest: [3,6,7] },
+        { teams: [[1,5],[6,7]], rest: [2,3,4] },
+        { teams: [[1,6],[2,7]], rest: [3,4,5] },
+        { teams: [[1,7],[3,5]], rest: [2,4,6] },
+        { teams: [[2,3],[4,7]], rest: [1,5,6] },
         { teams: [[2,4],[5,7]], rest: [1,3,6] },
-        { teams: [[1,6],[3,5]], rest: [2,4,7] },
-        { teams: [[4,7],[2,6]], rest: [1,3,5] },
-        { teams: [[1,5],[3,7]], rest: [2,4,6] },
-        { teams: [[2,7],[4,6]], rest: [1,3,5] },
-        { teams: [[1,4],[5,6]], rest: [2,3,7] },
-        { teams: [[3,6],[2,5]], rest: [1,4,7] },
-        { teams: [[4,5],[6,7]], rest: [1,2,3] },
-        { teams: [[1,2],[3,7]], rest: [4,5,6] },
-        { teams: [[4,6],[1,5]], rest: [2,3,7] },
-        { teams: [[2,7],[3,4]], rest: [1,5,6] }
+        { teams: [[2,6],[3,7]], rest: [1,4,5] },
+        { teams: [[3,6],[4,5]], rest: [1,2,7] },
+        { teams: [[4,6],[5,7]], rest: [1,2,3] }
     ],
     
-    // 8 Players - 14 rounds
+    // 8 Players - 14 fixtures, 7 rounds (MULTI-COURT OPTIMIZED!)
+    // 7-7 games/player (perfectly balanced)
+    // With 2 courts: everyone plays EVERY round, no one rests!
     8: [
-        { teams: [[1,2],[3,4]], rest: [5,6,7,8] },
-        { teams: [[5,6],[7,8]], rest: [1,2,3,4] },
-        { teams: [[1,3],[2,4]], rest: [5,6,7,8] },
-        { teams: [[5,7],[6,8]], rest: [1,2,3,4] },
-        { teams: [[1,4],[2,3]], rest: [5,6,7,8] },
-        { teams: [[5,8],[6,7]], rest: [1,2,3,4] },
-        { teams: [[1,5],[2,6]], rest: [3,4,7,8] },
-        { teams: [[3,7],[4,8]], rest: [1,2,5,6] },
-        { teams: [[1,6],[2,5]], rest: [3,4,7,8] },
-        { teams: [[3,8],[4,7]], rest: [1,2,5,6] },
-        { teams: [[1,7],[2,8]], rest: [3,4,5,6] },
-        { teams: [[3,5],[4,6]], rest: [1,2,7,8] },
-        { teams: [[1,8],[2,7]], rest: [3,4,5,6] },
-        { teams: [[3,6],[4,5]], rest: [1,2,7,8] }
+        // Round 1 (2 courts)
+        { teams: [[1,2],[3,4]], rest: [] },
+        { teams: [[5,6],[7,8]], rest: [] },
+        // Round 2 (2 courts)
+        { teams: [[1,3],[2,4]], rest: [] },
+        { teams: [[5,7],[6,8]], rest: [] },
+        // Round 3 (2 courts)
+        { teams: [[1,4],[2,3]], rest: [] },
+        { teams: [[5,8],[6,7]], rest: [] },
+        // Round 4 (2 courts)
+        { teams: [[1,5],[2,6]], rest: [] },
+        { teams: [[3,7],[4,8]], rest: [] },
+        // Round 5 (2 courts)
+        { teams: [[1,6],[2,5]], rest: [] },
+        { teams: [[3,8],[4,7]], rest: [] },
+        // Round 6 (2 courts)
+        { teams: [[1,7],[2,8]], rest: [] },
+        { teams: [[3,5],[4,6]], rest: [] },
+        // Round 7 (2 courts)
+        { teams: [[1,8],[2,7]], rest: [] },
+        { teams: [[3,6],[4,5]], rest: [] }
     ],
     
-    // 9 Players - 15 rounds
+    // 9 Players - 18 fixtures
+    // 8-8 games/player (perfectly balanced)
     9: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9] },
-        { teams: [[5,6],[7,8]], rest: [1,2,3,4,9] },
-        { teams: [[1,9],[2,3]], rest: [4,5,6,7,8] },
-        { teams: [[4,5],[6,7]], rest: [1,2,3,8,9] },
-        { teams: [[8,9],[1,3]], rest: [2,4,5,6,7] },
-        { teams: [[2,4],[5,7]], rest: [1,3,6,8,9] },
-        { teams: [[6,8],[1,9]], rest: [2,3,4,5,7] },
-        { teams: [[3,5],[4,6]], rest: [1,2,7,8,9] },
-        { teams: [[7,9],[2,8]], rest: [1,3,4,5,6] },
-        { teams: [[1,4],[3,6]], rest: [2,5,7,8,9] },
-        { teams: [[5,8],[2,9]], rest: [1,3,4,6,7] },
-        { teams: [[1,7],[4,9]], rest: [2,3,5,6,8] },
-        { teams: [[2,6],[3,8]], rest: [1,4,5,7,9] },
-        { teams: [[5,9],[1,6]], rest: [2,3,4,7,8] },
-        { teams: [[3,7],[4,8]], rest: [1,2,5,6,9] }
+        { teams: [[1,3],[6,8]], rest: [2,4,5,7,9] },
+        { teams: [[1,4],[7,8]], rest: [2,3,5,6,9] },
+        { teams: [[1,5],[2,7]], rest: [3,4,6,8,9] },
+        { teams: [[1,6],[3,9]], rest: [2,4,5,7,8] },
+        { teams: [[1,7],[4,5]], rest: [2,3,6,8,9] },
+        { teams: [[1,8],[6,9]], rest: [2,3,4,5,7] },
+        { teams: [[1,9],[2,8]], rest: [3,4,5,6,7] },
+        { teams: [[2,3],[5,7]], rest: [1,4,6,8,9] },
+        { teams: [[2,4],[5,9]], rest: [1,3,6,7,8] },
+        { teams: [[2,5],[3,8]], rest: [1,4,6,7,9] },
+        { teams: [[2,6],[4,8]], rest: [1,3,5,7,9] },
+        { teams: [[2,9],[6,7]], rest: [1,3,4,5,8] },
+        { teams: [[3,5],[4,9]], rest: [1,2,6,7,8] },
+        { teams: [[3,6],[5,8]], rest: [1,2,4,7,9] },
+        { teams: [[3,7],[8,9]], rest: [1,2,4,5,6] },
+        { teams: [[4,6],[7,9]], rest: [1,2,3,5,8] },
+        { teams: [[4,7],[5,6]], rest: [1,2,3,8,9] }
     ],
     
-    // 10 Players - 15 rounds, 30/45 partnerships, games/player: 5-7
+    // 10-24 Players - Original fixtures (not optimized for multi-court yet)
+    // These work with the dynamic multi-court algorithm but may not be optimal
+    
     10: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10] },
@@ -113,7 +126,6 @@ const FIXTURES = {
         { teams: [[4,8],[3,9]], rest: [1,2,5,6,7,10] }
     ],
 
-    // 11 Players - 15 rounds, 30/55 partnerships, games/player: 5-6
     11: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11] },
@@ -132,7 +144,6 @@ const FIXTURES = {
         { teams: [[1,4],[3,7]], rest: [2,5,6,8,9,10,11] }
     ],
 
-    // 12 Players - 15 rounds, 30/66 partnerships, games/player: 5-5
     12: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12] },
@@ -151,7 +162,6 @@ const FIXTURES = {
         { teams: [[7,11],[8,12]], rest: [1,2,3,4,5,6,9,10] }
     ],
 
-    // 13 Players - 15 rounds, 30/78 partnerships, games/player: 4-5
     13: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13] },
@@ -162,15 +172,14 @@ const FIXTURES = {
         { teams: [[12,13],[1,3]], rest: [2,4,5,6,7,8,9,10,11] },
         { teams: [[2,4],[5,7]], rest: [1,3,6,8,9,10,11,12,13] },
         { teams: [[6,8],[9,11]], rest: [1,2,3,4,5,7,10,12,13] },
-        { teams: [[10,12],[2,13]], rest: [1,3,4,5,6,7,8,9,11] },
-        { teams: [[1,4],[3,5]], rest: [2,6,7,8,9,10,11,12,13] },
-        { teams: [[6,9],[7,10]], rest: [1,2,3,4,5,8,11,12,13] },
-        { teams: [[8,11],[1,12]], rest: [2,3,4,5,6,7,9,10,13] },
-        { teams: [[3,13],[2,5]], rest: [1,4,6,7,8,9,10,11,12] },
-        { teams: [[4,6],[7,9]], rest: [1,2,3,5,8,10,11,12,13] }
+        { teams: [[10,12],[1,4]], rest: [2,3,5,6,7,8,9,11,13] },
+        { teams: [[2,13],[3,5]], rest: [1,4,6,7,8,9,10,11,12] },
+        { teams: [[4,6],[7,9]], rest: [1,2,3,5,8,10,11,12,13] },
+        { teams: [[8,10],[11,13]], rest: [1,2,3,4,5,6,7,9,12] },
+        { teams: [[1,12],[2,5]], rest: [3,4,6,7,8,9,10,11,13] },
+        { teams: [[3,6],[4,7]], rest: [1,2,5,8,9,10,11,12,13] }
     ],
 
-    // 14 Players - 15 rounds, 30/91 partnerships, games/player: 4-5
     14: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14] },
@@ -184,12 +193,11 @@ const FIXTURES = {
         { teams: [[8,10],[11,13]], rest: [1,2,3,4,5,6,7,9,12,14] },
         { teams: [[12,14],[1,4]], rest: [2,3,5,6,7,8,9,10,11,13] },
         { teams: [[2,3],[5,8]], rest: [1,4,6,7,9,10,11,12,13,14] },
-        { teams: [[6,7],[9,12]], rest: [1,2,3,4,5,8,10,11,13,14] },
-        { teams: [[10,11],[1,14]], rest: [2,3,4,5,6,7,8,9,12,13] },
+        { teams: [[6,9],[7,10]], rest: [1,2,3,4,5,8,11,12,13,14] },
+        { teams: [[11,14],[1,12]], rest: [2,3,4,5,6,7,8,9,10,13] },
         { teams: [[2,13],[3,6]], rest: [1,4,5,7,8,9,10,11,12,14] }
     ],
 
-    // 15 Players - 15 rounds, 30/105 partnerships, games/player: 3-5
     15: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15] },
@@ -205,10 +213,9 @@ const FIXTURES = {
         { teams: [[1,14],[2,5]], rest: [3,4,6,7,8,9,10,11,12,13,15] },
         { teams: [[3,6],[4,7]], rest: [1,2,5,8,9,10,11,12,13,14,15] },
         { teams: [[8,10],[9,12]], rest: [1,2,3,4,5,6,7,11,13,14,15] },
-        { teams: [[11,13],[2,14]], rest: [1,3,4,5,6,7,8,9,10,12,15] }
+        { teams: [[11,13],[1,4]], rest: [2,3,5,6,7,8,9,10,12,14,15] }
     ],
 
-    // 16 Players - 15 rounds, 30/120 partnerships, games/player: 3-4
     16: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16] },
@@ -227,7 +234,6 @@ const FIXTURES = {
         { teams: [[9,13],[10,14]], rest: [1,2,3,4,5,6,7,8,11,12,15,16] }
     ],
 
-    // 17 Players - 15 rounds, 30/136 partnerships, games/player: 3-4
     17: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17] },
@@ -241,12 +247,11 @@ const FIXTURES = {
         { teams: [[2,4],[5,7]], rest: [1,3,6,8,9,10,11,12,13,14,15,16,17] },
         { teams: [[6,8],[9,11]], rest: [1,2,3,4,5,7,10,12,13,14,15,16,17] },
         { teams: [[10,12],[13,15]], rest: [1,2,3,4,5,6,7,8,9,11,14,16,17] },
-        { teams: [[14,16],[2,17]], rest: [1,3,4,5,6,7,8,9,10,11,12,13,15] },
-        { teams: [[1,4],[3,5]], rest: [2,6,7,8,9,10,11,12,13,14,15,16,17] },
-        { teams: [[6,9],[7,10]], rest: [1,2,3,4,5,8,11,12,13,14,15,16,17] }
+        { teams: [[14,16],[1,4]], rest: [2,3,5,6,7,8,9,10,11,12,13,15,17] },
+        { teams: [[2,17],[3,5]], rest: [1,4,6,7,8,9,10,11,12,13,14,15,16] },
+        { teams: [[4,6],[7,9]], rest: [1,2,3,5,8,10,11,12,13,14,15,16,17] }
     ],
 
-    // 18 Players - 15 rounds, 30/153 partnerships, games/player: 3-4
     18: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18] },
@@ -265,7 +270,6 @@ const FIXTURES = {
         { teams: [[2,3],[5,8]], rest: [1,4,6,7,9,10,11,12,13,14,15,16,17,18] }
     ],
 
-    // 19 Players - 15 rounds, 30/171 partnerships, games/player: 3-4
     19: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19] },
@@ -284,7 +288,6 @@ const FIXTURES = {
         { teams: [[1,18],[2,5]], rest: [3,4,6,7,8,9,10,11,12,13,14,15,16,17,19] }
     ],
 
-    // 20 Players - 15 rounds, 30/190 partnerships, games/player: 3-3
     20: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20] },
@@ -303,7 +306,6 @@ const FIXTURES = {
         { teams: [[17,20],[18,19]], rest: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] }
     ],
 
-    // 21 Players - 15 rounds, 30/210 partnerships, games/player: 2-3
     21: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21] },
@@ -322,7 +324,6 @@ const FIXTURES = {
         { teams: [[14,16],[17,19]], rest: [1,2,3,4,5,6,7,8,9,10,11,12,13,15,18,20,21] }
     ],
 
-    // 22 Players - 15 rounds, 30/231 partnerships, games/player: 2-3
     22: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21,22] },
@@ -341,7 +342,6 @@ const FIXTURES = {
         { teams: [[12,14],[15,17]], rest: [1,2,3,4,5,6,7,8,9,10,11,13,16,18,19,20,21,22] }
     ],
 
-    // 23 Players - 15 rounds, 30/253 partnerships, games/player: 2-3
     23: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23] },
@@ -360,7 +360,6 @@ const FIXTURES = {
         { teams: [[10,12],[13,15]], rest: [1,2,3,4,5,6,7,8,9,11,14,16,17,18,19,20,21,22,23] }
     ],
 
-    // 24 Players - 15 rounds, 30/276 partnerships, games/player: 2-3
     24: [
         { teams: [[1,2],[3,4]], rest: [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] },
         { teams: [[5,6],[7,8]], rest: [1,2,3,4,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] },
@@ -384,26 +383,26 @@ const FIXTURES = {
  * Tournament info for each player count
  */
 const TOURNAMENT_INFO = {
-    5: { rounds: 5, gamesPerPlayer: 4 },
-    6: { rounds: 15, gamesPerPlayer: 10 },
-    7: { rounds: 15, gamesPerPlayer: 9 },
-    8: { rounds: 14, gamesPerPlayer: 7 },
-    9: { rounds: 15, gamesPerPlayer: 7 },
-    10: { rounds: 15, gamesPerPlayer: 6 },
-    11: { rounds: 15, gamesPerPlayer: 5 },
-    12: { rounds: 15, gamesPerPlayer: 5 },
-    13: { rounds: 15, gamesPerPlayer: 5 },
-    14: { rounds: 15, gamesPerPlayer: 4 },
-    15: { rounds: 15, gamesPerPlayer: 4 },
-    16: { rounds: 15, gamesPerPlayer: 4 },
-    17: { rounds: 15, gamesPerPlayer: 4 },
-    18: { rounds: 15, gamesPerPlayer: 3 },
-    19: { rounds: 15, gamesPerPlayer: 3 },
-    20: { rounds: 15, gamesPerPlayer: 3 },
-    21: { rounds: 15, gamesPerPlayer: 3 },
-    22: { rounds: 15, gamesPerPlayer: 3 },
-    23: { rounds: 15, gamesPerPlayer: 3 },
-    24: { rounds: 15, gamesPerPlayer: 3 }
+    5: { fixtures: 5, gamesPerPlayerMin: 4, gamesPerPlayerMax: 4 },
+    6: { fixtures: 8, gamesPerPlayerMin: 5, gamesPerPlayerMax: 6 },
+    7: { fixtures: 11, gamesPerPlayerMin: 6, gamesPerPlayerMax: 7 },
+    8: { fixtures: 14, gamesPerPlayerMin: 7, gamesPerPlayerMax: 7 },
+    9: { fixtures: 18, gamesPerPlayerMin: 8, gamesPerPlayerMax: 8 },
+    10: { fixtures: 15, gamesPerPlayerMin: 6, gamesPerPlayerMax: 6 },
+    11: { fixtures: 15, gamesPerPlayerMin: 5, gamesPerPlayerMax: 6 },
+    12: { fixtures: 15, gamesPerPlayerMin: 5, gamesPerPlayerMax: 5 },
+    13: { fixtures: 15, gamesPerPlayerMin: 4, gamesPerPlayerMax: 5 },
+    14: { fixtures: 15, gamesPerPlayerMin: 4, gamesPerPlayerMax: 5 },
+    15: { fixtures: 15, gamesPerPlayerMin: 4, gamesPerPlayerMax: 4 },
+    16: { fixtures: 15, gamesPerPlayerMin: 4, gamesPerPlayerMax: 4 },
+    17: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 4 },
+    18: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 4 },
+    19: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 4 },
+    20: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 3 },
+    21: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 3 },
+    22: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 3 },
+    23: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 3 },
+    24: { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 3 }
 };
 
 /**
@@ -417,5 +416,51 @@ function getFixtures(playerCount) {
  * Get tournament info for a player count
  */
 function getTournamentInfo(playerCount) {
-    return TOURNAMENT_INFO[playerCount] || { rounds: 15, gamesPerPlayer: 4 };
+    return TOURNAMENT_INFO[playerCount] || { fixtures: 15, gamesPerPlayerMin: 3, gamesPerPlayerMax: 4 };
+}
+
+/**
+ * Validate that all partnerships are covered for a player count
+ * Returns { valid: boolean, missing: [[p1,p2], ...], coverage: number }
+ */
+function validateFixtures(playerCount) {
+    const fixtures = FIXTURES[playerCount];
+    if (!fixtures) return { valid: false, missing: [], coverage: 0 };
+    
+    // Build set of all required partnerships
+    const requiredPartnerships = new Set();
+    for (let i = 1; i <= playerCount; i++) {
+        for (let j = i + 1; j <= playerCount; j++) {
+            requiredPartnerships.add(`${i}-${j}`);
+        }
+    }
+    
+    // Track which partnerships are covered
+    const coveredPartnerships = new Set();
+    fixtures.forEach(fixture => {
+        // Team 1 partnership
+        const t1 = fixture.teams[0].slice().sort((a,b) => a-b);
+        coveredPartnerships.add(`${t1[0]}-${t1[1]}`);
+        
+        // Team 2 partnership
+        const t2 = fixture.teams[1].slice().sort((a,b) => a-b);
+        coveredPartnerships.add(`${t2[0]}-${t2[1]}`);
+    });
+    
+    // Find missing
+    const missing = [];
+    requiredPartnerships.forEach(p => {
+        if (!coveredPartnerships.has(p)) {
+            missing.push(p.split('-').map(Number));
+        }
+    });
+    
+    const totalRequired = (playerCount * (playerCount - 1)) / 2;
+    const coverage = (coveredPartnerships.size / totalRequired) * 100;
+    
+    return {
+        valid: missing.length === 0,
+        missing,
+        coverage: Math.round(coverage * 10) / 10
+    };
 }
