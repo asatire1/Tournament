@@ -69,8 +69,9 @@ function goToWizardStep2() {
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg appearance-none">
                         ${Array.from({ length: CONFIG.MAX_PLAYERS - CONFIG.MIN_PLAYERS + 1 }, (_, i) => {
                             const count = CONFIG.MIN_PLAYERS + i;
-                            const info = TOURNAMENT_INFO[count];
-                            return `<option value="${count}" ${count === 6 ? 'selected' : ''}>${count} players (${info.fixtures} matches)</option>`;
+                            const info = getTournamentInfo(count);
+                            const fixtureText = info.fixtures ? `${info.fixtures} matches` : '33-38 matches';
+                            return `<option value="${count}" ${count === 6 ? 'selected' : ''}>${count} players (${fixtureText})</option>`;
                         }).join('')}
                     </select>
                     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
@@ -120,12 +121,18 @@ function goToWizardStep3() {
                 <div class="relative">
                     <select id="create-court-count" 
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg appearance-none">
-                        ${Array.from({ length: maxCourts }, (_, i) => {
-                            const count = i + 1;
-                            const playersPerRound = count * 4;
-                            const resting = playerCount - playersPerRound;
-                            return `<option value="${count}">${count} court${count > 1 ? 's' : ''} (${resting === 0 ? 'everyone plays' : resting + ' resting'})</option>`;
-                        }).join('')}
+                        ${(() => {
+                            const minCourts = getMinCourts(playerCount);
+                            const options = [];
+                            for (let count = minCourts; count <= maxCourts; count++) {
+                                const playersPerRound = count * 4;
+                                const resting = playerCount - playersPerRound;
+                                const info = getTournamentInfo(playerCount, count);
+                                const fixtureInfo = info && info.fixtures ? ` - ${info.fixtures} matches` : '';
+                                options.push(`<option value="${count}">${count} court${count > 1 ? 's' : ''} (${resting === 0 ? 'everyone plays' : resting + ' resting'}${fixtureInfo})</option>`);
+                            }
+                            return options.join('');
+                        })()}
                     </select>
                     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
                 </div>
@@ -155,8 +162,9 @@ function goBackToWizardStep2() {
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg appearance-none">
                         ${Array.from({ length: CONFIG.MAX_PLAYERS - CONFIG.MIN_PLAYERS + 1 }, (_, i) => {
                             const count = CONFIG.MIN_PLAYERS + i;
-                            const info = TOURNAMENT_INFO[count];
-                            return `<option value="${count}" ${count === window._createWizardData.playerCount ? 'selected' : ''}>${count} players (${info.fixtures} matches)</option>`;
+                            const info = getTournamentInfo(count);
+                            const fixtureText = info.fixtures ? `${info.fixtures} matches` : '33-38 matches';
+                            return `<option value="${count}" ${count === window._createWizardData.playerCount ? 'selected' : ''}>${count} players (${fixtureText})</option>`;
                         }).join('')}
                     </select>
                     <div class="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
@@ -284,7 +292,7 @@ async function createTournament(name, passcode, playerCount, courtCount) {
     }
     
     // Initialize empty scores
-    const fixtures = FIXTURES[playerCount] || [];
+    const fixtures = getFixtures(playerCount, courtCount);
     const scores = {};
     fixtures.forEach((_, fixtureIdx) => {
         const roundIndex = Math.floor(fixtureIdx / courtCount);

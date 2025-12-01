@@ -351,7 +351,7 @@ class AmericanoState {
             return this._cachedTimeslots;
         }
         
-        const fixtures = FIXTURES[this.playerCount] || [];
+        const fixtures = getFixtures(this.playerCount, this.courtCount);
         const timeslots = [];
         const usedFixtureIndices = new Set();
         
@@ -421,7 +421,7 @@ class AmericanoState {
             pointsAgainst: 0
         }));
         
-        const fixtures = FIXTURES[this.playerCount] || [];
+        const fixtures = getFixtures(this.playerCount, this.courtCount);
         
         // Iterate through all fixtures using fixture index
         fixtures.forEach((fixture, fixtureIndex) => {
@@ -508,7 +508,7 @@ class AmericanoState {
      */
     countCompletedMatches() {
         let count = 0;
-        const fixtures = FIXTURES[this.playerCount] || [];
+        const fixtures = getFixtures(this.playerCount, this.courtCount);
         fixtures.forEach((_, fixtureIndex) => {
             const score = this.getScoreByFixture(fixtureIndex);
             if (score.team1 !== null && score.team2 !== null) {
@@ -522,7 +522,7 @@ class AmericanoState {
      * Get total number of matches (fixtures)
      */
     getTotalMatches() {
-        return (FIXTURES[this.playerCount] || []).length;
+        return getFixtures(this.playerCount, this.courtCount).length;
     }
     
     /**

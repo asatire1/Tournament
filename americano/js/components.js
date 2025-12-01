@@ -602,6 +602,7 @@ function renderPlayersSettings(canEdit) {
  */
 function renderCourtsSettings(canEdit) {
     const maxCourts = getMaxCourts(state.playerCount);
+    const minCourts = getMinCourts(state.playerCount);
     const totalTimeslots = state.getTotalTimeslots();
     
     return `
@@ -618,10 +619,13 @@ function renderCourtsSettings(canEdit) {
                             class="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
                             ${!canEdit ? 'disabled' : ''}
                             onchange="state.updateSettings({ courtCount: parseInt(this.value) }); render();">
-                            ${Array.from({ length: maxCourts }, (_, i) => {
-                                const count = i + 1;
-                                return `<option value="${count}" ${state.courtCount === count ? 'selected' : ''}>${count} court${count > 1 ? 's' : ''}</option>`;
-                            }).join('')}
+                            ${(() => {
+                                const options = [];
+                                for (let count = minCourts; count <= maxCourts; count++) {
+                                    options.push(`<option value="${count}" ${state.courtCount === count ? 'selected' : ''}>${count} court${count > 1 ? 's' : ''}</option>`);
+                                }
+                                return options.join('');
+                            })()}
                         </select>
                     </div>
                     <div class="mt-3 p-3 bg-blue-50 rounded-xl">
