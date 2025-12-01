@@ -1,5 +1,5 @@
 /**
- * fixtures.js - Americano Tournament Fixtures (5-9 players)
+ * fixtures.js - Americano Tournament Fixtures (5-10 players)
  * 
  * Static fixtures where each player partners with every other player.
  * Multi-court just means fewer rounds (fixtures run simultaneously).
@@ -10,6 +10,7 @@
  * - 7 players: 1 court max (4 play, 3 rest)
  * - 8 players: 2 courts max (all 8 play, 0 rest)
  * - 9 players: 2 courts max (8 play, 1 rests) - optimized for 2-court play
+ * - 10 players: 2 courts max (8 play, 2 rest) - optimized for 2-court play
  */
 
 const FIXTURES = {
@@ -96,6 +97,41 @@ const FIXTURES = {
         { teams: [[3,6],[5,7]], rest: [8] },
         { teams: [[1,6],[2,5]], rest: [9] },
         { teams: [[3,7],[4,8]], rest: [9] }
+    ],
+
+    // 10 Players - 30 fixtures, 12 games each, optimized for 2 courts
+    // 15 rounds, each round uses 2 courts, 2 players rest per round
+    10: [
+        { teams: [[1,6],[3,5]], rest: [2,9] },
+        { teams: [[4,7],[8,10]], rest: [2,9] },
+        { teams: [[1,7],[6,9]], rest: [3,8] },
+        { teams: [[2,4],[5,10]], rest: [3,8] },
+        { teams: [[1,10],[7,9]], rest: [5,6] },
+        { teams: [[2,3],[4,8]], rest: [5,6] },
+        { teams: [[2,5],[9,10]], rest: [1,7] },
+        { teams: [[3,4],[6,8]], rest: [1,7] },
+        { teams: [[1,5],[2,6]], rest: [4,10] },
+        { teams: [[3,7],[8,9]], rest: [4,10] },
+        { teams: [[2,9],[4,5]], rest: [1,8] },
+        { teams: [[3,6],[7,10]], rest: [1,8] },
+        { teams: [[1,3],[2,10]], rest: [5,9] },
+        { teams: [[4,6],[7,8]], rest: [5,9] },
+        { teams: [[1,9],[6,7]], rest: [4,10] },
+        { teams: [[2,3],[5,8]], rest: [4,10] },
+        { teams: [[1,8],[6,10]], rest: [2,7] },
+        { teams: [[3,4],[5,9]], rest: [2,7] },
+        { teams: [[1,2],[4,10]], rest: [3,6] },
+        { teams: [[5,7],[8,9]], rest: [3,6] },
+        { teams: [[1,4],[2,7]], rest: [3,9] },
+        { teams: [[5,6],[8,10]], rest: [3,9] },
+        { teams: [[2,8],[4,9]], rest: [1,7] },
+        { teams: [[3,5],[6,10]], rest: [1,7] },
+        { teams: [[1,4],[6,7]], rest: [2,5] },
+        { teams: [[3,8],[9,10]], rest: [2,5] },
+        { teams: [[1,5],[3,9]], rest: [6,10] },
+        { teams: [[2,4],[7,8]], rest: [6,10] },
+        { teams: [[1,9],[3,10]], rest: [4,8] },
+        { teams: [[2,5],[6,7]], rest: [4,8] }
     ]
 };
 
@@ -107,7 +143,8 @@ const TOURNAMENT_INFO = {
     6: { fixtures: 12, maxCourts: 1, gamesPerPlayer: 8 },
     7: { fixtures: 15, maxCourts: 1, gamesPerPlayer: 8 },
     8: { fixtures: 14, maxCourts: 2, gamesPerPlayer: 7 },
-    9: { fixtures: 18, maxCourts: 2, gamesPerPlayer: 8 }
+    9: { fixtures: 18, maxCourts: 2, gamesPerPlayer: 8 },
+    10: { fixtures: 30, maxCourts: 2, gamesPerPlayer: 12 }
 };
 
 /**
@@ -136,5 +173,5 @@ function getMaxCourts(playerCount) {
  * Check if player count is supported
  */
 function isPlayerCountSupported(playerCount) {
-    return playerCount >= 5 && playerCount <= 9;
+    return playerCount >= 5 && playerCount <= 10;
 }

@@ -4,9 +4,9 @@
  */
 
 const CONFIG = {
-    // Player limits (5-9 supported)
+    // Player limits (5-10 supported)
     MIN_PLAYERS: 5,
-    MAX_PLAYERS: 9,
+    MAX_PLAYERS: 10,
     
     // Court limits (max 2 courts, depends on player count)
     MIN_COURTS: 1,
@@ -36,7 +36,7 @@ const CONFIG = {
     MAX_ROUNDS_DISPLAY: 17  // Max rounds for 9 players
 };
 
-// Player colour classes for badges (9 players max)
+// Player colour classes for badges (10 players max)
 const PLAYER_COLORS = [
     'player-color-1',  // Red
     'player-color-2',  // Purple
@@ -46,7 +46,8 @@ const PLAYER_COLORS = [
     'player-color-6',  // Teal
     'player-color-7',  // Pink
     'player-color-8',  // Indigo
-    'player-color-9'   // Amber
+    'player-color-9',  // Amber
+    'player-color-10'  // Cyan
 ];
 
 /**
