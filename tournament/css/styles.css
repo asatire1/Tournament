@@ -61,6 +61,7 @@ body {
 
 /* ===== TIER COLORS ===== */
 .tier-elite { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); }
+.tier-advanced-plus { background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); }
 .tier-advanced { background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%); }
 .tier-intermediate-plus { background: linear-gradient(135deg, #CA8A04 0%, #A16207 100%); }
 .tier-intermediate { background: linear-gradient(135deg, #16A34A 0%, #15803D 100%); }

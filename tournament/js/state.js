@@ -14,6 +14,23 @@ class TournamentState {
         this.isOrganiser = false;
         this.organiserKey = null;
         
+        // Polling for viewers (optimization: viewers don't need real-time)
+        this.pollingInterval = null;
+        this.VIEWER_POLL_INTERVAL = 10000; // 10 seconds for viewers
+        
+        // Debounce for score updates (optimization: batch writes)
+        this.pendingScoreUpdates = {};      // { "round-match": {team1Score, team2Score} }
+        this.pendingKnockoutUpdates = {};   // { "matchId": {team1Score, team2Score} }
+        this.scoreDebounceTimer = null;
+        this.SCORE_DEBOUNCE_MS = 500;       // Wait 500ms after last change
+        
+        // Idle detection (optimization: disconnect inactive users)
+        this.idleTimer = null;
+        this.IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes
+        this.isDisconnected = false;
+        this.activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        this.boundResetIdle = null;  // Will hold bound function reference
+        
         // Default data (will be overridden by loaded JSON)
         this.defaultPlayers = [];
         this.defaultFixtures = {};
@@ -69,6 +86,8 @@ class TournamentState {
             
             if (this.isOrganiser) {
                 console.log('✅ Organiser access granted');
+                // Upgrade from polling to real-time sync
+                this.upgradeToRealtime();
             } else {
                 console.log('❌ Invalid organiser key');
             }
@@ -138,6 +157,60 @@ class TournamentState {
 
     // ===== FIREBASE OPERATIONS =====
 
+    // Process STATIC data from Firebase (loaded once)
+    processStaticData(data) {
+        if (!data) {
+            console.log('⚠️ Tournament not found in Firebase');
+            return false;
+        }
+        
+        // Load metadata
+        if (data.meta) {
+            this.tournamentName = data.meta.name || '';
+            this.createdAt = data.meta.createdAt || null;
+            
+            // Load player count and update config
+            const playerCount = data.meta.playerCount || 24;
+            if (CONFIG.PLAYER_CONFIGS[playerCount]) {
+                setPlayerCountConfig(playerCount);
+            }
+        }
+        
+        // Static data - rarely changes
+        this.playerNames = data.playerNames || this.playerNames;
+        this.skillRatings = data.skillRatings || this.skillRatings;
+        this.fixtures = data.fixtures || this.fixtures;
+        this.matchNames = data.matchNames || this.matchNames;
+        this.knockoutNames = data.knockoutNames || this.knockoutNames;
+        this.fixtureMaxScore = data.fixtureMaxScore || CONFIG.FIXTURE_MAX_SCORE;
+        this.knockoutMaxScore = data.knockoutMaxScore || CONFIG.KNOCKOUT_MAX_SCORE;
+        this.semiMaxScore = data.semiMaxScore || CONFIG.SEMI_MAX_SCORE;
+        this.finalMaxScore = data.finalMaxScore || CONFIG.FINAL_MAX_SCORE;
+        this.savedVersions = data.savedVersions || [];
+        this.showFairnessTabs = data.showFairnessTabs !== undefined ? data.showFairnessTabs : true;
+        
+        // Also load initial scores
+        this.matchScores = data.matchScores || {};
+        this.knockoutScores = data.knockoutScores || {};
+        
+        console.log('📦 Static data loaded');
+        return true;
+    }
+    
+    // Process DYNAMIC data from Firebase (scores - changes frequently)
+    processDynamicData(matchScores, knockoutScores) {
+        // Skip updating local state if we're in the middle of saving
+        if (this.isSaving) {
+            console.log('⏳ Skipping Firebase update - save in progress');
+            return;
+        }
+        
+        this.matchScores = matchScores || {};
+        this.knockoutScores = knockoutScores || {};
+        
+        render();
+    }
+
     loadFromFirebase() {
         const basePath = this.getBasePath();
         
@@ -151,54 +224,224 @@ class TournamentState {
             }
         });
 
-        database.ref(basePath).on('value', (snapshot) => {
+        // STEP 1: Load static data once (meta, players, fixtures, settings)
+        database.ref(basePath).once('value').then((snapshot) => {
             const data = snapshot.val();
-            
-            // Skip updating local state if we're in the middle of saving
-            if (this.isSaving) {
-                console.log('⏳ Skipping Firebase update - save in progress');
+            if (!this.processStaticData(data)) {
+                this.isInitialized = true;
+                render();
                 return;
             }
             
-            if (data) {
-                // Load metadata
-                if (data.meta) {
-                    this.tournamentName = data.meta.name || '';
-                    this.createdAt = data.meta.createdAt || null;
-                }
-                
-                this.playerNames = data.playerNames || this.playerNames;
-                this.skillRatings = data.skillRatings || this.skillRatings;
-                this.matchScores = data.matchScores || {};
-                this.fixtures = data.fixtures || this.fixtures;
-                this.matchNames = data.matchNames || this.matchNames;
-                this.knockoutNames = data.knockoutNames || this.knockoutNames;
-                this.knockoutScores = data.knockoutScores || {};
-                this.fixtureMaxScore = data.fixtureMaxScore || CONFIG.FIXTURE_MAX_SCORE;
-                this.knockoutMaxScore = data.knockoutMaxScore || CONFIG.KNOCKOUT_MAX_SCORE;
-                this.semiMaxScore = data.semiMaxScore || CONFIG.SEMI_MAX_SCORE;
-                this.finalMaxScore = data.finalMaxScore || CONFIG.FINAL_MAX_SCORE;
-                this.savedVersions = data.savedVersions || [];
-                this.showFairnessTabs = data.showFairnessTabs !== undefined ? data.showFairnessTabs : true;
+            this.isInitialized = true;
+            render();
+            
+            // STEP 2: Set up listeners for dynamic data only (scores)
+            if (this.isOrganiser) {
+                // ORGANISER: Real-time listeners for scores only
+                console.log('👑 Organiser mode: Real-time sync for scores');
+                this.setupScoreListeners(basePath);
             } else {
-                // Tournament doesn't exist
-                console.log('⚠️ Tournament not found in Firebase');
+                // VIEWER: Polling for scores only
+                console.log('👁️ Viewer mode: Polling scores (every ' + (this.VIEWER_POLL_INTERVAL/1000) + 's)');
+                this.setupScorePolling(basePath);
             }
             
-            if (!this.isInitialized) {
-                this.isInitialized = true;
-                render();
-            } else {
+            // STEP 3: Start idle detection to disconnect inactive users
+            this.startIdleDetection();
+        });
+    }
+    
+    // Set up real-time listeners for scores only (organiser mode)
+    setupScoreListeners(basePath) {
+        // Listen to match scores
+        database.ref(`${basePath}/matchScores`).on('value', (snapshot) => {
+            if (!this.isSaving) {
+                this.matchScores = snapshot.val() || {};
                 render();
             }
         });
+        
+        // Listen to knockout scores
+        database.ref(`${basePath}/knockoutScores`).on('value', (snapshot) => {
+            if (!this.isSaving) {
+                this.knockoutScores = snapshot.val() || {};
+                render();
+            }
+        });
+    }
+    
+    // Set up polling for scores only (viewer mode)
+    setupScorePolling(basePath) {
+        this.pollingInterval = setInterval(() => {
+            // Only fetch scores, not entire tournament
+            Promise.all([
+                database.ref(`${basePath}/matchScores`).once('value'),
+                database.ref(`${basePath}/knockoutScores`).once('value')
+            ]).then(([matchSnapshot, knockoutSnapshot]) => {
+                this.processDynamicData(matchSnapshot.val(), knockoutSnapshot.val());
+            });
+        }, this.VIEWER_POLL_INTERVAL);
+    }
+
+    // Upgrade from polling to real-time (when viewer becomes organiser)
+    upgradeToRealtime() {
+        if (this.pollingInterval) {
+            console.log('⬆️ Upgrading to real-time sync');
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            
+            // Switch to real-time listeners for scores
+            const basePath = this.getBasePath();
+            this.setupScoreListeners(basePath);
+        }
     }
 
     // Stop listening to Firebase (when leaving tournament)
     stopListening() {
         const basePath = this.getBasePath();
+        
+        // Clear real-time listeners
+        database.ref(`${basePath}/matchScores`).off();
+        database.ref(`${basePath}/knockoutScores`).off();
         database.ref(basePath).off();
         database.ref('.info/connected').off();
+        
+        // Clear polling interval if active
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('🛑 Stopped polling');
+        }
+    }
+    
+    // Reload static data (called when organiser updates settings)
+    reloadStaticData() {
+        const basePath = this.getBasePath();
+        database.ref(basePath).once('value').then((snapshot) => {
+            this.processStaticData(snapshot.val());
+            render();
+        });
+    }
+    
+    // ===== IDLE DETECTION =====
+    
+    // Start monitoring for idle state
+    startIdleDetection() {
+        // Create bound function reference so we can remove it later
+        this.boundResetIdle = this.resetIdleTimer.bind(this);
+        
+        // Add event listeners for user activity
+        this.activityEvents.forEach(event => {
+            document.addEventListener(event, this.boundResetIdle, { passive: true });
+        });
+        
+        // Start the idle timer
+        this.resetIdleTimer();
+        console.log('👁️ Idle detection started (timeout: ' + (this.IDLE_TIMEOUT_MS / 60000) + ' min)');
+    }
+    
+    // Stop monitoring for idle state
+    stopIdleDetection() {
+        // Remove event listeners
+        if (this.boundResetIdle) {
+            this.activityEvents.forEach(event => {
+                document.removeEventListener(event, this.boundResetIdle);
+            });
+            this.boundResetIdle = null;
+        }
+        
+        // Clear idle timer
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+            this.idleTimer = null;
+        }
+    }
+    
+    // Reset the idle timer (called on any user activity)
+    resetIdleTimer() {
+        // Clear existing timer
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+        }
+        
+        // If we were disconnected, reconnect
+        if (this.isDisconnected) {
+            this.reconnect();
+        }
+        
+        // Start new timer
+        this.idleTimer = setTimeout(() => {
+            this.onIdle();
+        }, this.IDLE_TIMEOUT_MS);
+    }
+    
+    // Called when user becomes idle
+    onIdle() {
+        if (this.isDisconnected) return;
+        
+        console.log('😴 User idle - disconnecting to save resources');
+        this.isDisconnected = true;
+        
+        // Flush any pending saves
+        this.flushScoresImmediately();
+        
+        // Stop listening to Firebase
+        this.stopListening();
+        
+        // Show reconnect banner
+        this.showReconnectBanner();
+    }
+    
+    // Reconnect after being idle
+    reconnect() {
+        if (!this.isDisconnected) return;
+        
+        console.log('🔄 User active - reconnecting...');
+        this.isDisconnected = false;
+        
+        // Hide reconnect banner
+        this.hideReconnectBanner();
+        
+        // Reload data and restart listeners
+        const basePath = this.getBasePath();
+        database.ref(basePath).once('value').then((snapshot) => {
+            this.processStaticData(snapshot.val());
+            
+            if (this.isOrganiser) {
+                this.setupScoreListeners(basePath);
+            } else {
+                this.setupScorePolling(basePath);
+            }
+            
+            render();
+            console.log('✅ Reconnected successfully');
+        });
+    }
+    
+    // Show banner indicating disconnection
+    showReconnectBanner() {
+        const existingBanner = document.getElementById('idle-banner');
+        if (existingBanner) return;
+        
+        const banner = document.createElement('div');
+        banner.id = 'idle-banner';
+        banner.className = 'fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 px-4 z-50 shadow-lg';
+        banner.innerHTML = `
+            <span>😴 Disconnected due to inactivity.</span>
+            <button onclick="state.resetIdleTimer()" class="ml-2 underline font-semibold hover:text-amber-100">
+                Click to reconnect
+            </button>
+        `;
+        document.body.prepend(banner);
+    }
+    
+    // Hide reconnect banner
+    hideReconnectBanner() {
+        const banner = document.getElementById('idle-banner');
+        if (banner) {
+            banner.remove();
+        }
     }
 
     saveToFirebase() {
@@ -255,32 +498,90 @@ class TournamentState {
         }, 500);
     }
 
-    // Granular update for match scores only (most common operation)
+    // Granular update for match scores only (most common operation) - DEBOUNCED
     saveMatchScoreToFirebase(round, matchIdx, team1Score, team2Score) {
         if (!this.canEdit()) return;
         
-        const path = `${this.getBasePath()}/matchScores/${round}/${matchIdx}`;
-        database.ref(path).set({
-            team1Score: team1Score,
-            team2Score: team2Score
-        });
+        // Queue the update
+        const key = `${round}-${matchIdx}`;
+        this.pendingScoreUpdates[key] = { round, matchIdx, team1Score, team2Score };
         
-        // Update timestamp
-        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
+        // Debounce the actual save
+        this.debouncedScoreSave();
     }
 
-    // Granular update for knockout scores
+    // Granular update for knockout scores - DEBOUNCED
     saveKnockoutScoreToFirebase(matchId, team1Score, team2Score) {
         if (!this.canEdit()) return;
         
-        const path = `${this.getBasePath()}/knockoutScores/${matchId}`;
-        database.ref(path).set({
-            team1Score: team1Score,
-            team2Score: team2Score
-        });
+        // Queue the update
+        this.pendingKnockoutUpdates[matchId] = { team1Score, team2Score };
         
-        // Update timestamp
-        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
+        // Debounce the actual save
+        this.debouncedScoreSave();
+    }
+    
+    // Debounced save - batches all pending score updates
+    debouncedScoreSave() {
+        // Clear existing timer
+        if (this.scoreDebounceTimer) {
+            clearTimeout(this.scoreDebounceTimer);
+        }
+        
+        // Set new timer
+        this.scoreDebounceTimer = setTimeout(() => {
+            this.flushPendingScores();
+        }, this.SCORE_DEBOUNCE_MS);
+    }
+    
+    // Flush all pending score updates to Firebase in a single batch
+    flushPendingScores() {
+        const basePath = this.getBasePath();
+        const updates = {};
+        let hasUpdates = false;
+        
+        // Add pending match scores
+        for (const key in this.pendingScoreUpdates) {
+            const { round, matchIdx, team1Score, team2Score } = this.pendingScoreUpdates[key];
+            updates[`${basePath}/matchScores/${round}/${matchIdx}`] = { team1Score, team2Score };
+            hasUpdates = true;
+        }
+        
+        // Add pending knockout scores
+        for (const matchId in this.pendingKnockoutUpdates) {
+            const { team1Score, team2Score } = this.pendingKnockoutUpdates[matchId];
+            updates[`${basePath}/knockoutScores/${matchId}`] = { team1Score, team2Score };
+            hasUpdates = true;
+        }
+        
+        if (hasUpdates) {
+            // Add timestamp
+            updates[`${basePath}/meta/updatedAt`] = new Date().toISOString();
+            
+            // Batch write all updates
+            database.ref().update(updates)
+                .then(() => {
+                    console.log(`✅ Saved ${Object.keys(this.pendingScoreUpdates).length} match + ${Object.keys(this.pendingKnockoutUpdates).length} knockout scores`);
+                })
+                .catch(err => {
+                    console.error('❌ Error saving scores:', err);
+                });
+            
+            // Clear pending updates
+            this.pendingScoreUpdates = {};
+            this.pendingKnockoutUpdates = {};
+        }
+        
+        this.scoreDebounceTimer = null;
+    }
+    
+    // Force immediate save (e.g., before page unload)
+    flushScoresImmediately() {
+        if (this.scoreDebounceTimer) {
+            clearTimeout(this.scoreDebounceTimer);
+            this.scoreDebounceTimer = null;
+        }
+        this.flushPendingScores();
     }
 
     // Granular update for settings

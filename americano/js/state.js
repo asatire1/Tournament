@@ -16,6 +16,22 @@ class AmericanoState {
         this.isOrganiser = false;
         this.isInitialized = false;
         
+        // Polling for viewers (optimization: viewers don't need real-time)
+        this.pollingInterval = null;
+        this.VIEWER_POLL_INTERVAL = 10000; // 10 seconds for viewers
+        
+        // Debounce for score updates (optimization: batch writes)
+        this.pendingScoreUpdates = {};      // { "f_index": {team1, team2} }
+        this.scoreDebounceTimer = null;
+        this.SCORE_DEBOUNCE_MS = 500;       // Wait 500ms after last change
+        
+        // Idle detection (optimization: disconnect inactive users)
+        this.idleTimer = null;
+        this.IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes
+        this.isDisconnected = false;
+        this.activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        this.boundResetIdle = null;
+        
         // Player configuration
         this.playerCount = CONFIG.DEFAULT_PLAYERS;
         this.playerNames = [];
@@ -63,6 +79,12 @@ class AmericanoState {
             const isValid = await verifyOrganiserKey(this.tournamentId, key);
             this.isOrganiser = isValid;
             this.organiserKey = isValid ? key : null;
+            
+            if (isValid) {
+                // Upgrade from polling to real-time sync
+                this.upgradeToRealtime();
+            }
+            
             return isValid;
         } catch (error) {
             console.error('Error verifying organiser key:', error);
@@ -79,6 +101,89 @@ class AmericanoState {
     }
     
     /**
+     * Process STATIC data from Firebase (loaded once)
+     */
+    processStaticData(data) {
+        if (!data) {
+            console.log('⚠️ Tournament not found in Firebase');
+            return false;
+        }
+        
+        // Meta data
+        this.tournamentName = data.meta?.name || '';
+        
+        // Player config (static)
+        this.playerCount = data.playerCount || CONFIG.DEFAULT_PLAYERS;
+        if (data.playerNames) {
+            this.playerNames = Array.isArray(data.playerNames) 
+                ? data.playerNames 
+                : Object.values(data.playerNames);
+        } else {
+            this.playerNames = getDefaultPlayerNames(this.playerCount);
+        }
+        
+        // Court config (static)
+        this.courtCount = data.courtCount || CONFIG.DEFAULT_COURTS;
+        if (data.courtNames) {
+            this.courtNames = Array.isArray(data.courtNames)
+                ? data.courtNames
+                : Object.values(data.courtNames);
+        } else {
+            this.courtNames = getDefaultCourtNames(this.courtCount);
+        }
+        
+        // Scoring config (static)
+        this.fixedPoints = data.fixedPoints !== undefined ? data.fixedPoints : CONFIG.DEFAULT_FIXED_POINTS;
+        this.totalPoints = data.totalPoints || CONFIG.DEFAULT_TOTAL_POINTS;
+        
+        // Status (static)
+        this.tournamentStarted = data.tournamentStarted || false;
+        
+        // Also load initial scores
+        if (data.scores) {
+            this.scores = {};
+            Object.entries(data.scores).forEach(([key, value]) => {
+                const newKey = this._migrateScoreKey(key, data.courtCount || CONFIG.DEFAULT_COURTS);
+                this.scores[newKey] = {
+                    team1: value?.team1 === -1 ? null : value?.team1,
+                    team2: value?.team2 === -1 ? null : value?.team2
+                };
+            });
+        } else {
+            this.scores = {};
+        }
+        
+        // Invalidate cache
+        this._cachedTimeslots = null;
+        
+        console.log('📦 Static data loaded');
+        return true;
+    }
+    
+    /**
+     * Process DYNAMIC data from Firebase (scores - changes frequently)
+     */
+    processDynamicData(scoresData) {
+        if (scoresData) {
+            this.scores = {};
+            Object.entries(scoresData).forEach(([key, value]) => {
+                const newKey = this._migrateScoreKey(key, this.courtCount);
+                this.scores[newKey] = {
+                    team1: value?.team1 === -1 ? null : value?.team1,
+                    team2: value?.team2 === -1 ? null : value?.team2
+                };
+            });
+        } else {
+            this.scores = {};
+        }
+        
+        // Invalidate cache
+        this._cachedTimeslots = null;
+        
+        render();
+    }
+    
+    /**
      * Load tournament data from Firebase and subscribe to changes
      */
     loadFromFirebase() {
@@ -86,62 +191,173 @@ class AmericanoState {
         
         this.firebaseRef = database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`);
         
-        this.unsubscribe = this.firebaseRef.on('value', (snapshot) => {
+        // STEP 1: Load static data once
+        this.firebaseRef.once('value').then((snapshot) => {
             const data = snapshot.val();
-            if (data) {
-                // Meta data
-                this.tournamentName = data.meta?.name || '';
-                
-                // Player config
-                this.playerCount = data.playerCount || CONFIG.DEFAULT_PLAYERS;
-                if (data.playerNames) {
-                    this.playerNames = Array.isArray(data.playerNames) 
-                        ? data.playerNames 
-                        : Object.values(data.playerNames);
-                } else {
-                    this.playerNames = getDefaultPlayerNames(this.playerCount);
-                }
-                
-                // Court config
-                this.courtCount = data.courtCount || CONFIG.DEFAULT_COURTS;
-                if (data.courtNames) {
-                    this.courtNames = Array.isArray(data.courtNames)
-                        ? data.courtNames
-                        : Object.values(data.courtNames);
-                } else {
-                    this.courtNames = getDefaultCourtNames(this.courtCount);
-                }
-                
-                // Scoring config
-                this.fixedPoints = data.fixedPoints !== undefined ? data.fixedPoints : CONFIG.DEFAULT_FIXED_POINTS;
-                this.totalPoints = data.totalPoints || CONFIG.DEFAULT_TOTAL_POINTS;
-                
-                // Scores - convert from Firebase format and handle migration
-                if (data.scores) {
-                    this.scores = {};
-                    Object.entries(data.scores).forEach(([key, value]) => {
-                        // Migrate old format (roundIndex_matchIndex) to new format (f_fixtureIndex)
-                        const newKey = this._migrateScoreKey(key, data.courtCount || CONFIG.DEFAULT_COURTS);
-                        this.scores[newKey] = {
-                            team1: value?.team1 === -1 ? null : value?.team1,
-                            team2: value?.team2 === -1 ? null : value?.team2
-                        };
-                    });
-                } else {
-                    this.scores = {};
-                }
-                
-                // Status
-                this.tournamentStarted = data.tournamentStarted || false;
+            if (!this.processStaticData(data)) {
                 this.isInitialized = true;
-                
-                // Invalidate cache
-                this._cachedTimeslots = null;
-                
-                // Re-render UI
                 render();
+                return;
             }
+            
+            this.isInitialized = true;
+            render();
+            
+            // STEP 2: Set up listeners for dynamic data only (scores)
+            if (this.isOrganiser) {
+                console.log('👑 Organiser mode: Real-time sync for scores');
+                this.setupScoreListeners();
+            } else {
+                console.log('👁️ Viewer mode: Polling scores (every ' + (this.VIEWER_POLL_INTERVAL/1000) + 's)');
+                this.setupScorePolling();
+            }
+            
+            // STEP 3: Start idle detection
+            this.startIdleDetection();
         });
+    }
+    
+    /**
+     * Set up real-time listener for scores only (organiser mode)
+     */
+    setupScoreListeners() {
+        database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/scores`).on('value', (snapshot) => {
+            this.processDynamicData(snapshot.val());
+        });
+    }
+    
+    /**
+     * Set up polling for scores only (viewer mode)
+     */
+    setupScorePolling() {
+        this.pollingInterval = setInterval(() => {
+            database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/scores`).once('value').then((snapshot) => {
+                this.processDynamicData(snapshot.val());
+            });
+        }, this.VIEWER_POLL_INTERVAL);
+    }
+    
+    /**
+     * Upgrade from polling to real-time (when viewer becomes organiser)
+     */
+    upgradeToRealtime() {
+        if (this.pollingInterval) {
+            console.log('⬆️ Upgrading to real-time sync');
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            
+            this.setupScoreListeners();
+        }
+    }
+    
+    /**
+     * Stop listening to Firebase changes
+     */
+    stopListening() {
+        // Clear real-time listeners
+        database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/scores`).off();
+        if (this.firebaseRef && this.unsubscribe) {
+            this.firebaseRef.off('value', this.unsubscribe);
+        }
+        
+        // Clear polling interval if active
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('🛑 Stopped polling');
+        }
+    }
+    
+    /**
+     * Reload static data (called when organiser updates settings)
+     */
+    reloadStaticData() {
+        this.firebaseRef.once('value').then((snapshot) => {
+            this.processStaticData(snapshot.val());
+            render();
+        });
+    }
+    
+    // ===== IDLE DETECTION =====
+    
+    startIdleDetection() {
+        this.boundResetIdle = this.resetIdleTimer.bind(this);
+        this.activityEvents.forEach(event => {
+            document.addEventListener(event, this.boundResetIdle, { passive: true });
+        });
+        this.resetIdleTimer();
+        console.log('👁️ Idle detection started (timeout: ' + (this.IDLE_TIMEOUT_MS / 60000) + ' min)');
+    }
+    
+    stopIdleDetection() {
+        if (this.boundResetIdle) {
+            this.activityEvents.forEach(event => {
+                document.removeEventListener(event, this.boundResetIdle);
+            });
+            this.boundResetIdle = null;
+        }
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+            this.idleTimer = null;
+        }
+    }
+    
+    resetIdleTimer() {
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+        }
+        if (this.isDisconnected) {
+            this.reconnect();
+        }
+        this.idleTimer = setTimeout(() => {
+            this.onIdle();
+        }, this.IDLE_TIMEOUT_MS);
+    }
+    
+    onIdle() {
+        if (this.isDisconnected) return;
+        console.log('😴 User idle - disconnecting to save resources');
+        this.isDisconnected = true;
+        this.flushScoresImmediately();
+        this.stopListening();
+        this.showReconnectBanner();
+    }
+    
+    reconnect() {
+        if (!this.isDisconnected) return;
+        console.log('🔄 User active - reconnecting...');
+        this.isDisconnected = false;
+        this.hideReconnectBanner();
+        
+        this.firebaseRef.once('value').then((snapshot) => {
+            this.processStaticData(snapshot.val());
+            if (this.isOrganiser) {
+                this.setupScoreListeners();
+            } else {
+                this.setupScorePolling();
+            }
+            render();
+            console.log('✅ Reconnected successfully');
+        });
+    }
+    
+    showReconnectBanner() {
+        if (document.getElementById('idle-banner')) return;
+        const banner = document.createElement('div');
+        banner.id = 'idle-banner';
+        banner.className = 'fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 px-4 z-50 shadow-lg';
+        banner.innerHTML = `
+            <span>😴 Disconnected due to inactivity.</span>
+            <button onclick="state.resetIdleTimer()" class="ml-2 underline font-semibold hover:text-amber-100">
+                Click to reconnect
+            </button>
+        `;
+        document.body.prepend(banner);
+    }
+    
+    hideReconnectBanner() {
+        const banner = document.getElementById('idle-banner');
+        if (banner) banner.remove();
     }
     
     /**
@@ -165,15 +381,6 @@ class AmericanoState {
         }
         
         return key;
-    }
-    
-    /**
-     * Stop listening to Firebase changes
-     */
-    stopListening() {
-        if (this.firebaseRef && this.unsubscribe) {
-            this.firebaseRef.off('value', this.unsubscribe);
-        }
     }
     
     /**
@@ -209,17 +416,74 @@ class AmericanoState {
     }
     
     /**
-     * Save a single match score to Firebase using fixture index
+     * Save a single match score to Firebase using fixture index - DEBOUNCED
      */
     saveMatchScoreToFirebase(fixtureIndex, team1Score, team2Score) {
         if (!this.tournamentId) return;
         
+        // Queue the update
         const key = `f_${fixtureIndex}`;
-        database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/scores/${key}`).set({
-            team1: team1Score === null ? -1 : team1Score,
-            team2: team2Score === null ? -1 : team2Score
-        });
-        database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/meta/updatedAt`).set(new Date().toISOString());
+        this.pendingScoreUpdates[key] = { 
+            team1: team1Score === null ? -1 : team1Score, 
+            team2: team2Score === null ? -1 : team2Score 
+        };
+        
+        // Debounce the actual save
+        this.debouncedScoreSave();
+    }
+    
+    /**
+     * Debounced save - batches all pending score updates
+     */
+    debouncedScoreSave() {
+        if (this.scoreDebounceTimer) {
+            clearTimeout(this.scoreDebounceTimer);
+        }
+        
+        this.scoreDebounceTimer = setTimeout(() => {
+            this.flushPendingScores();
+        }, this.SCORE_DEBOUNCE_MS);
+    }
+    
+    /**
+     * Flush all pending score updates to Firebase in a single batch
+     */
+    flushPendingScores() {
+        if (!this.tournamentId || Object.keys(this.pendingScoreUpdates).length === 0) {
+            this.scoreDebounceTimer = null;
+            return;
+        }
+        
+        const basePath = `${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`;
+        const updates = {};
+        
+        for (const key in this.pendingScoreUpdates) {
+            updates[`${basePath}/scores/${key}`] = this.pendingScoreUpdates[key];
+        }
+        
+        updates[`${basePath}/meta/updatedAt`] = new Date().toISOString();
+        
+        database.ref().update(updates)
+            .then(() => {
+                console.log(`✅ Saved ${Object.keys(this.pendingScoreUpdates).length} scores`);
+            })
+            .catch(err => {
+                console.error('❌ Error saving scores:', err);
+            });
+        
+        this.pendingScoreUpdates = {};
+        this.scoreDebounceTimer = null;
+    }
+    
+    /**
+     * Force immediate save (e.g., before page unload)
+     */
+    flushScoresImmediately() {
+        if (this.scoreDebounceTimer) {
+            clearTimeout(this.scoreDebounceTimer);
+            this.scoreDebounceTimer = null;
+        }
+        this.flushPendingScores();
     }
     
     /**

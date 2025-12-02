@@ -18,6 +18,23 @@ class TeamLeagueState {
         this.isOrganiser = false;
         this.organiserKey = null;
         
+        // Polling for viewers (optimization: viewers don't need real-time)
+        this.pollingInterval = null;
+        this.VIEWER_POLL_INTERVAL = 10000; // 10 seconds for viewers
+        
+        // Debounce for score updates (optimization: batch writes)
+        this.pendingGroupScores = {};       // { "group-matchKey": {team1Score, team2Score} }
+        this.pendingKnockoutScores = {};    // { "matchId": {team1Score, team2Score} }
+        this.scoreDebounceTimer = null;
+        this.SCORE_DEBOUNCE_MS = 500;       // Wait 500ms after last change
+        
+        // Idle detection (optimization: disconnect inactive users)
+        this.idleTimer = null;
+        this.IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes
+        this.isDisconnected = false;
+        this.activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        this.boundResetIdle = null;
+        
         // Tournament metadata
         this.tournamentName = '';
         this.createdAt = null;
@@ -132,6 +149,8 @@ class TeamLeagueState {
             
             if (this.isOrganiser) {
                 console.log('✅ Organiser access granted');
+                // Upgrade from polling to real-time sync
+                this.upgradeToRealtime();
             } else {
                 console.log('❌ Invalid organiser key');
             }
@@ -146,6 +165,80 @@ class TeamLeagueState {
 
     // ===== FIREBASE OPERATIONS =====
 
+    // Process STATIC data from Firebase (loaded once)
+    processStaticData(data) {
+        if (!data) {
+            console.log('⚠️ Tournament not found in Firebase');
+            return false;
+        }
+        
+        // Metadata
+        if (data.meta) {
+            this.tournamentName = data.meta.name || '';
+            this.createdAt = data.meta.createdAt || null;
+        }
+        
+        // Configuration (static)
+        this.teamCount = data.teamCount || CONFIG.DEFAULT_TEAM_COUNT;
+        this.groupMode = data.groupMode || CONFIG.DEFAULT_GROUP_MODE;
+        this.includeThirdPlace = data.includeThirdPlace !== undefined ? data.includeThirdPlace : CONFIG.INCLUDE_THIRD_PLACE;
+        
+        // Teams (static)
+        this.teams = data.teams || [];
+        this.groupA = data.groupA || [];
+        this.groupB = data.groupB || [];
+        
+        // Fixtures (static)
+        this.groupAFixtures = data.groupAFixtures || [];
+        this.groupBFixtures = data.groupBFixtures || [];
+        
+        // Max scores (static)
+        this.groupMaxScore = data.groupMaxScore || CONFIG.DEFAULT_MAX_SCORE;
+        this.knockoutMaxScore = data.knockoutMaxScore || CONFIG.KNOCKOUT_MAX_SCORE;
+        this.semiMaxScore = data.semiMaxScore || CONFIG.SEMI_MAX_SCORE;
+        this.thirdPlaceMaxScore = data.thirdPlaceMaxScore || CONFIG.THIRD_PLACE_MAX_SCORE;
+        this.finalMaxScore = data.finalMaxScore || CONFIG.FINAL_MAX_SCORE;
+        
+        // Names (static)
+        this.knockoutNames = data.knockoutNames || this.knockoutNames;
+        
+        // Court names (static)
+        this.courtNames = data.courtNames || {
+            group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
+            knockout: {
+                qf1: 'Court 1', qf2: 'Court 2', qf3: 'Court 3', qf4: 'Court 4',
+                sf1: 'Centre Court', sf2: 'Court 1',
+                thirdPlace: 'Court 1',
+                final: 'Centre Court'
+            }
+        };
+        
+        // Versions (static)
+        this.savedVersions = data.savedVersions || [];
+        
+        // Also load initial scores
+        this.groupMatchScores = data.groupMatchScores || { A: {}, B: {} };
+        this.knockoutScores = data.knockoutScores || this.knockoutScores;
+        this.knockoutTeams = data.knockoutTeams || this.knockoutTeams;
+        
+        console.log('📦 Static data loaded');
+        return true;
+    }
+    
+    // Process DYNAMIC data from Firebase (scores - changes frequently)
+    processDynamicData(groupMatchScores, knockoutScores, knockoutTeams) {
+        if (this.isSaving) {
+            console.log('⏳ Skipping Firebase update - save in progress');
+            return;
+        }
+        
+        this.groupMatchScores = groupMatchScores || { A: {}, B: {} };
+        this.knockoutScores = knockoutScores || this.knockoutScores;
+        this.knockoutTeams = knockoutTeams || this.knockoutTeams;
+        
+        renderTeamLeague();
+    }
+
     loadFromFirebase() {
         const basePath = this.getBasePath();
         
@@ -159,80 +252,193 @@ class TeamLeagueState {
             }
         });
 
-        database.ref(basePath).on('value', (snapshot) => {
+        // STEP 1: Load static data once
+        database.ref(basePath).once('value').then((snapshot) => {
             const data = snapshot.val();
-            
-            if (this.isSaving) {
-                console.log('⏳ Skipping Firebase update - save in progress');
+            if (!this.processStaticData(data)) {
+                this.isInitialized = true;
+                renderTeamLeague();
                 return;
             }
             
-            if (data) {
-                // Metadata
-                if (data.meta) {
-                    this.tournamentName = data.meta.name || '';
-                    this.createdAt = data.meta.createdAt || null;
-                }
-                
-                // Configuration
-                this.teamCount = data.teamCount || CONFIG.DEFAULT_TEAM_COUNT;
-                this.groupMode = data.groupMode || CONFIG.DEFAULT_GROUP_MODE;
-                this.includeThirdPlace = data.includeThirdPlace !== undefined ? data.includeThirdPlace : CONFIG.INCLUDE_THIRD_PLACE;
-                
-                // Teams
-                this.teams = data.teams || [];
-                this.groupA = data.groupA || [];
-                this.groupB = data.groupB || [];
-                
-                // Fixtures
-                this.groupAFixtures = data.groupAFixtures || [];
-                this.groupBFixtures = data.groupBFixtures || [];
-                
-                // Scores
-                this.groupMatchScores = data.groupMatchScores || { A: {}, B: {} };
-                this.knockoutScores = data.knockoutScores || this.knockoutScores;
-                this.knockoutTeams = data.knockoutTeams || this.knockoutTeams;
-                
-                // Max scores
-                this.groupMaxScore = data.groupMaxScore || CONFIG.DEFAULT_MAX_SCORE;
-                this.knockoutMaxScore = data.knockoutMaxScore || CONFIG.KNOCKOUT_MAX_SCORE;
-                this.semiMaxScore = data.semiMaxScore || CONFIG.SEMI_MAX_SCORE;
-                this.thirdPlaceMaxScore = data.thirdPlaceMaxScore || CONFIG.THIRD_PLACE_MAX_SCORE;
-                this.finalMaxScore = data.finalMaxScore || CONFIG.FINAL_MAX_SCORE;
-                
-                // Names
-                this.knockoutNames = data.knockoutNames || this.knockoutNames;
-                
-                // Court names
-                this.courtNames = data.courtNames || {
-                    group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
-                    knockout: {
-                        qf1: 'Court 1', qf2: 'Court 2', qf3: 'Court 3', qf4: 'Court 4',
-                        sf1: 'Centre Court', sf2: 'Court 1',
-                        thirdPlace: 'Court 1',
-                        final: 'Centre Court'
-                    }
-                };
-                
-                // Versions
-                this.savedVersions = data.savedVersions || [];
+            this.isInitialized = true;
+            renderTeamLeague();
+            
+            // STEP 2: Set up listeners for dynamic data only (scores)
+            if (this.isOrganiser) {
+                console.log('👑 Organiser mode: Real-time sync for scores');
+                this.setupScoreListeners(basePath);
             } else {
-                console.log('⚠️ Tournament not found in Firebase');
+                console.log('👁️ Viewer mode: Polling scores (every ' + (this.VIEWER_POLL_INTERVAL/1000) + 's)');
+                this.setupScorePolling(basePath);
             }
             
-            if (!this.isInitialized) {
-                this.isInitialized = true;
+            // STEP 3: Start idle detection
+            this.startIdleDetection();
+        });
+    }
+    
+    // Set up real-time listeners for scores only (organiser mode)
+    setupScoreListeners(basePath) {
+        database.ref(`${basePath}/groupMatchScores`).on('value', (snapshot) => {
+            if (!this.isSaving) {
+                this.groupMatchScores = snapshot.val() || { A: {}, B: {} };
                 renderTeamLeague();
-            } else {
+            }
+        });
+        
+        database.ref(`${basePath}/knockoutScores`).on('value', (snapshot) => {
+            if (!this.isSaving) {
+                this.knockoutScores = snapshot.val() || this.knockoutScores;
+                renderTeamLeague();
+            }
+        });
+        
+        database.ref(`${basePath}/knockoutTeams`).on('value', (snapshot) => {
+            if (!this.isSaving) {
+                this.knockoutTeams = snapshot.val() || this.knockoutTeams;
                 renderTeamLeague();
             }
         });
     }
+    
+    // Set up polling for scores only (viewer mode)
+    setupScorePolling(basePath) {
+        this.pollingInterval = setInterval(() => {
+            Promise.all([
+                database.ref(`${basePath}/groupMatchScores`).once('value'),
+                database.ref(`${basePath}/knockoutScores`).once('value'),
+                database.ref(`${basePath}/knockoutTeams`).once('value')
+            ]).then(([groupSnapshot, knockoutSnapshot, teamsSnapshot]) => {
+                this.processDynamicData(
+                    groupSnapshot.val(),
+                    knockoutSnapshot.val(),
+                    teamsSnapshot.val()
+                );
+            });
+        }, this.VIEWER_POLL_INTERVAL);
+    }
+
+    // Upgrade from polling to real-time (when viewer becomes organiser)
+    upgradeToRealtime() {
+        if (this.pollingInterval) {
+            console.log('⬆️ Upgrading to real-time sync');
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            
+            const basePath = this.getBasePath();
+            this.setupScoreListeners(basePath);
+        }
+    }
 
     stopListening() {
         const basePath = this.getBasePath();
+        
+        // Clear real-time listeners
+        database.ref(`${basePath}/groupMatchScores`).off();
+        database.ref(`${basePath}/knockoutScores`).off();
+        database.ref(`${basePath}/knockoutTeams`).off();
         database.ref(basePath).off();
         database.ref('.info/connected').off();
+        
+        // Clear polling interval if active
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('🛑 Stopped polling');
+        }
+    }
+    
+    // Reload static data (called when organiser updates settings)
+    reloadStaticData() {
+        const basePath = this.getBasePath();
+        database.ref(basePath).once('value').then((snapshot) => {
+            this.processStaticData(snapshot.val());
+            renderTeamLeague();
+        });
+    }
+    
+    // ===== IDLE DETECTION =====
+    
+    startIdleDetection() {
+        this.boundResetIdle = this.resetIdleTimer.bind(this);
+        this.activityEvents.forEach(event => {
+            document.addEventListener(event, this.boundResetIdle, { passive: true });
+        });
+        this.resetIdleTimer();
+        console.log('👁️ Idle detection started (timeout: ' + (this.IDLE_TIMEOUT_MS / 60000) + ' min)');
+    }
+    
+    stopIdleDetection() {
+        if (this.boundResetIdle) {
+            this.activityEvents.forEach(event => {
+                document.removeEventListener(event, this.boundResetIdle);
+            });
+            this.boundResetIdle = null;
+        }
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+            this.idleTimer = null;
+        }
+    }
+    
+    resetIdleTimer() {
+        if (this.idleTimer) {
+            clearTimeout(this.idleTimer);
+        }
+        if (this.isDisconnected) {
+            this.reconnect();
+        }
+        this.idleTimer = setTimeout(() => {
+            this.onIdle();
+        }, this.IDLE_TIMEOUT_MS);
+    }
+    
+    onIdle() {
+        if (this.isDisconnected) return;
+        console.log('😴 User idle - disconnecting to save resources');
+        this.isDisconnected = true;
+        this.flushScoresImmediately();
+        this.stopListening();
+        this.showReconnectBanner();
+    }
+    
+    reconnect() {
+        if (!this.isDisconnected) return;
+        console.log('🔄 User active - reconnecting...');
+        this.isDisconnected = false;
+        this.hideReconnectBanner();
+        
+        const basePath = this.getBasePath();
+        database.ref(basePath).once('value').then((snapshot) => {
+            this.processStaticData(snapshot.val());
+            if (this.isOrganiser) {
+                this.setupScoreListeners(basePath);
+            } else {
+                this.setupScorePolling(basePath);
+            }
+            renderTeamLeague();
+            console.log('✅ Reconnected successfully');
+        });
+    }
+    
+    showReconnectBanner() {
+        if (document.getElementById('idle-banner')) return;
+        const banner = document.createElement('div');
+        banner.id = 'idle-banner';
+        banner.className = 'fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 px-4 z-50 shadow-lg';
+        banner.innerHTML = `
+            <span>😴 Disconnected due to inactivity.</span>
+            <button onclick="state.resetIdleTimer()" class="ml-2 underline font-semibold hover:text-amber-100">
+                Click to reconnect
+            </button>
+        `;
+        document.body.prepend(banner);
+    }
+    
+    hideReconnectBanner() {
+        const banner = document.getElementById('idle-banner');
+        if (banner) banner.remove();
     }
 
     saveToFirebase() {
@@ -290,21 +496,84 @@ class TeamLeagueState {
         }, 500);
     }
 
-    // Granular saves
+    // Granular saves - DEBOUNCED
     saveGroupScoreToFirebase(group, matchKey, team1Score, team2Score) {
         if (!this.canEdit()) return;
         
-        const path = `${this.getBasePath()}/groupMatchScores/${group}/${matchKey}`;
-        database.ref(path).set({ team1Score, team2Score });
-        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
+        // Queue the update
+        const key = `${group}-${matchKey}`;
+        this.pendingGroupScores[key] = { group, matchKey, team1Score, team2Score };
+        
+        // Debounce the actual save
+        this.debouncedScoreSave();
     }
 
     saveKnockoutScoreToFirebase(matchId, team1Score, team2Score) {
         if (!this.canEdit()) return;
         
-        const path = `${this.getBasePath()}/knockoutScores/${matchId}`;
-        database.ref(path).set({ team1Score, team2Score });
-        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
+        // Queue the update
+        this.pendingKnockoutScores[matchId] = { team1Score, team2Score };
+        
+        // Debounce the actual save
+        this.debouncedScoreSave();
+    }
+    
+    // Debounced save - batches all pending score updates
+    debouncedScoreSave() {
+        if (this.scoreDebounceTimer) {
+            clearTimeout(this.scoreDebounceTimer);
+        }
+        
+        this.scoreDebounceTimer = setTimeout(() => {
+            this.flushPendingScores();
+        }, this.SCORE_DEBOUNCE_MS);
+    }
+    
+    // Flush all pending score updates to Firebase in a single batch
+    flushPendingScores() {
+        const basePath = this.getBasePath();
+        const updates = {};
+        let hasUpdates = false;
+        
+        // Add pending group scores
+        for (const key in this.pendingGroupScores) {
+            const { group, matchKey, team1Score, team2Score } = this.pendingGroupScores[key];
+            updates[`${basePath}/groupMatchScores/${group}/${matchKey}`] = { team1Score, team2Score };
+            hasUpdates = true;
+        }
+        
+        // Add pending knockout scores
+        for (const matchId in this.pendingKnockoutScores) {
+            const { team1Score, team2Score } = this.pendingKnockoutScores[matchId];
+            updates[`${basePath}/knockoutScores/${matchId}`] = { team1Score, team2Score };
+            hasUpdates = true;
+        }
+        
+        if (hasUpdates) {
+            updates[`${basePath}/meta/updatedAt`] = new Date().toISOString();
+            
+            database.ref().update(updates)
+                .then(() => {
+                    console.log(`✅ Saved ${Object.keys(this.pendingGroupScores).length} group + ${Object.keys(this.pendingKnockoutScores).length} knockout scores`);
+                })
+                .catch(err => {
+                    console.error('❌ Error saving scores:', err);
+                });
+            
+            this.pendingGroupScores = {};
+            this.pendingKnockoutScores = {};
+        }
+        
+        this.scoreDebounceTimer = null;
+    }
+    
+    // Force immediate save (e.g., before page unload)
+    flushScoresImmediately() {
+        if (this.scoreDebounceTimer) {
+            clearTimeout(this.scoreDebounceTimer);
+            this.scoreDebounceTimer = null;
+        }
+        this.flushPendingScores();
     }
 
     saveSettingToFirebase(key, value) {

@@ -73,12 +73,12 @@ function renderLandingPage() {
                         </div>
                         
                         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6" style="letter-spacing: -2px; line-height: 1.1;">
-                            Mixed<br>Tournament
+                            Mix<br>Tournament
                         </h1>
                         
                         <p class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-12" style="line-height: 1.6;">
-                            League format with 13 rounds, 6 skill tiers, and knockout stage.<br class="hidden md:block">
-                            Real-time sync across all devices.
+                            League format with skill tiers and knockout stage.<br class="hidden md:block">
+                            Choose 20, 24, or 28 players. Real-time sync across all devices.
                         </p>
                         
                         <!-- Main Actions -->
@@ -243,7 +243,7 @@ function showCreateTournamentModal() {
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
             <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden" style="font-family: 'Space Grotesk', sans-serif;">
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-5">
-                    <h2 class="text-xl font-bold text-white">✨ Create New Tournament</h2>
+                    <h2 class="text-xl font-bold text-white">✨ Create New Mix Tournament</h2>
                 </div>
                 
                 <div class="p-6">
@@ -256,6 +256,40 @@ function showCreateTournamentModal() {
                             placeholder="e.g. Sunday Session Dec 1st"
                             autofocus
                         />
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Number of Players</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button 
+                                type="button"
+                                onclick="selectPlayerCount(20)"
+                                id="player-count-20"
+                                class="player-count-btn px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                            >
+                                <div class="text-xl">20</div>
+                                <div class="text-xs text-gray-500">5 tiers</div>
+                            </button>
+                            <button 
+                                type="button"
+                                onclick="selectPlayerCount(24)"
+                                id="player-count-24"
+                                class="player-count-btn px-4 py-3 border-2 border-blue-500 bg-blue-50 rounded-xl font-semibold text-blue-700 transition-colors"
+                            >
+                                <div class="text-xl">24</div>
+                                <div class="text-xs text-blue-600">6 tiers</div>
+                            </button>
+                            <button 
+                                type="button"
+                                onclick="selectPlayerCount(28)"
+                                id="player-count-28"
+                                class="player-count-btn px-4 py-3 border-2 border-gray-200 rounded-xl font-semibold text-gray-700 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                            >
+                                <div class="text-xl">28</div>
+                                <div class="text-xs text-gray-500">7 tiers</div>
+                            </button>
+                        </div>
+                        <input type="hidden" id="selected-player-count" value="24" />
                     </div>
                     
                     <div class="mb-4">
@@ -291,7 +325,7 @@ function showCreateTournamentModal() {
                                 <ul class="space-y-1 text-blue-700">
                                     <li>• You get a <strong>player link</strong> to share (view-only)</li>
                                     <li>• Use your <strong>passcode</strong> to access organiser mode</li>
-                                    <li>• 24 players & 13 rounds ready to go</li>
+                                    <li>• <span id="player-info-text">24 players & 13 rounds</span> ready to go</li>
                                 </ul>
                             </div>
                         </div>
@@ -320,6 +354,35 @@ function showCreateTournamentModal() {
     setTimeout(() => {
         document.getElementById('tournament-name-input')?.focus();
     }, 100);
+}
+
+// Select player count
+function selectPlayerCount(count) {
+    // Update hidden input
+    document.getElementById('selected-player-count').value = count;
+    
+    // Update button styles
+    document.querySelectorAll('.player-count-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-700');
+        btn.classList.add('border-gray-200', 'text-gray-700');
+        btn.querySelector('div:last-child').classList.remove('text-blue-600');
+        btn.querySelector('div:last-child').classList.add('text-gray-500');
+    });
+    
+    const selectedBtn = document.getElementById(`player-count-${count}`);
+    if (selectedBtn) {
+        selectedBtn.classList.remove('border-gray-200', 'text-gray-700');
+        selectedBtn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-700');
+        selectedBtn.querySelector('div:last-child').classList.remove('text-gray-500');
+        selectedBtn.querySelector('div:last-child').classList.add('text-blue-600');
+    }
+    
+    // Update info text
+    const config = CONFIG.PLAYER_CONFIGS[count];
+    if (config) {
+        document.getElementById('player-info-text').textContent = 
+            `${count} players & ${config.totalRounds} rounds`;
+    }
 }
 
 // Join Tournament Modal
@@ -444,12 +507,14 @@ async function createTournament() {
     const nameInput = document.getElementById('tournament-name-input');
     const passcodeInput = document.getElementById('organiser-passcode-input');
     const passcodeConfirm = document.getElementById('organiser-passcode-confirm');
+    const playerCountInput = document.getElementById('selected-player-count');
     const passcodeError = document.getElementById('passcode-error');
     const passcodeErrorText = document.getElementById('passcode-error-text');
     
     const name = nameInput?.value.trim() || `Tournament ${new Date().toLocaleDateString()}`;
     const passcode = passcodeInput?.value;
     const passcodeConfirmValue = passcodeConfirm?.value;
+    const playerCount = parseInt(playerCountInput?.value || '24', 10);
     
     // Hide previous errors
     passcodeError?.classList.add('hidden');
@@ -486,7 +551,7 @@ async function createTournament() {
         }
         
         // Create tournament in Firebase (passcode is stored as organiserKey)
-        await createTournamentInFirebase(tournamentId, passcode, name);
+        await createTournamentInFirebase(tournamentId, passcode, name, playerCount);
         
         // Save to my tournaments (with passcode)
         MyTournaments.add(tournamentId, passcode, name);
@@ -516,11 +581,15 @@ function joinTournament() {
 }
 
 // Create tournament data in Firebase
-async function createTournamentInFirebase(tournamentId, organiserKey, name) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, playerCount = 24) {
+    // Get the correct fixtures file path based on player count
+    const fixturesPath = getFixturesPath(playerCount);
+    const playerConfig = CONFIG.PLAYER_CONFIGS[playerCount];
+    
     // Load default data
     const [playersRes, fixturesRes, matchNamesRes] = await Promise.all([
         fetch(CONFIG.DATA_PATHS.PLAYERS),
-        fetch(CONFIG.DATA_PATHS.FIXTURES),
+        fetch(fixturesPath),
         fetch(CONFIG.DATA_PATHS.MATCH_NAMES)
     ]);
     
@@ -528,25 +597,39 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name) {
     const fixturesData = await fixturesRes.json();
     const matchNamesData = await matchNamesRes.json();
     
-    // Prepare player names and ratings
-    const playerNames = playersData.players.map(p => p.name);
+    // Generate player names for the selected player count
+    const playerNames = generatePlayerNames(playerCount, playersData.players);
+    
+    // Generate skill ratings
     const skillRatings = {};
-    playersData.players.forEach(p => {
-        skillRatings[p.id] = p.rating;
-    });
+    for (let i = 1; i <= playerCount; i++) {
+        // Use existing ratings if available, otherwise generate based on position
+        if (playersData.players[i - 1]) {
+            skillRatings[i] = playersData.players[i - 1].rating;
+        } else {
+            // Generate a rating for additional players (decreasing by position)
+            skillRatings[i] = Math.max(2.5, 3.75 - (i * 0.03));
+        }
+    }
+    
+    // Generate match names based on player count
+    const matchNames = generateMatchNames(playerConfig.matchesPerRound);
     
     // Create tournament object
     const tournamentData = {
         meta: {
             name: name,
             organiserKey: organiserKey,
+            playerCount: playerCount,
+            totalRounds: playerConfig.totalRounds,
+            matchesPerRound: playerConfig.matchesPerRound,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         },
         playerNames: playerNames,
         skillRatings: skillRatings,
         fixtures: fixturesData,
-        matchNames: matchNamesData.fixtureMatches,
+        matchNames: matchNames,
         knockoutNames: matchNamesData.knockoutMatches,
         matchScores: {},
         knockoutScores: {},
@@ -561,8 +644,38 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name) {
     // Save to Firebase
     await database.ref(`tournaments/${tournamentId}`).set(tournamentData);
     
-    console.log(`✅ Tournament ${tournamentId} created successfully`);
+    console.log(`✅ Tournament ${tournamentId} created successfully with ${playerCount} players`);
     return tournamentData;
+}
+
+// Generate player names for a given player count
+function generatePlayerNames(playerCount, existingPlayers) {
+    const names = [];
+    const additionalNames = [
+        'Alex', 'Sam', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Quinn',
+        'Avery', 'Parker', 'Drew', 'Cameron', 'Reese', 'Skyler', 'Blake', 'Charlie'
+    ];
+    
+    for (let i = 0; i < playerCount; i++) {
+        if (existingPlayers[i]) {
+            names.push(existingPlayers[i].name);
+        } else {
+            // Use additional names for players beyond the default 24
+            const additionalIndex = i - existingPlayers.length;
+            names.push(additionalNames[additionalIndex] || `Player ${i + 1}`);
+        }
+    }
+    
+    return names;
+}
+
+// Generate match names (court names) based on matches per round
+function generateMatchNames(matchesPerRound) {
+    const matchNames = {};
+    for (let i = 1; i <= matchesPerRound; i++) {
+        matchNames[i] = `Court ${i + 2}`; // Courts 3, 4, 5, etc.
+    }
+    return matchNames;
 }
 
 // Load recent tournaments from Firebase

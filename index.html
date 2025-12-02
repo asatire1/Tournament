@@ -3,11 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stretford Padel - Tournament Manager</title>
     
-    <!-- Google Fonts -->
+    <!-- Primary Meta Tags -->
+    <title>Stretford Padel - Tournament Manager | Create & Manage Padel Tournaments</title>
+    <meta name="title" content="Stretford Padel - Tournament Manager | Create & Manage Padel Tournaments">
+    <meta name="description" content="Free online padel tournament manager. Create Mix tournaments (20-28 players), Team Leagues, Americano, and Mexicano formats. Real-time scoring, live leaderboards, and instant sharing. No registration required.">
+    <meta name="keywords" content="padel tournament, tournament manager, padel scoring, americano padel, mexicano padel, team league, padel app, sports tournament, bracket generator, padel leaderboard">
+    <meta name="author" content="Stretford Padel">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://stretfordpadelclub.co.uk/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏓</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏓</text></svg>">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://stretfordpadelclub.co.uk/">
+    <meta property="og:title" content="Stretford Padel - Tournament Manager">
+    <meta property="og:description" content="Free online padel tournament manager. Create Mix tournaments, Team Leagues, Americano, and Mexicano formats with real-time scoring and live leaderboards.">
+    <meta property="og:image" content="https://stretfordpadelclub.co.uk/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Stretford Padel">
+    <meta property="og:locale" content="en_GB">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://stretfordpadelclub.co.uk/">
+    <meta name="twitter:title" content="Stretford Padel - Tournament Manager">
+    <meta name="twitter:description" content="Free online padel tournament manager. Create Mix tournaments, Team Leagues, Americano, and Mexicano formats with real-time scoring.">
+    <meta name="twitter:image" content="https://stretfordpadelclub.co.uk/og-image.png">
+    
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content="#2563EB">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Stretford Padel">
+    <meta name="application-name" content="Stretford Padel Tournament Manager">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- Structured Data - WebApplication -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Stretford Padel Tournament Manager",
+        "description": "Free online padel tournament manager with multiple formats including Mix tournaments, Team Leagues, Americano, and Mexicano.",
+        "url": "https://stretfordpadelclub.co.uk/",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "Any",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "GBP"
+        },
+        "featureList": [
+            "Mix Tournament (20-28 players)",
+            "Team League format",
+            "Americano rotating partners",
+            "Mexicano dynamic matchups",
+            "Real-time score sync",
+            "Live leaderboards",
+            "No registration required"
+        ],
+        "screenshot": "https://stretfordpadelclub.co.uk/og-image.png",
+        "softwareVersion": "1.4.0",
+        "author": {
+            "@type": "Organization",
+            "name": "Stretford Padel"
+        }
+    }
+    </script>
+    
+    <!-- Structured Data - SportsOrganization -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SportsOrganization",
+        "name": "Stretford Padel",
+        "url": "https://stretfordpadelclub.co.uk/",
+        "sport": "Padel",
+        "description": "Community padel club offering tournament management tools for players and organizers."
+    }
+    </script>
+    
+    <!-- Preconnect hints for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS -->
@@ -223,25 +314,25 @@
                 <!-- Format Selection Cards - 2x2 grid -->
                 <div class="animate-fade-in-up animate-delay-400 grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
                     
-                    <!-- 24-Player Tournament Card -->
+                    <!-- Mix Tournament Card -->
                     <a href="./tournament/" class="format-card format-card-blue group text-left cursor-pointer block">
                         <div class="flex items-start gap-4 mb-4">
                             <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
                                 👥
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-bold text-gray-900 mb-1">24-Player Tournament</h3>
-                                <p class="text-sm text-gray-500">League + knockout</p>
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Mix Tournament</h3>
+                                <p class="text-sm text-gray-500">20, 24, or 28 players</p>
                             </div>
                         </div>
                         <div class="space-y-2 text-sm text-gray-600">
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                <span>24 players in 6 skill tiers</span>
+                                <span>Flexible player count</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                <span>13 rounds + knockout stage</span>
+                                <span>League + knockout stage</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -399,13 +490,13 @@
         <!-- Tournament Lists - 4 columns -->
         <div class="grid lg:grid-cols-4 gap-8">
             
-            <!-- 24-Player Tournaments -->
+            <!-- Mix Tournaments -->
             <div>
                 <div class="flex items-center gap-2 mb-4">
                     <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                         <span class="text-sm">👥</span>
                     </div>
-                    <h3 class="font-semibold text-gray-800">24-Player</h3>
+                    <h3 class="font-semibold text-gray-800">Mix</h3>
                 </div>
                 <div id="tournament-list-24" class="space-y-3">
                     <!-- Loading skeleton -->
@@ -503,7 +594,7 @@
                         1️⃣
                     </div>
                     <h3 class="font-semibold text-gray-900 mb-2">Choose Format</h3>
-                    <p class="text-gray-600 text-sm">24-player league, Team League, Americano rotating partners, or Mexicano dynamic matchups.</p>
+                    <p class="text-gray-600 text-sm">Mix tournament (20-28 players), Team League, Americano rotating partners, or Mexicano dynamic matchups.</p>
                 </div>
                 
                 <div class="text-center group">
@@ -932,7 +1023,7 @@
                 return;
             }
             
-            // Check if it's a 24-player tournament
+            // Check if it's a Mix tournament
             try {
                 const snapshot24 = await database.ref(`tournaments/${code}/meta`).once('value');
                 if (snapshot24.exists()) {
