@@ -39,6 +39,9 @@ async function onRouteChange(route, tournamentId, organiserKey) {
  * Load tournament from Firebase
  */
 async function loadTournament(tournamentId, organiserKey) {
+    // Close any open modal first
+    closeModal();
+    
     // Clean up existing state
     if (state) {
         state.stopListening();
