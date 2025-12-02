@@ -26,7 +26,7 @@ const CONFIG = {
     ORGANISER_KEY_LENGTH: 16,
     
     // Local storage keys
-    STORAGE_KEY: 'stretford_padel_americano_tournaments',
+    STORAGE_KEY: 'uber_padel_americano_tournaments',
     MAX_STORED_TOURNAMENTS: 20,
     
     // Firebase paths

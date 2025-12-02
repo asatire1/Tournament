@@ -104,7 +104,7 @@
  * ADMIN ACCESS
  * ------------
  * - Admin page: /admin.html
- * - Default password: stretford2024
+ * - Default password: uberpadel2024
  * - Change password by updating ADMIN_HASH in admin.html:
  *   1. Encode new password: btoa('yourNewPassword')
  *   2. Replace the ADMIN_HASH value

@@ -1,4 +1,4 @@
-# Stretford Padel Tournament - Updated Package
+# Uber Padel Tournament - Updated Package
 
 ## 📦 What's Included
 

@@ -1,11 +1,11 @@
-# Robots.txt for Stretford Padel Tournament Manager
-# https://stretfordpadel.co.uk
+# Robots.txt for Uber Padel Tournament Manager
+# https://uberpadel.com
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://stretfordpadel.co.uk/sitemap.xml
+Sitemap: https://uberpadel.com/sitemap.xml
 
 # Block admin page from indexing
 Disallow: /admin.html

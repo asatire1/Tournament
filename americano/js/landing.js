@@ -59,7 +59,7 @@ function renderLandingPage() {
                         <!-- Back Link -->
                         <div class="mt-8">
                             <a href="../" class="text-white/60 hover:text-white text-sm transition-colors">
-                                ← Back to Stretford Padel Home
+                                ← Back to Uber Padel Home
                             </a>
                         </div>
                     </div>
@@ -137,7 +137,7 @@ function renderLandingPage() {
             
             <!-- Footer -->
             <div class="max-w-5xl mx-auto px-6 py-8 text-center text-sm text-gray-400">
-                <p>Stretford Padel Club • Americano Tournament Manager</p>
+                <p>Uber Padel Club • Americano Tournament Manager</p>
             </div>
         </div>
     `;

@@ -4,7 +4,7 @@ let state;
 
 // Main initialization - starts the router
 async function initializeApp() {
-    console.log('🚀 Initializing Stretford Padel Tournament...');
+    console.log('🚀 Initializing Uber Padel Tournament...');
     
     // Set up route change handler
     Router.onRouteChange = handleRouteChange;

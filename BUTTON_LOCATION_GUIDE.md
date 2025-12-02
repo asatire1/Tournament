@@ -2,7 +2,7 @@
 
 ## Navigation Path
 ```
-Stretford Padel Tournament
+Uber Padel Tournament
     └── Settings Tab
             └── Data Subtab
                     └── 🔄 Reset from JSON Files (NEW!)

@@ -2,7 +2,7 @@
 
 // ===== MY TOURNAMENTS STORAGE =====
 const MyTournaments = {
-    KEY: 'stretford_padel_team_leagues',
+    KEY: 'uber_padel_team_leagues',
     
     getAll() {
         try {
@@ -103,7 +103,7 @@ function renderLandingPage() {
                     <div class="text-center">
                         <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-full px-5 py-2 mb-8">
                             <span class="text-3xl">👥</span>
-                            <span class="text-white/90 font-medium">Stretford Padel</span>
+                            <span class="text-white/90 font-medium">Uber Padel</span>
                         </div>
                         
                         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6" style="letter-spacing: -2px; line-height: 1.1;">
@@ -134,7 +134,7 @@ function renderLandingPage() {
                         
                         <div class="mt-8">
                             <a href="../" class="text-white/60 hover:text-white text-sm transition-colors">
-                                ← Back to Stretford Padel Home
+                                ← Back to Uber Padel Home
                             </a>
                         </div>
                     </div>
@@ -233,7 +233,7 @@ function renderLandingPage() {
             <!-- Footer -->
             <div class="bg-gray-900 text-gray-400 py-8">
                 <div class="max-w-5xl mx-auto px-6 text-center text-sm">
-                    <p>Stretford Padel Team League • Built with ❤️ for the padel community</p>
+                    <p>Uber Padel Team League • Built with ❤️ for the padel community</p>
                 </div>
             </div>
         </div>
