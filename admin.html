@@ -114,6 +114,48 @@
                     class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
                     📋 All Messages
                 </button>
+                <button onclick="setTab('tournament')" id="tab-tournament"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    🏆 Tournament Admin
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tournament Admin Panel (hidden by default) -->
+        <div id="tournament-panel" class="hidden max-w-6xl mx-auto px-4 pb-8">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <span>🔄</span> Reset Tournament from JSON
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- Tournament ID Input -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament ID</label>
+                        <input type="text" id="reset-tournament-id" 
+                            class="w-full max-w-md px-4 py-3 border border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none font-mono uppercase"
+                            placeholder="e.g. ABC123" maxlength="10" />
+                        <p class="text-sm text-gray-500 mt-2">Enter the Mix Tournament ID to reset</p>
+                    </div>
+                    
+                    <!-- What it does -->
+                    <div class="bg-purple-50 rounded-xl p-4">
+                        <h3 class="font-semibold text-purple-800 mb-2">What this does:</h3>
+                        <ul class="text-sm text-purple-700 space-y-1">
+                            <li>✓ Creates an automatic backup first</li>
+                            <li>✓ Loads player names/ratings from <code class="bg-purple-100 px-1 rounded">data/players.json</code></li>
+                            <li>✓ Loads fixtures from <code class="bg-purple-100 px-1 rounded">data/fixtures.json</code></li>
+                            <li>✓ Loads match names from <code class="bg-purple-100 px-1 rounded">data/match-names.json</code></li>
+                            <li>✓ Clears all existing scores</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Reset Button -->
+                    <button onclick="resetTournamentFromJSON()" 
+                        class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors">
+                        🔄 Reset from JSON Files
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -247,7 +289,18 @@
                     ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-blue-100 text-blue-700'
                     : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
             
-            renderMessages();
+            document.getElementById('tab-tournament').className = 
+                tab === 'tournament' 
+                    ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-purple-100 text-purple-700'
+                    : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
+            
+            // Show/hide panels
+            document.getElementById('messages-list').parentElement.classList.toggle('hidden', tab === 'tournament');
+            document.getElementById('tournament-panel').classList.toggle('hidden', tab !== 'tournament');
+            
+            if (tab !== 'tournament') {
+                renderMessages();
+            }
         }
         
         // Render messages
@@ -401,6 +454,84 @@
                 toast.style.transition = 'opacity 0.3s';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+        
+        // ===== TOURNAMENT ADMIN FUNCTIONS =====
+        
+        async function resetTournamentFromJSON() {
+            const tournamentId = document.getElementById('reset-tournament-id').value.trim().toLowerCase();
+            
+            if (!tournamentId) {
+                showToast('❌ Please enter a Tournament ID');
+                return;
+            }
+            
+            // Check if tournament exists
+            const snapshot = await database.ref(`tournaments/${tournamentId}/meta`).once('value');
+            if (!snapshot.exists()) {
+                showToast('❌ Tournament not found');
+                return;
+            }
+            
+            if (!confirm(`Reset tournament "${tournamentId.toUpperCase()}" from JSON files?\n\nThis will:\n✓ Create an automatic backup\n✓ Load players from data/players.json\n✓ Load fixtures from data/fixtures.json\n✓ Clear all scores\n\nContinue?`)) {
+                return;
+            }
+            
+            try {
+                // Fetch JSON files
+                const [playersRes, fixturesRes, matchNamesRes] = await Promise.all([
+                    fetch('tournament/data/players.json'),
+                    fetch('tournament/data/fixtures.json'),
+                    fetch('tournament/data/match-names.json')
+                ]);
+                
+                if (!playersRes.ok || !fixturesRes.ok) {
+                    throw new Error('Could not load JSON files');
+                }
+                
+                const players = await playersRes.json();
+                const fixtures = await fixturesRes.json();
+                const matchNames = matchNamesRes.ok ? await matchNamesRes.json() : { names: {} };
+                
+                // Create backup first
+                const currentData = await database.ref(`tournaments/${tournamentId}`).once('value');
+                const backupData = currentData.val();
+                
+                if (backupData) {
+                    const backups = backupData.backups || [];
+                    backups.unshift({
+                        name: 'Auto-backup before JSON reset',
+                        timestamp: new Date().toISOString(),
+                        data: {
+                            players: backupData.players,
+                            matchScores: backupData.matchScores,
+                            knockoutScores: backupData.knockoutScores
+                        }
+                    });
+                    // Keep only last 10 backups
+                    if (backups.length > 10) backups.pop();
+                    
+                    await database.ref(`tournaments/${tournamentId}/backups`).set(backups);
+                }
+                
+                // Reset tournament data
+                const updates = {};
+                updates[`tournaments/${tournamentId}/players`] = players.players;
+                updates[`tournaments/${tournamentId}/fixtures`] = fixtures.fixtures;
+                updates[`tournaments/${tournamentId}/matchNames`] = matchNames.names || {};
+                updates[`tournaments/${tournamentId}/matchScores`] = null; // Clear scores
+                updates[`tournaments/${tournamentId}/knockoutScores`] = null;
+                updates[`tournaments/${tournamentId}/meta/updatedAt`] = new Date().toISOString();
+                
+                await database.ref().update(updates);
+                
+                showToast('✅ Tournament reset from JSON!');
+                document.getElementById('reset-tournament-id').value = '';
+                
+            } catch (error) {
+                console.error('Error resetting tournament:', error);
+                showToast('❌ Failed to reset. Check console for details.');
+            }
         }
     </script>
 </body>

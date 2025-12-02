@@ -443,8 +443,8 @@ function SettingsTab() {
                 </div>
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-3">🔄 Reset from JSON Files</h3>
-                    <p class="text-sm text-gray-600 mb-4">Reload all data from JSON files (players, fixtures, match names). Creates automatic backup first. Use this after editing JSON files.</p>
-                    <button onclick="resetToJsonDefaults()" class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium">Reset from JSON Files</button>
+                    <p class="text-sm text-gray-600 mb-4">This function has moved to the Admin panel for security.</p>
+                    <a href="../admin.html" class="inline-block px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium">Go to Admin Panel</a>
                 </div>
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-3">⚠️ Reset Match Scores</h3>
