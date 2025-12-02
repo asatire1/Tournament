@@ -25,8 +25,9 @@ class MexicanoState {
         this.idleTimer = null;
         this.IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes
         this.isDisconnected = false;
-        this.activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        this.activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
         this.boundResetIdle = null;
+        this.lastIdleReset = 0;
         
         // Tournament mode and settings
         this.mode = 'individual'; // 'individual' or 'team'
@@ -284,6 +285,12 @@ class MexicanoState {
     }
     
     resetIdleTimer() {
+        const now = Date.now();
+        if (!this.isDisconnected && this.lastIdleReset && (now - this.lastIdleReset) < 5000) {
+            return;
+        }
+        this.lastIdleReset = now;
+        
         if (this.idleTimer) {
             clearTimeout(this.idleTimer);
         }

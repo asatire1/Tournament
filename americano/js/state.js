@@ -29,8 +29,9 @@ class AmericanoState {
         this.idleTimer = null;
         this.IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes
         this.isDisconnected = false;
-        this.activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        this.activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
         this.boundResetIdle = null;
+        this.lastIdleReset = 0;
         
         // Player configuration
         this.playerCount = CONFIG.DEFAULT_PLAYERS;
@@ -303,6 +304,12 @@ class AmericanoState {
     }
     
     resetIdleTimer() {
+        const now = Date.now();
+        if (!this.isDisconnected && this.lastIdleReset && (now - this.lastIdleReset) < 5000) {
+            return;
+        }
+        this.lastIdleReset = now;
+        
         if (this.idleTimer) {
             clearTimeout(this.idleTimer);
         }

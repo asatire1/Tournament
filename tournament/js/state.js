@@ -28,8 +28,9 @@ class TournamentState {
         this.idleTimer = null;
         this.IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes
         this.isDisconnected = false;
-        this.activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        this.activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
         this.boundResetIdle = null;  // Will hold bound function reference
+        this.lastIdleReset = 0;  // Throttle: track last reset time
         
         // Default data (will be overridden by loaded JSON)
         this.defaultPlayers = [];
@@ -360,6 +361,13 @@ class TournamentState {
     
     // Reset the idle timer (called on any user activity)
     resetIdleTimer() {
+        // Throttle: only process if 5+ seconds since last reset (unless disconnected)
+        const now = Date.now();
+        if (!this.isDisconnected && this.lastIdleReset && (now - this.lastIdleReset) < 5000) {
+            return;
+        }
+        this.lastIdleReset = now;
+        
         // Clear existing timer
         if (this.idleTimer) {
             clearTimeout(this.idleTimer);
