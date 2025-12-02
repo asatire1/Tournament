@@ -1,6 +1,6 @@
 {
   "rules": {
-    // Tournament data - existing rules
+    // Tournament data - existing rules (Mix format)
     "tournaments": {
       "$tournamentId": {
         ".read": true,
@@ -25,7 +25,7 @@
     },
     
     // Team League tournaments
-    "team-league": {
+    "team-tournaments": {
       "$tournamentId": {
         ".read": true,
         ".write": true

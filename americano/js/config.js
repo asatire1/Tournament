@@ -30,7 +30,7 @@ const CONFIG = {
     MAX_STORED_TOURNAMENTS: 20,
     
     // Firebase paths
-    FIREBASE_ROOT: 'americano',
+    FIREBASE_ROOT: 'americano-tournaments',
     
     // UI settings
     MAX_ROUNDS_DISPLAY: 26  // Max rounds (23 players, 5 courts)

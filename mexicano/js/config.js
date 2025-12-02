@@ -5,7 +5,7 @@
 
 const CONFIG = {
     // Firebase paths
-    FIREBASE_ROOT: 'mexicano',
+    FIREBASE_ROOT: 'mexicano-tournaments',
     
     // Tournament settings
     MIN_PLAYERS_INDIVIDUAL: 8,
