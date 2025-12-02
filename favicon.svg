@@ -1,6 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect x="5" y="25" width="90" height="50" rx="8" fill="#1a1a2e" stroke="#4ade80" stroke-width="4"/>
-  <text x="18" y="65" font-family="monospace" font-size="36" font-weight="bold" fill="#4ade80">6</text>
-  <text x="42" y="65" font-family="monospace" font-size="36" font-weight="bold" fill="#facc15">-</text>
-  <text x="62" y="65" font-family="monospace" font-size="36" font-weight="bold" fill="#4ade80">4</text>
+  <!-- Padel Racket -->
+  <g fill="none" stroke="#1e3a5f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Racket head (oval) -->
+    <ellipse cx="50" cy="35" rx="28" ry="32"/>
+    <!-- Inner rim -->
+    <ellipse cx="50" cy="35" rx="22" ry="26"/>
+    <!-- Handle -->
+    <path d="M38 62 L32 92 M62 62 L58 92"/>
+    <line x1="32" y1="92" x2="58" y2="92"/>
+    <!-- Handle grip lines -->
+    <line x1="34" y1="72" x2="60" y2="72"/>
+    <line x1="33" y1="78" x2="59" y2="78"/>
+    <line x1="32.5" y1="84" x2="58.5" y2="84"/>
+  </g>
+  <!-- Holes in racket head -->
+  <g fill="#1e3a5f">
+    <circle cx="38" cy="20" r="3"/>
+    <circle cx="50" cy="20" r="3"/>
+    <circle cx="62" cy="20" r="3"/>
+    <circle cx="32" cy="30" r="3"/>
+    <circle cx="44" cy="30" r="3"/>
+    <circle cx="56" cy="30" r="3"/>
+    <circle cx="68" cy="30" r="3"/>
+    <circle cx="38" cy="40" r="3"/>
+    <circle cx="50" cy="40" r="3"/>
+    <circle cx="62" cy="40" r="3"/>
+    <circle cx="44" cy="50" r="3"/>
+    <circle cx="56" cy="50" r="3"/>
+  </g>
 </svg>
