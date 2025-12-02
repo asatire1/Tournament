@@ -1,0 +1,15 @@
+# Robots.txt for Stretford Padel Tournament Manager
+# https://stretfordpadel.co.uk
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://stretfordpadel.co.uk/sitemap.xml
+
+# Block admin page from indexing
+Disallow: /admin.html
+
+# Block debug/test pages
+Disallow: /debug.html
+Disallow: /index-4.html

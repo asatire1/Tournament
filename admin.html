@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Community Moderation | Stretford Padel</title>
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+            <div class="text-center mb-6">
+                <span class="text-5xl">🛡️</span>
+                <h1 class="text-2xl font-bold text-gray-800 mt-4">Admin Access</h1>
+                <p class="text-gray-500 mt-2">Enter the admin password to continue</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="password" id="admin-password" placeholder="Admin password"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                    onkeypress="if(event.key==='Enter') attemptLogin()" />
+                
+                <button onclick="attemptLogin()" 
+                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                    Login
+                </button>
+                
+                <p id="login-error" class="text-red-500 text-center text-sm hidden">
+                    Incorrect password
+                </p>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <a href="about.html" class="text-gray-400 hover:text-gray-600 text-sm">← Back to site</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin Dashboard -->
+    <div id="admin-dashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🛡️</span>
+                    <span class="font-bold text-xl text-gray-800">Community Moderation</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="about.html" class="text-gray-500 hover:text-gray-700">View Site</a>
+                    <button onclick="logout()" class="text-red-500 hover:text-red-700 font-medium">Logout</button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Stats Bar -->
+        <div class="bg-white border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 py-4">
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div id="stat-total" class="text-2xl font-bold text-gray-800">-</div>
+                        <div class="text-sm text-gray-500">Total Messages</div>
+                    </div>
+                    <div>
+                        <div id="stat-reported" class="text-2xl font-bold text-amber-500">-</div>
+                        <div class="text-sm text-gray-500">Reported</div>
+                    </div>
+                    <div>
+                        <div id="stat-hidden" class="text-2xl font-bold text-red-500">-</div>
+                        <div class="text-sm text-gray-500">Auto-Hidden (2+ reports)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex gap-2">
+                <button onclick="setTab('reported')" id="tab-reported" 
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-amber-100 text-amber-700">
+                    🚩 Reported Messages
+                </button>
+                <button onclick="setTab('all')" id="tab-all"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    📋 All Messages
+                </button>
+            </div>
+        </div>
+        
+        <!-- Messages List -->
+        <main class="max-w-6xl mx-auto px-4 pb-8">
+            <div id="messages-list" class="space-y-3">
+                <div class="text-center py-12 text-gray-400">
+                    <div class="animate-spin inline-block w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full mb-4"></div>
+                    <p>Loading messages...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+    
+    <!-- Confirm Delete Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Delete Message?</h3>
+            <p class="text-gray-600 mb-4">This action cannot be undone.</p>
+            <div id="delete-preview" class="bg-gray-50 rounded-xl p-3 mb-4 text-sm text-gray-600"></div>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-2 border border-gray-200 rounded-xl font-medium hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="confirmDelete()" class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI_UR_krpPwfogdCSVlWPwl7zMde4jhng",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.firebasestorage.app",
+            messagingSenderId: "564215582230",
+            appId: "1:564215582230:web:31564ab8d3d9f37bb5587b"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Admin password (in production, use proper authentication!)
+        // This is a simple hash - change "stretford2024" to your desired password
+        const ADMIN_HASH = 'c3RyZXRmb3JkMjAyNA=='; // base64 of password
+        
+        const COMMENTS_PATH = 'community/messages';
+        let currentTab = 'reported';
+        let allMessages = [];
+        let deleteTargetKey = null;
+        
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('adminAuth') === ADMIN_HASH) {
+                showDashboard();
+            }
+        });
+        
+        // Login attempt
+        function attemptLogin() {
+            const password = document.getElementById('admin-password').value;
+            const hash = btoa(password);
+            
+            if (hash === ADMIN_HASH) {
+                sessionStorage.setItem('adminAuth', ADMIN_HASH);
+                showDashboard();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+                document.getElementById('admin-password').value = '';
+            }
+        }
+        
+        // Show dashboard
+        function showDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            loadAllMessages();
+        }
+        
+        // Logout
+        function logout() {
+            sessionStorage.removeItem('adminAuth');
+            location.reload();
+        }
+        
+        // Load all messages
+        function loadAllMessages() {
+            database.ref(COMMENTS_PATH).orderByChild('timestamp').once('value')
+                .then(snapshot => {
+                    allMessages = [];
+                    snapshot.forEach(child => {
+                        allMessages.push({ key: child.key, ...child.val() });
+                    });
+                    allMessages.reverse(); // Newest first
+                    
+                    updateStats();
+                    renderMessages();
+                });
+        }
+        
+        // Update stats
+        function updateStats() {
+            const total = allMessages.length;
+            const reported = allMessages.filter(m => m.reported).length;
+            const hidden = allMessages.filter(m => m.reportCount >= 2).length;
+            
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-reported').textContent = reported;
+            document.getElementById('stat-hidden').textContent = hidden;
+        }
+        
+        // Set tab
+        function setTab(tab) {
+            currentTab = tab;
+            
+            // Update tab styles
+            document.getElementById('tab-reported').className = 
+                tab === 'reported' 
+                    ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-amber-100 text-amber-700'
+                    : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
+            
+            document.getElementById('tab-all').className = 
+                tab === 'all' 
+                    ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-blue-100 text-blue-700'
+                    : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
+            
+            renderMessages();
+        }
+        
+        // Render messages
+        function renderMessages() {
+            const container = document.getElementById('messages-list');
+            
+            let filtered = currentTab === 'reported' 
+                ? allMessages.filter(m => m.reported)
+                : allMessages;
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <p class="text-4xl mb-2">${currentTab === 'reported' ? '✅' : '📭'}</p>
+                        <p>${currentTab === 'reported' ? 'No reported messages!' : 'No messages yet'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filtered.map(message => createMessageHTML(message)).join('');
+        }
+        
+        // Create message HTML for admin
+        function createMessageHTML(message) {
+            const date = new Date(message.timestamp);
+            const timeStr = date.toLocaleDateString('en-GB', { 
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            
+            const initial = (message.name || 'A')[0].toUpperCase();
+            const bgColors = ['bg-blue-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+            const bgColor = bgColors[message.name.length % bgColors.length];
+            
+            const reportBadge = message.reported 
+                ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${message.reportCount >= 2 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">
+                    🚩 ${message.reportCount || 1} report${(message.reportCount || 1) > 1 ? 's' : ''}
+                   </span>`
+                : '';
+            
+            const hiddenBadge = message.reportCount >= 2
+                ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Hidden from users</span>`
+                : '';
+            
+            return `
+                <div class="bg-white rounded-xl p-4 shadow-sm border ${message.reportCount >= 2 ? 'border-red-200' : 'border-gray-100'}" data-key="${message.key}">
+                    <div class="flex gap-3">
+                        <div class="w-10 h-10 ${bgColor} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                            ${initial}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <span class="font-semibold text-gray-800">${escapeHtml(message.name)}</span>
+                                <span class="text-xs text-gray-400">${timeStr}</span>
+                                ${reportBadge}
+                                ${hiddenBadge}
+                            </div>
+                            <p class="text-gray-600 break-words mb-3">${escapeHtml(message.text)}</p>
+                            <div class="flex gap-2">
+                                ${message.reported ? `
+                                    <button onclick="clearReports('${message.key}')" 
+                                        class="px-3 py-1.5 text-sm bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors">
+                                        ✓ Clear Reports
+                                    </button>
+                                ` : ''}
+                                <button onclick="showDeleteModal('${message.key}', '${escapeHtml(message.text).substring(0, 50)}')" 
+                                    class="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Clear reports on a message
+        function clearReports(key) {
+            database.ref(`${COMMENTS_PATH}/${key}`).update({
+                reported: false,
+                reportCount: 0
+            }).then(() => {
+                showToast('✅ Reports cleared');
+                
+                // Update local data
+                const msg = allMessages.find(m => m.key === key);
+                if (msg) {
+                    msg.reported = false;
+                    msg.reportCount = 0;
+                }
+                
+                updateStats();
+                renderMessages();
+            }).catch(error => {
+                console.error('Error clearing reports:', error);
+                showToast('❌ Failed to clear reports');
+            });
+        }
+        
+        // Show delete confirmation modal
+        function showDeleteModal(key, preview) {
+            deleteTargetKey = key;
+            document.getElementById('delete-preview').textContent = preview + (preview.length >= 50 ? '...' : '');
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+        
+        // Close delete modal
+        function closeDeleteModal() {
+            deleteTargetKey = null;
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+        
+        // Confirm delete
+        function confirmDelete() {
+            if (!deleteTargetKey) return;
+            
+            database.ref(`${COMMENTS_PATH}/${deleteTargetKey}`).remove()
+                .then(() => {
+                    showToast('✅ Message deleted');
+                    
+                    // Remove from local data
+                    allMessages = allMessages.filter(m => m.key !== deleteTargetKey);
+                    
+                    closeDeleteModal();
+                    updateStats();
+                    renderMessages();
+                }).catch(error => {
+                    console.error('Error deleting:', error);
+                    showToast('❌ Failed to delete');
+                });
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Show toast
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg mb-2';
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

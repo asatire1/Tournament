@@ -1,0 +1,118 @@
+{
+  "rules": {
+    // Tournament data - existing rules
+    "tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Americano tournaments
+    "americano-tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Mexicano tournaments
+    "mexicano-tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Team League tournaments
+    "team-league": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Community messages with rate limiting
+    "community": {
+      "messages": {
+        ".read": true,
+        
+        // Allow creating new messages
+        "$messageId": {
+          ".write": true,
+          
+          // Validate message structure
+          ".validate": "newData.hasChildren(['name', 'text', 'timestamp'])",
+          
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
+          },
+          
+          "text": {
+            // No URLs allowed, max 280 chars
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 280 && !newData.val().contains('http://') && !newData.val().contains('https://') && !newData.val().contains('www.')"
+          },
+          
+          "timestamp": {
+            ".validate": "newData.isNumber()"
+          },
+          
+          "reported": {
+            ".validate": "newData.isBoolean()"
+          },
+          
+          "reportCount": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          }
+        }
+      },
+      
+      // Rate limiting tracker (optional - for server-side rate limiting)
+      "rateLimit": {
+        "$ipHash": {
+          ".read": false,
+          ".write": true,
+          ".validate": "newData.hasChildren(['lastPost', 'count'])"
+        }
+      }
+    }
+  }
+}
+
+/*
+ * FIREBASE RULES SETUP INSTRUCTIONS
+ * =================================
+ * 
+ * 1. Go to Firebase Console: https://console.firebase.google.com
+ * 2. Select your project: stretford-padel-tournament
+ * 3. Navigate to: Realtime Database > Rules
+ * 4. Copy and paste the rules above (without this comment block)
+ * 5. Click "Publish"
+ * 
+ * RATE LIMITING NOTES
+ * -------------------
+ * - Client-side rate limiting is implemented in about.html (30 second cooldown)
+ * - Firebase rules validate message structure
+ * - URLs are blocked at both client and server level
+ * - Messages auto-hide after 2+ reports
+ * 
+ * For stronger rate limiting, consider:
+ * - Firebase Cloud Functions to track IP-based limits
+ * - Firebase Authentication for user identification
+ * - reCAPTCHA integration for spam prevention
+ * 
+ * ADMIN ACCESS
+ * ------------
+ * - Admin page: /admin.html
+ * - Default password: stretford2024
+ * - Change password by updating ADMIN_HASH in admin.html:
+ *   1. Encode new password: btoa('yourNewPassword')
+ *   2. Replace the ADMIN_HASH value
+ * 
+ * MODERATION FEATURES
+ * -------------------
+ * - Users can report messages (stored in reportCount)
+ * - Messages with 2+ reports are auto-hidden from public view
+ * - Admin can clear reports or delete messages
+ * - All messages visible to admin regardless of report status
+ */
