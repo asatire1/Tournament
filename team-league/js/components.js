@@ -573,7 +573,17 @@ function StandingsTab() {
 
 function KnockoutTab() {
     const canEdit = state.canEdit();
-    const hasKnockoutTeams = state.knockoutTeams.qf1.team1 !== null;
+    const knockoutFormat = state.knockoutFormat || 'quarter_final';
+    
+    // Determine if knockout has started based on format
+    let hasKnockoutTeams = false;
+    if (knockoutFormat === 'final_only') {
+        hasKnockoutTeams = state.knockoutTeams.final.team1 !== null;
+    } else if (knockoutFormat === 'semi_final') {
+        hasKnockoutTeams = state.knockoutTeams.sf1.team1 !== null;
+    } else {
+        hasKnockoutTeams = state.knockoutTeams.qf1.team1 !== null;
+    }
     
     if (!hasKnockoutTeams) {
         return `
@@ -590,6 +600,58 @@ function KnockoutTab() {
         `;
     }
     
+    // Final Only Format
+    if (knockoutFormat === 'final_only') {
+        return `
+            <div class="space-y-8">
+                <div class="max-w-md mx-auto">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 justify-center">
+                        <span>🏆</span> Final
+                    </h3>
+                    ${KnockoutMatchCard('final', 'Final', state.finalMaxScore)}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Semi Final + Final Format
+    if (knockoutFormat === 'semi_final') {
+        return `
+            <div class="space-y-8">
+                <!-- Semi Finals -->
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span>⚡</span> Semi Finals
+                    </h3>
+                    <div class="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
+                        ${KnockoutMatchCard('sf1', 'SF1', state.semiMaxScore)}
+                        ${KnockoutMatchCard('sf2', 'SF2', state.semiMaxScore)}
+                    </div>
+                </div>
+                
+                <!-- 3rd Place & Final -->
+                <div class="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
+                    ${state.includeThirdPlace ? `
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <span>🥉</span> 3rd Place Playoff
+                            </h3>
+                            ${KnockoutMatchCard('thirdPlace', '3rd Place', state.thirdPlaceMaxScore)}
+                        </div>
+                    ` : ''}
+                    
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <span>🏆</span> Final
+                        </h3>
+                        ${KnockoutMatchCard('final', 'Final', state.finalMaxScore)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Quarter Final + Semi Final + Final Format (default)
     return `
         <div class="space-y-8">
             <!-- Quarter Finals -->
@@ -1211,7 +1273,7 @@ const TeamLeagueApp = {
                                     <span class="font-mono">${state.tournamentId?.toUpperCase() || ''}</span>
                                     ${state.isOrganiser ? '<span class="bg-white/20 px-2 py-0.5 rounded text-xs">Organiser</span>' : ''}
                                 </div>
-                                <h1 class="text-2xl font-bold">${state.tournamentName || 'Team League'}</h1>
+                                <h1 class="text-2xl font-bold">${state.tournamentName || 'Team Tournament'}</h1>
                             </div>
                             <button onclick="showShareModal()" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Share">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1264,4 +1326,4 @@ const TeamLeagueApp = {
     }
 };
 
-console.log('✅ Team League Components loaded');
+console.log('✅ Team Tournament Components loaded');

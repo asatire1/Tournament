@@ -369,4 +369,4 @@ function validateTeamCount(teamCount, groupMode) {
     return { valid: true };
 }
 
-console.log('✅ Team League Config loaded');
+console.log('✅ Team Tournament Config loaded');

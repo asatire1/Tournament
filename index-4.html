@@ -258,14 +258,14 @@
                         </div>
                     </a>
                     
-                    <!-- Team League Card -->
+                    <!-- Team Tournament Card -->
                     <a href="./team-league/" class="format-card format-card-pink group text-left cursor-pointer block">
                         <div class="flex items-start gap-4 mb-4">
                             <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-2xl shadow-lg shadow-pink-500/30 group-hover:scale-110 transition-transform">
                                 🏆
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-bold text-gray-900 mb-1">Team League</h3>
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Team Tournament</h3>
                                 <p class="text-sm text-gray-500">Fixed pairs format</p>
                             </div>
                         </div>
@@ -285,7 +285,7 @@
                         </div>
                         <div class="mt-4 pt-4 border-t border-gray-100">
                             <span class="inline-flex items-center gap-2 text-sm font-semibold text-pink-600 group-hover:gap-3 transition-all">
-                                Start Team League
+                                Start Team Tournament
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                                 </svg>
@@ -421,13 +421,13 @@
                 </div>
             </div>
             
-            <!-- Team League Tournaments -->
+            <!-- Team Tournament Tournaments -->
             <div>
                 <div class="flex items-center gap-2 mb-4">
                     <div class="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center">
                         <span class="text-sm">🏆</span>
                     </div>
-                    <h3 class="font-semibold text-gray-800">Team Leagues</h3>
+                    <h3 class="font-semibold text-gray-800">Team Tournaments</h3>
                 </div>
                 <div id="tournament-list-team" class="space-y-3">
                     <!-- Loading skeleton -->
@@ -503,7 +503,7 @@
                         1️⃣
                     </div>
                     <h3 class="font-semibold text-gray-900 mb-2">Choose Format</h3>
-                    <p class="text-gray-600 text-sm">24-player league, Team League, Americano rotating partners, or Mexicano dynamic matchups.</p>
+                    <p class="text-gray-600 text-sm">24-player league, Team Tournament, Americano rotating partners, or Mexicano dynamic matchups.</p>
                 </div>
                 
                 <div class="text-center group">
@@ -629,7 +629,7 @@
                 render24PlayerTournaments([]);
             }
             
-            // Load Team League Tournaments
+            // Load Team Tournament Tournaments
             try {
                 const snapshot = await database.ref('team-tournaments')
                     .orderByChild('meta/updatedAt')
@@ -943,7 +943,7 @@
                 console.error('Error checking 24-player:', e);
             }
             
-            // Check if it's a Team League tournament
+            // Check if it's a Team Tournament tournament
             try {
                 const snapshotTeam = await database.ref(`team-tournaments/${code}/meta`).once('value');
                 if (snapshotTeam.exists()) {

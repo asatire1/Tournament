@@ -42,6 +42,26 @@ function handleKnockoutScore(matchId, value, team, maxScore) {
     render();
 }
 
+function setKnockoutFormat(format) {
+    if (!checkCanEdit()) return;
+    if (!['final', 'semi', 'quarter'].includes(format)) return;
+    
+    // Warn if there are existing knockout scores
+    const hasScores = Object.keys(state.knockoutScores || {}).length > 0;
+    if (hasScores) {
+        if (!confirm('Changing knockout format will clear existing knockout scores. Continue?')) {
+            return;
+        }
+        // Clear knockout scores
+        state.knockoutScores = {};
+    }
+    
+    state.knockoutFormat = format;
+    state.saveToFirebase();
+    render();
+    showToast(`✅ Knockout format changed to ${format === 'final' ? 'Final Only' : format === 'semi' ? 'Semi + Final' : 'Quarter + Semi + Final'}`);
+}
+
 // ===== FIXTURE HANDLERS =====
 
 function handleFixtureChange(round, matchIdx, position, newValue) {

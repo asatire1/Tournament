@@ -514,7 +514,7 @@ function showShareModal() {
                 </div>
                 <div class="p-6 space-y-4">
                     <div class="text-center mb-4">
-                        <div class="text-lg font-bold text-gray-800">${state.tournamentName || 'Team League'}</div>
+                        <div class="text-lg font-bold text-gray-800">${state.tournamentName || 'Team Tournament'}</div>
                         <div class="text-sm text-gray-500">Code: <span class="font-mono font-bold text-purple-600">${state.tournamentId?.toUpperCase() || ''}</span></div>
                     </div>
                     
@@ -625,4 +625,4 @@ function showToast(message) {
     }, 2500);
 }
 
-console.log('✅ Team League Handlers loaded');
+console.log('✅ Team Tournament Handlers loaded');

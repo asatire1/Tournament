@@ -51,6 +51,7 @@ const WizardState = {
     
     // Step 4: Options
     includeThirdPlace: true,
+    knockoutFormat: 'quarter_final', // 'final_only', 'semi_final', 'quarter_final'
     
     // After creation - Team Entry
     tournamentId: null,
@@ -64,6 +65,7 @@ const WizardState = {
         this.teamCount = 8;
         this.groupMode = 'two_groups';
         this.includeThirdPlace = true;
+        this.knockoutFormat = 'quarter_final';
         this.tournamentId = null;
         this.organiserKey = null;
         this.teams = [];
@@ -107,7 +109,7 @@ function renderLandingPage() {
                         </div>
                         
                         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6" style="letter-spacing: -2px; line-height: 1.1;">
-                            Team League<br>Tournament
+                            Team Tournament<br>Tournament
                         </h1>
                         
                         <p class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-12" style="line-height: 1.6;">
@@ -148,7 +150,7 @@ function renderLandingPage() {
                         <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
                             <span class="text-xl">📋</span>
                         </div>
-                        <h2 class="text-2xl font-bold text-gray-800" style="letter-spacing: -0.5px;">My Team Leagues</h2>
+                        <h2 class="text-2xl font-bold text-gray-800" style="letter-spacing: -0.5px;">My Team Tournaments</h2>
                         <span class="text-sm text-gray-400">(${myTournaments.length})</span>
                     </div>
                     
@@ -206,7 +208,7 @@ function renderLandingPage() {
             <div class="bg-gray-50 border-t border-gray-100">
                 <div class="max-w-5xl mx-auto px-6 py-16">
                     <div class="text-center mb-12">
-                        <h2 class="text-3xl font-bold text-gray-800 mb-4">Team League Format</h2>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-4">Team Tournament Format</h2>
                         <p class="text-gray-600">Fixed pairs, group stages, knockout rounds</p>
                     </div>
                     
@@ -233,7 +235,7 @@ function renderLandingPage() {
             <!-- Footer -->
             <div class="bg-gray-900 text-gray-400 py-8">
                 <div class="max-w-5xl mx-auto px-6 text-center text-sm">
-                    <p>Uber Padel Team League • Built with ❤️ for the padel community</p>
+                    <p>Uber Padel Team Tournament • Built with ❤️ for the padel community</p>
                 </div>
             </div>
         </div>
@@ -256,7 +258,7 @@ function renderWizardStep() {
                 <!-- Header with Progress -->
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
                     <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-xl font-bold text-white">✨ Create Team League</h2>
+                        <h2 class="text-xl font-bold text-white">✨ Create Team Tournament</h2>
                         <span class="text-white/80 text-sm">Step ${step} of ${WizardState.totalSteps}</span>
                     </div>
                     <!-- Progress Bar -->
@@ -471,13 +473,57 @@ function renderWizardStep3() {
 }
 
 function renderWizardStep4() {
+    const knockoutLabels = {
+        'final_only': 'Final Only',
+        'semi_final': 'Semi-Finals → Final',
+        'quarter_final': 'Quarter-Finals → Semi-Finals → Final'
+    };
+    
     return `
         <div id="wizard-content">
             <h3 class="text-lg font-bold text-gray-800 mb-1">Tournament Options</h3>
             <p class="text-gray-500 text-sm mb-6">Final settings before creating your tournament</p>
             
             <div class="space-y-4">
-                <!-- 3rd Place Playoff -->
+                <!-- Knockout Format -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Knockout Format</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${WizardState.knockoutFormat === 'quarter_final' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                            <input type="radio" name="knockout-format" value="quarter_final" 
+                                ${WizardState.knockoutFormat === 'quarter_final' ? 'checked' : ''}
+                                onchange="setKnockoutFormat('quarter_final')"
+                                class="w-4 h-4 text-purple-500" />
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">Quarter-Finals → Semi-Finals → Final</span>
+                                <p class="text-xs text-gray-500">8 teams in knockout (recommended)</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${WizardState.knockoutFormat === 'semi_final' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                            <input type="radio" name="knockout-format" value="semi_final" 
+                                ${WizardState.knockoutFormat === 'semi_final' ? 'checked' : ''}
+                                onchange="setKnockoutFormat('semi_final')"
+                                class="w-4 h-4 text-purple-500" />
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">Semi-Finals → Final</span>
+                                <p class="text-xs text-gray-500">4 teams in knockout</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${WizardState.knockoutFormat === 'final_only' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                            <input type="radio" name="knockout-format" value="final_only" 
+                                ${WizardState.knockoutFormat === 'final_only' ? 'checked' : ''}
+                                onchange="setKnockoutFormat('final_only')"
+                                class="w-4 h-4 text-purple-500" />
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">Final Only</span>
+                                <p class="text-xs text-gray-500">Top 2 teams play final</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- 3rd Place Playoff (only if semi_final or quarter_final) -->
+                ${WizardState.knockoutFormat !== 'final_only' ? `
                 <label class="flex items-center gap-4 p-4 rounded-xl border-2 border-gray-200 hover:border-purple-300 cursor-pointer transition-colors">
                     <input 
                         type="checkbox" 
@@ -492,6 +538,7 @@ function renderWizardStep4() {
                     </div>
                     <span class="text-2xl">🥉</span>
                 </label>
+                ` : ''}
             </div>
             
             <!-- Summary -->
@@ -500,7 +547,7 @@ function renderWizardStep4() {
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Tournament Name</span>
-                        <span class="font-medium text-gray-800">${WizardState.tournamentName || 'Team League'}</span>
+                        <span class="font-medium text-gray-800">${WizardState.tournamentName || 'Team Tournament'}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Number of Teams</span>
@@ -511,9 +558,15 @@ function renderWizardStep4() {
                         <span class="font-medium text-gray-800">${WizardState.groupMode === 'two_groups' ? 'Two Groups' : 'Single Group'}</span>
                     </div>
                     <div class="flex justify-between">
+                        <span class="text-gray-600">Knockout Format</span>
+                        <span class="font-medium text-gray-800">${knockoutLabels[WizardState.knockoutFormat]}</span>
+                    </div>
+                    ${WizardState.knockoutFormat !== 'final_only' ? `
+                    <div class="flex justify-between">
                         <span class="text-gray-600">3rd Place Playoff</span>
                         <span class="font-medium text-gray-800">${WizardState.includeThirdPlace ? 'Yes' : 'No'}</span>
                     </div>
+                    ` : ''}
                 </div>
             </div>
             
@@ -531,6 +584,15 @@ function renderWizardStep4() {
             </button>
         </div>
     `;
+}
+
+function setKnockoutFormat(format) {
+    WizardState.knockoutFormat = format;
+    // If final only, disable 3rd place
+    if (format === 'final_only') {
+        WizardState.includeThirdPlace = false;
+    }
+    renderWizardStep();
 }
 
 // ===== WIZARD NAVIGATION =====
@@ -553,7 +615,7 @@ function wizardNext() {
             return;
         }
         
-        WizardState.tournamentName = name || 'Team League';
+        WizardState.tournamentName = name || 'Team Tournament';
         WizardState.passcode = passcode;
     }
     
@@ -634,7 +696,8 @@ async function createTournamentFromWizard() {
             WizardState.tournamentName,
             WizardState.teamCount,
             WizardState.groupMode,
-            WizardState.includeThirdPlace
+            WizardState.includeThirdPlace,
+            WizardState.knockoutFormat
         );
         
         WizardState.tournamentId = tournamentId;
@@ -1054,7 +1117,7 @@ function removeFromMyTournaments(tournamentId) {
 
 // ===== FIREBASE OPERATIONS =====
 
-async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final') {
     const data = {
         meta: {
             name: name,
@@ -1066,6 +1129,7 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, team
         teamCount: teamCount,
         groupMode: groupMode,
         includeThirdPlace: includeThirdPlace,
+        knockoutFormat: knockoutFormat, // 'final_only', 'semi_final', 'quarter_final'
         teams: [],
         groupA: [],
         groupB: [],
@@ -1132,4 +1196,4 @@ function formatTimeAgo(isoString) {
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-console.log('✅ Team League Landing loaded');
+console.log('✅ Team Tournament Landing loaded');

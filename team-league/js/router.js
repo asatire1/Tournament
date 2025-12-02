@@ -107,4 +107,4 @@ const Router = {
     onRouteChange: null
 };
 
-console.log('✅ Router initialized (Team League)');
+console.log('✅ Router initialized (Team Tournament)');

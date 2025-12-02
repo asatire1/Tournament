@@ -649,8 +649,135 @@ function PartnershipsTab() {
 // ===== KNOCKOUT TAB =====
 function KnockoutTab() {
     const standings = state.calculateStandings();
-    const top16 = standings.slice(0, 16);
     const canEdit = state.canEdit();
+    const format = state.knockoutFormat || 'quarter';
+    
+    // Get the right number of players for the format
+    const playerCounts = { 'final': 4, 'semi': 8, 'quarter': 16 };
+    const playerCount = playerCounts[format];
+    const topPlayers = standings.slice(0, playerCount);
+    
+    // Format selector (only for organisers)
+    const formatSelector = canEdit ? `
+        <div class="bg-white rounded-2xl shadow-sm p-5 mb-6">
+            <h3 class="font-semibold text-gray-800 mb-3 text-sm">Knockout Format</h3>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="setKnockoutFormat('final')" class="px-4 py-2 rounded-lg font-medium transition-all ${format === 'final' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                    🏆 Final Only (4 players)
+                </button>
+                <button onclick="setKnockoutFormat('semi')" class="px-4 py-2 rounded-lg font-medium transition-all ${format === 'semi' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                    🥈 Semi + Final (8 players)
+                </button>
+                <button onclick="setKnockoutFormat('quarter')" class="px-4 py-2 rounded-lg font-medium transition-all ${format === 'quarter' ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                    🥉 Quarter + Semi + Final (16 players)
+                </button>
+            </div>
+        </div>
+    ` : '';
+    
+    // Qualified players display
+    const qualifiedPlayers = `
+        <div class="filter-section rounded-3xl shadow-sm p-5">
+            <h3 class="font-semibold text-gray-800 mb-4 text-sm" style="letter-spacing: -0.3px;">Top ${playerCount} Qualified Players</h3>
+            <div class="flex flex-wrap gap-2">
+                ${topPlayers.map((p, idx) => `<div class="flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200"><span class="text-xs font-bold text-gray-500">#${idx + 1}</span>${PlayerBadge(p.playerId)}</div>`).join('')}
+            </div>
+        </div>
+    `;
+    
+    // View-only message for non-organisers
+    const viewOnlyMessage = !canEdit ? `
+        <div class="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center gap-3">
+            <span class="text-2xl">🏆</span>
+            <div>
+                <div class="font-semibold text-purple-900">Knockout Stage - View Only</div>
+                <div class="text-sm text-purple-700">Watch the knockout rounds unfold in real-time!</div>
+            </div>
+        </div>
+    ` : '';
+    
+    // Render based on format
+    if (format === 'final') {
+        return renderFinalOnly(topPlayers, canEdit, viewOnlyMessage, formatSelector, qualifiedPlayers);
+    } else if (format === 'semi') {
+        return renderSemiAndFinal(topPlayers, canEdit, viewOnlyMessage, formatSelector, qualifiedPlayers);
+    } else {
+        return renderFullKnockout(topPlayers, canEdit, viewOnlyMessage, formatSelector, qualifiedPlayers);
+    }
+}
+
+// Final Only format (4 players)
+function renderFinalOnly(topPlayers, canEdit, viewOnlyMessage, formatSelector, qualifiedPlayers) {
+    const final = state.getKnockoutScore('final');
+    const champion = final.team1Score !== null && final.team2Score !== null ? (final.team1Score > final.team2Score ? 'team1' : 'team2') : null;
+    
+    // Team 1: 1st + 3rd, Team 2: 2nd + 4th
+    const team1 = topPlayers[0] && topPlayers[2] ? [topPlayers[0].playerId, topPlayers[2].playerId] : null;
+    const team2 = topPlayers[1] && topPlayers[3] ? [topPlayers[1].playerId, topPlayers[3].playerId] : null;
+    
+    return `
+        <div class="space-y-6">
+            ${viewOnlyMessage}
+            ${formatSelector}
+            ${qualifiedPlayers}
+            <div>
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2" style="letter-spacing: -0.5px;"><span class="text-xl">🏆</span>Championship Final</h3>
+                <div class="max-w-2xl mx-auto">
+                    ${KnockoutMatchCard('final', team1, team2, state.finalMaxScore)}
+                    ${champion ? `<div class="mt-6 text-center relative overflow-hidden rounded-3xl p-8 shadow-xl" style="background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);"><div class="absolute inset-0 opacity-10"><div class="absolute inset-0 bg-gradient-to-br from-white via-transparent to-transparent"></div></div><div class="relative"><div class="text-6xl mb-4">🏆</div><div class="text-3xl font-bold text-white mb-2" style="letter-spacing: -0.8px;">Champions!</div><div class="text-lg text-yellow-50">Congratulations</div></div></div>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Semi-finals + Final format (8 players)
+function renderSemiAndFinal(topPlayers, canEdit, viewOnlyMessage, formatSelector, qualifiedPlayers) {
+    const sf1 = state.getKnockoutScore('sf1');
+    const sf2 = state.getKnockoutScore('sf2');
+    const final = state.getKnockoutScore('final');
+    
+    const sf1Winner = sf1.team1Score !== null && sf1.team2Score !== null ? (sf1.team1Score > sf1.team2Score ? 'team1' : 'team2') : null;
+    const sf2Winner = sf2.team1Score !== null && sf2.team2Score !== null ? (sf2.team1Score > sf2.team2Score ? 'team1' : 'team2') : null;
+    const champion = final.team1Score !== null && final.team2Score !== null ? (final.team1Score > final.team2Score ? 'team1' : 'team2') : null;
+    
+    // SF1: 1st+3rd vs 6th+8th
+    // SF2: 2nd+4th vs 5th+7th
+    const sf1Team1 = topPlayers[0] && topPlayers[2] ? [topPlayers[0].playerId, topPlayers[2].playerId] : null;
+    const sf1Team2 = topPlayers[5] && topPlayers[7] ? [topPlayers[5].playerId, topPlayers[7].playerId] : null;
+    const sf2Team1 = topPlayers[1] && topPlayers[3] ? [topPlayers[1].playerId, topPlayers[3].playerId] : null;
+    const sf2Team2 = topPlayers[4] && topPlayers[6] ? [topPlayers[4].playerId, topPlayers[6].playerId] : null;
+    
+    // Determine final teams based on semi winners
+    let finalTeam1 = null, finalTeam2 = null;
+    if (sf1Winner) finalTeam1 = sf1Winner === 'team1' ? sf1Team1 : sf1Team2;
+    if (sf2Winner) finalTeam2 = sf2Winner === 'team1' ? sf2Team1 : sf2Team2;
+    
+    return `
+        <div class="space-y-6">
+            ${viewOnlyMessage}
+            ${formatSelector}
+            ${qualifiedPlayers}
+            <div>
+                <h3 class="text-lg font-bold text-gray-800 mb-4" style="letter-spacing: -0.5px;">Semi Finals</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${KnockoutMatchCard('sf1', sf1Team1, sf1Team2, state.semiMaxScore)}
+                    ${KnockoutMatchCard('sf2', sf2Team1, sf2Team2, state.semiMaxScore)}
+                </div>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2" style="letter-spacing: -0.5px;"><span class="text-xl">🏆</span>Championship Final</h3>
+                <div class="max-w-2xl mx-auto">
+                    ${sf1Winner && sf2Winner ? `${KnockoutMatchCard('final', finalTeam1, finalTeam2, state.finalMaxScore)}${champion ? `<div class="mt-6 text-center relative overflow-hidden rounded-3xl p-8 shadow-xl" style="background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);"><div class="absolute inset-0 opacity-10"><div class="absolute inset-0 bg-gradient-to-br from-white via-transparent to-transparent"></div></div><div class="relative"><div class="text-6xl mb-4">🏆</div><div class="text-3xl font-bold text-white mb-2" style="letter-spacing: -0.8px;">Champions!</div><div class="text-lg text-yellow-50">Congratulations</div></div></div>` : ''}` : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800 flex items-center gap-2" style="letter-spacing: -0.3px;"><span class="text-base">🏆</span>${state.knockoutNames.final || 'Final'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete both Semi Finals first</div></div>`}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Full knockout format (Quarter + Semi + Final, 16 players)
+function renderFullKnockout(topPlayers, canEdit, viewOnlyMessage, formatSelector, qualifiedPlayers) {
+    const top16 = topPlayers;
     
     const qf1 = state.getKnockoutScore('qf1');
     const qf2 = state.getKnockoutScore('qf2');
@@ -668,43 +795,47 @@ function KnockoutTab() {
     const sf2Winner = sf2.team1Score !== null && sf2.team2Score !== null ? (sf2.team1Score > sf2.team2Score ? 'team1' : 'team2') : null;
     const champion = final.team1Score !== null && final.team2Score !== null ? (final.team1Score > final.team2Score ? 'team1' : 'team2') : null;
     
+    // QF teams
+    const qf1Team1 = top16[0] && top16[2] ? [top16[0].playerId, top16[2].playerId] : null;
+    const qf1Team2 = top16[13] && top16[15] ? [top16[13].playerId, top16[15].playerId] : null;
+    const qf2Team1 = top16[1] && top16[3] ? [top16[1].playerId, top16[3].playerId] : null;
+    const qf2Team2 = top16[12] && top16[14] ? [top16[12].playerId, top16[14].playerId] : null;
+    const qf3Team1 = top16[4] && top16[6] ? [top16[4].playerId, top16[6].playerId] : null;
+    const qf3Team2 = top16[9] && top16[11] ? [top16[9].playerId, top16[11].playerId] : null;
+    const qf4Team1 = top16[5] && top16[7] ? [top16[5].playerId, top16[7].playerId] : null;
+    const qf4Team2 = top16[8] && top16[10] ? [top16[8].playerId, top16[10].playerId] : null;
+    
+    // SF teams based on QF winners
+    const sf1Team1 = qf1Winner === 'team1' ? qf1Team1 : qf1Team2;
+    const sf1Team2 = qf4Winner === 'team1' ? qf4Team1 : qf4Team2;
+    const sf2Team1 = qf2Winner === 'team1' ? qf2Team1 : qf2Team2;
+    const sf2Team2 = qf3Winner === 'team1' ? qf3Team1 : qf3Team2;
+    
     return `
         <div class="space-y-6">
-            ${!canEdit ? `
-                <div class="bg-purple-50 border border-purple-200 rounded-2xl p-4 flex items-center gap-3">
-                    <span class="text-2xl">🏆</span>
-                    <div>
-                        <div class="font-semibold text-purple-900">Knockout Stage - View Only</div>
-                        <div class="text-sm text-purple-700">Watch the knockout rounds unfold in real-time!</div>
-                    </div>
-                </div>
-            ` : ''}
-            <div class="filter-section rounded-3xl shadow-sm p-5">
-                <h3 class="font-semibold text-gray-800 mb-4 text-sm" style="letter-spacing: -0.3px;">Top 16 Qualified Players</h3>
-                <div class="flex flex-wrap gap-2">
-                    ${top16.map((p, idx) => `<div class="flex items-center gap-2 bg-white rounded-full px-3 py-2 border border-gray-200"><span class="text-xs font-bold text-gray-500">#${idx + 1}</span>${PlayerBadge(p.playerId)}</div>`).join('')}
-                </div>
-            </div>
+            ${viewOnlyMessage}
+            ${formatSelector}
+            ${qualifiedPlayers}
             <div>
                 <h3 class="text-lg font-bold text-gray-800 mb-4" style="letter-spacing: -0.5px;">Quarter Finals</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${KnockoutMatchCard('qf1', top16[0] && top16[2] ? [top16[0].playerId, top16[2].playerId] : null, top16[13] && top16[15] ? [top16[13].playerId, top16[15].playerId] : null, state.knockoutMaxScore)}
-                    ${KnockoutMatchCard('qf2', top16[1] && top16[3] ? [top16[1].playerId, top16[3].playerId] : null, top16[12] && top16[14] ? [top16[12].playerId, top16[14].playerId] : null, state.knockoutMaxScore)}
-                    ${KnockoutMatchCard('qf3', top16[4] && top16[6] ? [top16[4].playerId, top16[6].playerId] : null, top16[9] && top16[11] ? [top16[9].playerId, top16[11].playerId] : null, state.knockoutMaxScore)}
-                    ${KnockoutMatchCard('qf4', top16[5] && top16[7] ? [top16[5].playerId, top16[7].playerId] : null, top16[8] && top16[10] ? [top16[8].playerId, top16[10].playerId] : null, state.knockoutMaxScore)}
+                    ${KnockoutMatchCard('qf1', qf1Team1, qf1Team2, state.knockoutMaxScore)}
+                    ${KnockoutMatchCard('qf2', qf2Team1, qf2Team2, state.knockoutMaxScore)}
+                    ${KnockoutMatchCard('qf3', qf3Team1, qf3Team2, state.knockoutMaxScore)}
+                    ${KnockoutMatchCard('qf4', qf4Team1, qf4Team2, state.knockoutMaxScore)}
                 </div>
             </div>
             <div>
                 <h3 class="text-lg font-bold text-gray-800 mb-4" style="letter-spacing: -0.5px;">Semi Finals</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${qf1Winner && qf4Winner ? KnockoutMatchCard('sf1', qf1Winner === 'team1' ? [top16[0].playerId, top16[2].playerId] : [top16[13].playerId, top16[15].playerId], qf4Winner === 'team1' ? [top16[5].playerId, top16[7].playerId] : [top16[8].playerId, top16[10].playerId], state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf1}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF1 and QF4 first</div></div>`}
-                    ${qf2Winner && qf3Winner ? KnockoutMatchCard('sf2', qf2Winner === 'team1' ? [top16[1].playerId, top16[3].playerId] : [top16[12].playerId, top16[14].playerId], qf3Winner === 'team1' ? [top16[4].playerId, top16[6].playerId] : [top16[9].playerId, top16[11].playerId], state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf2}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF2 and QF3 first</div></div>`}
+                    ${qf1Winner && qf4Winner ? KnockoutMatchCard('sf1', sf1Team1, sf1Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf1 || 'Semi Final 1'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF1 and QF4 first</div></div>`}
+                    ${qf2Winner && qf3Winner ? KnockoutMatchCard('sf2', sf2Team1, sf2Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf2 || 'Semi Final 2'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF2 and QF3 first</div></div>`}
                 </div>
             </div>
             <div>
                 <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2" style="letter-spacing: -0.5px;"><span class="text-xl">🏆</span>Championship Final</h3>
                 <div class="max-w-2xl mx-auto">
-                    ${sf1Winner && sf2Winner ? `${KnockoutMatchCard('final', [1, 2], [3, 4], state.finalMaxScore)}${champion ? `<div class="mt-6 text-center relative overflow-hidden rounded-3xl p-8 shadow-xl" style="background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);"><div class="absolute inset-0 opacity-10"><div class="absolute inset-0 bg-gradient-to-br from-white via-transparent to-transparent"></div></div><div class="relative"><div class="text-6xl mb-4">🏆</div><div class="text-3xl font-bold text-white mb-2" style="letter-spacing: -0.8px;">Champions!</div><div class="text-lg text-yellow-50">Congratulations</div></div></div>` : ''}` : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800 flex items-center gap-2" style="letter-spacing: -0.3px;"><span class="text-base">🏆</span>${state.knockoutNames.final}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete both Semi Finals first</div></div>`}
+                    ${sf1Winner && sf2Winner ? `${KnockoutMatchCard('final', sf1Winner === 'team1' ? sf1Team1 : sf1Team2, sf2Winner === 'team1' ? sf2Team1 : sf2Team2, state.finalMaxScore)}${champion ? `<div class="mt-6 text-center relative overflow-hidden rounded-3xl p-8 shadow-xl" style="background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);"><div class="absolute inset-0 opacity-10"><div class="absolute inset-0 bg-gradient-to-br from-white via-transparent to-transparent"></div></div><div class="relative"><div class="text-6xl mb-4">🏆</div><div class="text-3xl font-bold text-white mb-2" style="letter-spacing: -0.8px;">Champions!</div><div class="text-lg text-yellow-50">Congratulations</div></div></div>` : ''}` : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800 flex items-center gap-2" style="letter-spacing: -0.3px;"><span class="text-base">🏆</span>${state.knockoutNames.final || 'Final'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete both Semi Finals first</div></div>`}
                 </div>
             </div>
         </div>

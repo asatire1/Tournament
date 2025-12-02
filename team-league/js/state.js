@@ -44,6 +44,7 @@ class TeamLeagueState {
         this.teamCount = CONFIG.DEFAULT_TEAM_COUNT;
         this.groupMode = CONFIG.DEFAULT_GROUP_MODE;
         this.includeThirdPlace = CONFIG.INCLUDE_THIRD_PLACE;
+        this.knockoutFormat = 'quarter_final'; // 'final_only', 'semi_final', 'quarter_final'
         
         // Teams data: { id, name, player1Name, player1Rating, player2Name, player2Rating, combinedRating, group }
         this.teams = [];
@@ -183,6 +184,7 @@ class TeamLeagueState {
         this.teamCount = data.teamCount || CONFIG.DEFAULT_TEAM_COUNT;
         this.groupMode = data.groupMode || CONFIG.DEFAULT_GROUP_MODE;
         this.includeThirdPlace = data.includeThirdPlace !== undefined ? data.includeThirdPlace : CONFIG.INCLUDE_THIRD_PLACE;
+        this.knockoutFormat = data.knockoutFormat || 'quarter_final';
         
         // Teams (static)
         this.teams = data.teams || [];
@@ -927,7 +929,37 @@ class TeamLeagueState {
         
         const groupAStandings = this.getGroupStandings('A');
         const groupBStandings = this.getGroupStandings('B');
+        const knockoutFormat = this.knockoutFormat || 'quarter_final';
         
+        // Final Only - top 2 overall
+        if (knockoutFormat === 'final_only') {
+            if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
+                // Single group: 1st vs 2nd
+                this.knockoutTeams.final = { team1: groupAStandings[0]?.teamId, team2: groupAStandings[1]?.teamId };
+            } else {
+                // Two groups: winner of A vs winner of B
+                this.knockoutTeams.final = { team1: groupAStandings[0]?.teamId, team2: groupBStandings[0]?.teamId };
+            }
+            this.saveToFirebase();
+            return;
+        }
+        
+        // Semi Final - top 4
+        if (knockoutFormat === 'semi_final') {
+            if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
+                // Single group: 1v4, 2v3
+                this.knockoutTeams.sf1 = { team1: groupAStandings[0]?.teamId, team2: groupAStandings[3]?.teamId };
+                this.knockoutTeams.sf2 = { team1: groupAStandings[1]?.teamId, team2: groupAStandings[2]?.teamId };
+            } else {
+                // Two groups: A1vB2, A2vB1
+                this.knockoutTeams.sf1 = { team1: groupAStandings[0]?.teamId, team2: groupBStandings[1]?.teamId };
+                this.knockoutTeams.sf2 = { team1: groupAStandings[1]?.teamId, team2: groupBStandings[0]?.teamId };
+            }
+            this.saveToFirebase();
+            return;
+        }
+        
+        // Quarter Final (default) - top 8
         if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
             if (groupAStandings.length >= 8) {
                 const seeding = CONFIG.SINGLE_GROUP_SEEDING;
@@ -949,6 +981,35 @@ class TeamLeagueState {
     }
 
     updateKnockoutProgression() {
+        const knockoutFormat = this.knockoutFormat || 'quarter_final';
+        
+        // Final only has no progression
+        if (knockoutFormat === 'final_only') {
+            return;
+        }
+        
+        // Semi final format - just progress SF winners to final
+        if (knockoutFormat === 'semi_final') {
+            const sf1Winner = this.getKnockoutMatchWinner('sf1');
+            const sf1Loser = this.getKnockoutMatchLoser('sf1');
+            const sf2Winner = this.getKnockoutMatchWinner('sf2');
+            const sf2Loser = this.getKnockoutMatchLoser('sf2');
+            
+            // 3rd place playoff
+            if (this.includeThirdPlace && sf1Loser && sf2Loser) {
+                this.knockoutTeams.thirdPlace = { team1: sf1Loser, team2: sf2Loser };
+            }
+            
+            // Final
+            if (sf1Winner && sf2Winner) {
+                this.knockoutTeams.final = { team1: sf1Winner, team2: sf2Winner };
+            }
+            
+            this.saveToFirebase();
+            return;
+        }
+        
+        // Quarter final format (default) - full progression
         // QF winners to SF
         const qf1Winner = this.getKnockoutMatchWinner('qf1');
         const qf2Winner = this.getKnockoutMatchWinner('qf2');
@@ -1222,4 +1283,4 @@ function renderTeamLeague() {
     }
 }
 
-console.log('✅ Team League State loaded');
+console.log('✅ Team Tournament State loaded');

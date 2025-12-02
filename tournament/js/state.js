@@ -50,6 +50,7 @@ class TournamentState {
         this.matchNames = {};
         this.knockoutNames = {};
         this.knockoutScores = {};
+        this.knockoutFormat = 'quarter'; // 'final', 'semi', or 'quarter'
         this.fixtureMaxScore = CONFIG.FIXTURE_MAX_SCORE;
         this.knockoutMaxScore = CONFIG.KNOCKOUT_MAX_SCORE;
         this.semiMaxScore = CONFIG.SEMI_MAX_SCORE;
@@ -183,6 +184,7 @@ class TournamentState {
         this.fixtures = data.fixtures || this.fixtures;
         this.matchNames = data.matchNames || this.matchNames;
         this.knockoutNames = data.knockoutNames || this.knockoutNames;
+        this.knockoutFormat = data.knockoutFormat || 'quarter';
         this.fixtureMaxScore = data.fixtureMaxScore || CONFIG.FIXTURE_MAX_SCORE;
         this.knockoutMaxScore = data.knockoutMaxScore || CONFIG.KNOCKOUT_MAX_SCORE;
         this.semiMaxScore = data.semiMaxScore || CONFIG.SEMI_MAX_SCORE;
@@ -475,6 +477,7 @@ class TournamentState {
         updates[`${basePath}/matchNames`] = this.matchNames;
         updates[`${basePath}/knockoutNames`] = this.knockoutNames;
         updates[`${basePath}/knockoutScores`] = this.knockoutScores;
+        updates[`${basePath}/knockoutFormat`] = this.knockoutFormat;
         updates[`${basePath}/fixtureMaxScore`] = this.fixtureMaxScore;
         updates[`${basePath}/knockoutMaxScore`] = this.knockoutMaxScore;
         updates[`${basePath}/semiMaxScore`] = this.semiMaxScore;

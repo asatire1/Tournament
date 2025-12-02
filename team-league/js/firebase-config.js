@@ -15,4 +15,4 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-console.log('✅ Firebase initialized (Team League)');
+console.log('✅ Firebase initialized (Team Tournament)');

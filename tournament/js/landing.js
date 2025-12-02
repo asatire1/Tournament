@@ -631,6 +631,7 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
         fixtures: fixturesData,
         matchNames: matchNames,
         knockoutNames: matchNamesData.knockoutMatches,
+        knockoutFormat: 'quarter', // Default knockout format
         matchScores: {},
         knockoutScores: {},
         fixtureMaxScore: CONFIG.FIXTURE_MAX_SCORE,

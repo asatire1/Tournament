@@ -64,7 +64,7 @@ async function loadTournament(tournamentId, organiserKey) {
     // Get tournament name for MyTournaments
     try {
         const snapshot = await database.ref(`team-tournaments/${tournamentId}/meta/name`).once('value');
-        const name = snapshot.val() || 'Team League';
+        const name = snapshot.val() || 'Team Tournament';
         MyTournaments.add(tournamentId, name);
         state.tournamentName = name;
     } catch (e) {
@@ -86,14 +86,14 @@ function renderTeamLeague() {
 // ===== START APP =====
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🏁 Team League starting...');
+    console.log('🏁 Team Tournament starting...');
     Router.init();
 });
 
 // Also handle if DOM already loaded
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    console.log('🏁 Team League starting (immediate)...');
+    console.log('🏁 Team Tournament starting (immediate)...');
     Router.init();
 }
 
-console.log('✅ Team League Main loaded');
+console.log('✅ Team Tournament Main loaded');
