@@ -779,6 +779,9 @@ function SettingsTab() {
             <button onclick="setSettingsSubTab('fixtures')" class="settings-subtab ${subTab === 'fixtures' ? 'active' : 'inactive'}">
                 🔄 Fixtures
             </button>
+            <button onclick="setSettingsSubTab('knockout')" class="settings-subtab ${subTab === 'knockout' ? 'active' : 'inactive'}">
+                🏆 Knockout
+            </button>
             <button onclick="setSettingsSubTab('courts')" class="settings-subtab ${subTab === 'courts' ? 'active' : 'inactive'}">
                 🏟️ Courts
             </button>
@@ -795,6 +798,7 @@ function SettingsTab() {
             ${subTab === 'teams' ? TeamsSettingsSection() : ''}
             ${subTab === 'groups' ? GroupsSettingsSection() : ''}
             ${subTab === 'fixtures' ? FixturesSettingsSection() : ''}
+            ${subTab === 'knockout' ? KnockoutSettingsSection() : ''}
             ${subTab === 'courts' ? CourtsSettingsSection() : ''}
             ${subTab === 'scoring' ? ScoringSettingsSection() : ''}
             ${subTab === 'danger' ? DangerZoneSection() : ''}
@@ -1190,6 +1194,89 @@ function CourtsSettingsSection() {
             </div>
         </div>
     `;
+}
+
+function KnockoutSettingsSection() {
+    const currentFormat = state.knockoutFormat || 'quarter_final';
+    const hasKnockoutStarted = checkKnockoutHasStarted();
+    
+    return `
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Knockout Format</h3>
+        
+        ${hasKnockoutStarted ? `
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                <p class="text-amber-800 text-sm">
+                    ⚠️ <strong>Knockout matches have started.</strong> Changing the format now may affect existing scores.
+                </p>
+            </div>
+        ` : ''}
+        
+        <p class="text-gray-600 mb-4">Choose how many knockout rounds to play after the group stage.</p>
+        
+        <div class="space-y-3">
+            <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${currentFormat === 'quarter_final' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                <input type="radio" name="knockout-format-setting" value="quarter_final" 
+                    ${currentFormat === 'quarter_final' ? 'checked' : ''}
+                    onchange="updateKnockoutFormat('quarter_final')"
+                    class="w-5 h-5 text-purple-600" />
+                <div class="flex-1">
+                    <div class="font-semibold text-gray-800">🏆 Full Knockout (Quarter Finals)</div>
+                    <div class="text-sm text-gray-500">Quarter Finals → Semi Finals → Final (+ optional 3rd place)</div>
+                    <div class="text-xs text-purple-600 mt-1">Best for 8+ teams advancing from groups</div>
+                </div>
+            </label>
+            
+            <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${currentFormat === 'semi_final' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                <input type="radio" name="knockout-format-setting" value="semi_final" 
+                    ${currentFormat === 'semi_final' ? 'checked' : ''}
+                    onchange="updateKnockoutFormat('semi_final')"
+                    class="w-5 h-5 text-purple-600" />
+                <div class="flex-1">
+                    <div class="font-semibold text-gray-800">🥈 Semi Finals Only</div>
+                    <div class="text-sm text-gray-500">Semi Finals → Final (+ optional 3rd place)</div>
+                    <div class="text-xs text-purple-600 mt-1">Best for 4 teams advancing from groups</div>
+                </div>
+            </label>
+            
+            <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${currentFormat === 'final_only' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                <input type="radio" name="knockout-format-setting" value="final_only" 
+                    ${currentFormat === 'final_only' ? 'checked' : ''}
+                    onchange="updateKnockoutFormat('final_only')"
+                    class="w-5 h-5 text-purple-600" />
+                <div class="flex-1">
+                    <div class="font-semibold text-gray-800">🥇 Final Only</div>
+                    <div class="text-sm text-gray-500">Straight to the Final (+ optional 3rd place)</div>
+                    <div class="text-xs text-purple-600 mt-1">Best for 2 teams advancing from groups</div>
+                </div>
+            </label>
+        </div>
+        
+        <!-- Third Place Option -->
+        <div class="mt-6 pt-6 border-t border-gray-200">
+            <h4 class="font-semibold text-gray-800 mb-3">Third Place Playoff</h4>
+            <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${state.includeThirdPlace ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                <input type="checkbox" 
+                    ${state.includeThirdPlace ? 'checked' : ''}
+                    onchange="updateIncludeThirdPlace(this.checked)"
+                    class="w-5 h-5 text-purple-600 rounded" />
+                <div class="flex-1">
+                    <div class="font-semibold text-gray-800">Include 3rd Place Match</div>
+                    <div class="text-sm text-gray-500">Semi-final losers play for 3rd place</div>
+                </div>
+            </label>
+        </div>
+    `;
+}
+
+function checkKnockoutHasStarted() {
+    // Check if any knockout scores have been entered
+    const scores = state.knockoutScores || {};
+    for (const key in scores) {
+        if (scores[key] && (scores[key].team1Score !== null || scores[key].team2Score !== null)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function ScoringSettingsSection() {

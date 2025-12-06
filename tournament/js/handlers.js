@@ -62,6 +62,11 @@ function setKnockoutFormat(format) {
     showToast(`✅ Knockout format changed to ${format === 'final' ? 'Final Only' : format === 'semi' ? 'Semi + Final' : 'Quarter + Semi + Final'}`);
 }
 
+// Alias for settings page
+function changeKnockoutFormat(format) {
+    setKnockoutFormat(format);
+}
+
 // ===== FIXTURE HANDLERS =====
 
 function handleFixtureChange(round, matchIdx, position, newValue) {

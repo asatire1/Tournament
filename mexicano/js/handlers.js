@@ -10,7 +10,10 @@ let wizardData = {
     pointsPerMatch: 24,
     players: [],
     teams: [],
-    passcode: ''
+    passcode: '',
+    accessMode: 'anyone',
+    levelMin: 0,
+    levelMax: 10
 };
 
 // ===== CREATE WIZARD =====
@@ -25,7 +28,10 @@ function showCreateModal() {
         pointsPerMatch: 24,
         players: [],
         teams: [],
-        passcode: ''
+        passcode: '',
+        accessMode: 'anyone',
+        levelMin: 0,
+        levelMax: 10
     };
     
     document.getElementById('modal-container').innerHTML = `
@@ -34,7 +40,7 @@ function showCreateModal() {
             <div class="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-scale-in" onclick="event.stopPropagation()">
                 <div class="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-5 rounded-t-3xl">
                     <h2 class="text-xl font-bold text-white">🎯 Create Mexicano Session</h2>
-                    <p class="text-teal-100 text-sm mt-1">Step 1 of 3: Basic Info</p>
+                    <p class="text-teal-100 text-sm mt-1">Step 1 of 4: Basic Info</p>
                 </div>
                 <div class="p-6">
                     <div class="mb-5">
@@ -133,7 +139,7 @@ function showAddPlayersModal() {
             <div class="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-scale-in" onclick="event.stopPropagation()">
                 <div class="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-5 rounded-t-3xl">
                     <h2 class="text-xl font-bold text-white">${isTeam ? '👯 Add Teams' : '👥 Add Players'}</h2>
-                    <p class="text-teal-100 text-sm mt-1">Step 2 of 3: ${isTeam ? 'Teams' : 'Players'}</p>
+                    <p class="text-teal-100 text-sm mt-1">Step 2 of 4: ${isTeam ? 'Teams' : 'Players'}</p>
                 </div>
                 <div class="p-6">
                     <p class="text-gray-500 text-sm mb-4">Minimum ${min} ${isTeam ? 'teams' : 'players'} required</p>
@@ -443,89 +449,113 @@ function goToStep4() {
  * Create tournament in Firebase
  */
 async function handleCreateTournament() {
-    const passcode = document.getElementById('create-passcode').value;
-    if (!passcode) {
-        showToast('❌ Please enter a passcode');
-        return;
-    }
-    
-    wizardData.passcode = passcode;
-    
-    const tournamentId = Router.generateTournamentId();
-    const organiserKey = Router.generateOrganiserKey();
-    const hashedPasscode = btoa(passcode); // Simple hash for demo
-    
-    // Get current user for creator info
-    const currentUser = getCurrentUser();
-    
-    // Prepare mode settings
-    const accessMode = wizardData.accessMode || 'anyone';
-    const modeSettings = {
-        mode: accessMode,
-        allowGuests: accessMode === 'anyone',
-        requireRegistered: accessMode === 'registered' || accessMode === 'level-based',
-        requireVerified: accessMode === 'level-based',
-        levelCriteria: accessMode === 'level-based' ? { 
-            min: wizardData.levelMin, 
-            max: wizardData.levelMax 
-        } : null
-    };
-    
-    // Initialize state
-    state = new MexicanoState(tournamentId);
-    state.tournamentName = wizardData.name;
-    state.mode = wizardData.mode;
-    state.pointsPerMatch = wizardData.pointsPerMatch;
-    state.players = wizardData.players;
-    state.teams = wizardData.teams;
-    state.organiserKey = organiserKey;
-    state.isOrganiser = true;
-    
-    // Generate first round
-    state.rounds = [state.generateRound(1)];
-    state.currentRound = 1;
-    state.viewingRound = 1;
-    state.status = 'active';
-    
-    // Build Firebase data
-    const data = {
-        meta: {
-            name: wizardData.name,
-            mode: wizardData.mode,
-            pointsPerMatch: wizardData.pointsPerMatch,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            status: 'active',
-            organiserKey: organiserKey,
-            passcodeHash: hashedPasscode,
-            // Mode settings
-            ...modeSettings,
-            // Creator info
-            createdBy: currentUser ? {
-                id: currentUser.id,
-                name: currentUser.name,
-                type: currentUser.type
-            } : null
-        },
-        currentRound: 1,
-        playerCount: wizardData.mode === 'individual' ? wizardData.players.length : wizardData.teams.length * 2,
-        rounds: state.rounds,
-        // For registered modes
-        registeredPlayers: {}
-    };
-    
-    if (wizardData.mode === 'individual') {
-        data.players = wizardData.players;
-    } else {
-        data.teams = wizardData.teams;
-    }
+    console.log('🔄 handleCreateTournament called');
     
     try {
+        const passcode = document.getElementById('create-passcode').value;
+        if (!passcode) {
+            showToast('❌ Please enter a passcode');
+            return;
+        }
+        
+        console.log('✅ Passcode entered');
+        wizardData.passcode = passcode;
+        
+        const tournamentId = Router.generateTournamentId();
+        const organiserKey = Router.generateOrganiserKey();
+        const hashedPasscode = btoa(passcode); // Simple hash for demo
+        
+        console.log('✅ Generated IDs:', { tournamentId, organiserKey });
+        
+        // Get current user for creator info
+        const currentUser = getCurrentUser();
+        
+        // Prepare mode settings
+        const accessMode = wizardData.accessMode || 'anyone';
+        const modeSettings = {
+            mode: accessMode,
+            allowGuests: accessMode === 'anyone',
+            requireRegistered: accessMode === 'registered' || accessMode === 'level-based',
+            requireVerified: accessMode === 'level-based',
+            levelCriteria: accessMode === 'level-based' ? { 
+                min: wizardData.levelMin, 
+                max: wizardData.levelMax 
+            } : null
+        };
+        
+        // Validate we have enough players/teams
+        const isTeam = wizardData.mode === 'team';
+        const items = isTeam ? wizardData.teams : wizardData.players;
+        const min = isTeam ? CONFIG.MIN_TEAMS : CONFIG.MIN_PLAYERS_INDIVIDUAL;
+        
+        console.log('✅ Validation:', { isTeam, itemCount: items?.length, min });
+        
+        if (!items || items.length < min) {
+            showToast(`❌ Need at least ${min} ${isTeam ? 'teams' : 'players'}`);
+            return;
+        }
+        
+        // Initialize state
+        console.log('🔄 Creating MexicanoState...');
+        state = new MexicanoState(tournamentId);
+        state.tournamentName = wizardData.name;
+        state.mode = wizardData.mode;
+        state.pointsPerMatch = wizardData.pointsPerMatch;
+        state.players = wizardData.players;
+        state.teams = wizardData.teams;
+        state.organiserKey = organiserKey;
+        state.isOrganiser = true;
+        
+        console.log('🔄 Generating first round...');
+        // Generate first round
+        state.rounds = [state.generateRound(1)];
+        state.currentRound = 1;
+        state.viewingRound = 1;
+        state.status = 'active';
+        
+        console.log('✅ Round generated:', state.rounds[0]);
+        
+        // Build Firebase data
+        const data = {
+            meta: {
+                name: wizardData.name,
+                mode: wizardData.mode,
+                pointsPerMatch: wizardData.pointsPerMatch,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                status: 'active',
+                organiserKey: organiserKey,
+                passcodeHash: hashedPasscode,
+                // Mode settings
+                ...modeSettings,
+                // Creator info
+                createdBy: currentUser ? {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    type: currentUser.type
+                } : null
+            },
+            currentRound: 1,
+            playerCount: wizardData.mode === 'individual' ? wizardData.players.length : wizardData.teams.length * 2,
+            rounds: state.rounds,
+            // For registered modes
+            registeredPlayers: {}
+        };
+        
+        if (wizardData.mode === 'individual') {
+            data.players = wizardData.players;
+        } else {
+            data.teams = wizardData.teams;
+        }
+        
+        console.log('🔄 Saving to Firebase...');
         const success = await createTournamentInFirebase(tournamentId, data);
         if (!success) {
             showToast('❌ Failed to create session');
             return;
         }
+        
+        console.log('✅ Saved to Firebase');
         
         // Save to local storage
         MyTournaments.save({
@@ -534,11 +564,12 @@ async function handleCreateTournament() {
             createdAt: data.meta.createdAt
         });
         
+        console.log('✅ Showing success modal');
         // Show success modal with links
         showSuccessModal(tournamentId, organiserKey, accessMode);
     } catch (error) {
-        console.error('Error creating tournament:', error);
-        showToast('❌ Failed to create session');
+        console.error('❌ Error creating tournament:', error);
+        showToast('❌ Failed to create session: ' + (error.message || error));
     }
 }
 

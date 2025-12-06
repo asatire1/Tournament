@@ -465,6 +465,22 @@ function updateFinalMaxScore(value) {
     showToast('✅ Final max score updated');
 }
 
+function updateKnockoutFormat(format) {
+    if (!state || !state.canEdit()) return;
+    state.knockoutFormat = format;
+    state.saveSettingToFirebase('knockoutFormat', format);
+    showToast('✅ Knockout format updated');
+    renderTeamLeague();
+}
+
+function updateIncludeThirdPlace(include) {
+    if (!state || !state.canEdit()) return;
+    state.includeThirdPlace = include;
+    state.saveSettingToFirebase('includeThirdPlace', include);
+    showToast(`✅ 3rd place playoff ${include ? 'enabled' : 'disabled'}`);
+    renderTeamLeague();
+}
+
 // ===== DANGER ZONE =====
 
 function confirmResetScores() {

@@ -410,7 +410,43 @@ function SettingsTab() {
                 </div>
 
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">👁️ Tab Visibility Settings</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">🏆 Knockout Format</h3>
+                    <p class="text-sm text-gray-600 mb-4">Choose which knockout rounds to include in the tournament.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${state.knockoutFormat === 'quarter' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}">
+                            <input type="radio" name="knockout-format" value="quarter" 
+                                ${state.knockoutFormat === 'quarter' ? 'checked' : ''}
+                                onchange="changeKnockoutFormat('quarter')"
+                                class="w-5 h-5 text-blue-600" />
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-800 text-sm">Full (QF → SF → F)</div>
+                                <div class="text-xs text-gray-500">8 teams in knockout</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${state.knockoutFormat === 'semi' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}">
+                            <input type="radio" name="knockout-format" value="semi" 
+                                ${state.knockoutFormat === 'semi' ? 'checked' : ''}
+                                onchange="changeKnockoutFormat('semi')"
+                                class="w-5 h-5 text-blue-600" />
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-800 text-sm">Semi Finals Only</div>
+                                <div class="text-xs text-gray-500">4 teams in knockout</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${state.knockoutFormat === 'final' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}">
+                            <input type="radio" name="knockout-format" value="final" 
+                                ${state.knockoutFormat === 'final' ? 'checked' : ''}
+                                onchange="changeKnockoutFormat('final')"
+                                class="w-5 h-5 text-blue-600" />
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-800 text-sm">Final Only</div>
+                                <div class="text-xs text-gray-500">2 teams in knockout</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
                     <div class="space-y-4">
                         <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                             <div>
