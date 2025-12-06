@@ -1,6 +1,6 @@
 /**
  * state.js - Mexicano Tournament State Management
- * Handles all tournament state, Firebase sync, and round generation
+ * REBUILT: Calculates standings from match results (no stored points)
  */
 
 class MexicanoState {
@@ -12,477 +12,124 @@ class MexicanoState {
         this.isOrganiser = false;
         this.isInitialized = false;
         
-        // Polling for viewers (optimization: viewers don't need real-time)
-        this.pollingInterval = null;
-        this.VIEWER_POLL_INTERVAL = 10000; // 10 seconds for viewers
-        
-        // Debounce for saves (optimization: batch writes)
+        // Firebase sync
+        this.firebaseListener = null;
         this.saveDebounceTimer = null;
-        this.SAVE_DEBOUNCE_MS = 500;        // Wait 500ms after last change
-        this.pendingSave = false;
+        this.SAVE_DEBOUNCE_MS = 300;
         
-        // Idle detection (optimization: disconnect inactive users)
-        this.idleTimer = null;
-        this.IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30 minutes
-        this.isDisconnected = false;
-        this.activityEvents = ['mousedown', 'keypress', 'scroll', 'touchstart', 'click'];
-        this.boundResetIdle = null;
-        this.lastIdleReset = 0;
-        
-        // Tournament mode and settings
+        // Tournament settings
         this.mode = 'individual'; // 'individual' or 'team'
         this.pointsPerMatch = CONFIG.DEFAULT_POINTS_PER_MATCH;
-        this.status = 'setup'; // 'setup', 'active', 'completed'
+        this.status = 'active';
         
-        // Players/Teams
+        // Players/Teams (just names and IDs - no stored points)
         this.players = [];
         this.teams = [];
         
-        // Registered players (Phase 4 - Browse & Join)
+        // Registered players (Browse & Join)
         this.registeredPlayers = {};
         
-        // Rounds and matches
+        // Rounds and matches (source of truth for scores)
         this.rounds = [];
         this.currentRound = 0;
         this.viewingRound = 0;
         
         // UI state
         this.activeTab = 'matches';
-        
-        // Firebase listener
-        this.firebaseListener = null;
-        
-        // Scores being edited (prevent sync conflicts)
-        this.scoresBeingEdited = new Set();
     }
     
-    /**
-     * Verify organiser key against Firebase
-     */
-    async verifyOrganiserKey(key) {
-        if (!this.tournamentId || !key) {
-            this.isOrganiser = false;
-            return false;
-        }
-        
-        try {
-            const isValid = await verifyOrganiserKey(this.tournamentId, key);
-            this.isOrganiser = isValid;
-            this.organiserKey = isValid ? key : null;
-            
-            if (isValid) {
-                // Upgrade from polling to real-time sync
-                this.upgradeToRealtime();
-            }
-            
-            return isValid;
-        } catch (error) {
-            console.error('Error verifying organiser key:', error);
-            this.isOrganiser = false;
-            return false;
-        }
-    }
+    // ========================================
+    // STANDINGS - Calculated from match results
+    // ========================================
     
     /**
-     * Check if user can edit tournament
+     * Calculate standings from all completed matches
+     * This is the KEY FIX - we don't store points, we calculate them
      */
-    canEdit() {
-        return this.isOrganiser;
-    }
-    
-    /**
-     * Load tournament data from Firebase
-     */
-    async loadFromFirebase() {
-        if (!this.tournamentId) return false;
+    getStandings() {
+        const stats = new Map();
         
-        try {
-            const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).once('value');
-            
-            if (!snapshot.exists()) {
-                return false;
-            }
-            
-            const data = snapshot.val();
-            
-            // Meta data (static config)
-            this.tournamentName = data.meta?.name || '';
-            this.mode = data.meta?.mode || 'individual';
-            this.pointsPerMatch = data.meta?.pointsPerMatch || CONFIG.DEFAULT_POINTS_PER_MATCH;
-            this.status = data.meta?.status || 'active';
-            
-            // Players/Teams - normalize arrays (Firebase may convert to objects)
-            this.players = this.normalizeArray(data.players);
-            this.teams = this.normalizeArray(data.teams);
-            
-            // Rounds - normalize to ensure arrays are properly converted
-            this.rounds = this.normalizeRoundsData(data.rounds || []);
-            this.currentRound = data.currentRound || 1;
-            this.viewingRound = this.currentRound;
-            
-            this.isInitialized = true;
-            
-            // Save to local storage
-            MyTournaments.save({
-                id: this.tournamentId,
-                name: this.tournamentName,
-                createdAt: data.meta?.createdAt
+        // Initialize all players/teams with 0
+        const items = this.mode === 'individual' ? this.players : this.teams;
+        items.forEach(item => {
+            stats.set(item.id, {
+                id: item.id,
+                name: item.name || item.teamName || 'Unknown',
+                totalPoints: 0,
+                matchesPlayed: 0
             });
-            
-            console.log('📦 Initial data loaded');
-            return true;
-        } catch (error) {
-            console.error('Error loading tournament:', error);
-            return false;
-        }
-    }
-    
-    /**
-     * Process DYNAMIC data from Firebase (rounds, players/teams with scores)
-     */
-    processDynamicData(data) {
-        // Don't update if user is editing scores
-        if (this.scoresBeingEdited.size > 0) {
-            console.log('⏳ Skipping Firebase update - scores being edited');
-            return;
-        }
-        
-        if (!data) return;
-        
-        // Update rounds - normalize data from Firebase
-        this.rounds = this.normalizeRoundsData(data.rounds || []);
-        this.currentRound = data.currentRound || 1;
-        
-        // For ORGANISER: Don't overwrite local player data - organiser is source of truth
-        // Only update if we don't have players yet
-        if (this.isOrganiser && this.players.length > 0) {
-            console.log('👑 Organiser mode - keeping local player state');
-            // Don't overwrite players - local state is authoritative
-        } else {
-            // For VIEWERS: Always update from Firebase
-            this.players = this.normalizeArray(data.players);
-            this.teams = this.normalizeArray(data.teams);
-        }
-        
-        this.status = data.meta?.status || 'active';
-        this.registeredPlayers = data.registeredPlayers || {};
-        
-        // Adjust viewing round if needed
-        if (this.viewingRound > this.rounds.length) {
-            this.viewingRound = this.currentRound;
-        }
-        
-        // Re-render
-        render();
-    }
-    
-    /**
-     * Normalize array data from Firebase (converts object-with-numeric-keys to array)
-     */
-    normalizeArray(data) {
-        if (!data) return [];
-        if (Array.isArray(data)) return data;
-        // Firebase converts arrays to objects with numeric keys
-        return Object.values(data);
-    }
-    
-    /**
-     * Setup real-time listener or polling for tournament updates
-     */
-    setupRealtimeListener() {
-        if (!this.tournamentId) return;
-        
-        // Clean up existing listener/polling
-        this.stopListening();
-        
-        const basePath = `${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`;
-        
-        if (this.isOrganiser) {
-            // ORGANISER: Real-time listeners for dynamic data
-            console.log('👑 Organiser mode: Real-time sync for scores');
-            this.setupScoreListeners(basePath);
-        } else {
-            // VIEWER: Polling for dynamic data only
-            console.log('👁️ Viewer mode: Polling scores (every ' + (this.VIEWER_POLL_INTERVAL/1000) + 's)');
-            this.setupScorePolling(basePath);
-        }
-        
-        // Start idle detection (only on first setup, not on reconnect)
-        if (!this.boundResetIdle) {
-            this.startIdleDetection();
-        }
-    }
-    
-    /**
-     * Set up real-time listeners for dynamic data (organiser mode)
-     */
-    setupScoreListeners(basePath) {
-        // Listen to all dynamic data paths
-        this.firebaseListener = database.ref(basePath).on('value', (snapshot) => {
-            if (snapshot.exists() && this.scoresBeingEdited.size === 0) {
-                this.processDynamicData(snapshot.val());
-            }
         });
-    }
-    
-    /**
-     * Set up polling for dynamic data (viewer mode)
-     */
-    setupScorePolling(basePath) {
-        this.pollingInterval = setInterval(() => {
-            // Fetch only the dynamic parts
-            Promise.all([
-                database.ref(`${basePath}/rounds`).once('value'),
-                database.ref(`${basePath}/currentRound`).once('value'),
-                database.ref(`${basePath}/players`).once('value'),
-                database.ref(`${basePath}/teams`).once('value'),
-                database.ref(`${basePath}/meta/status`).once('value')
-            ]).then(([roundsSnap, currentRoundSnap, playersSnap, teamsSnap, statusSnap]) => {
-                if (this.scoresBeingEdited.size === 0) {
-                    this.rounds = this.normalizeRoundsData(roundsSnap.val() || []);
-                    this.currentRound = currentRoundSnap.val() || 1;
-                    this.players = this.normalizeArray(playersSnap.val());
-                    this.teams = this.normalizeArray(teamsSnap.val());
-                    this.status = statusSnap.val() || 'active';
+        
+        // Calculate from all completed matches
+        this.rounds.forEach(round => {
+            if (!round || !round.matches) return;
+            
+            round.matches.forEach(match => {
+                if (!match.completed) return;
+                
+                const score1 = match.score1 || 0;
+                const score2 = match.score2 || 0;
+                
+                if (this.mode === 'individual') {
+                    // Individual mode - team1 and team2 are arrays of player IDs
+                    const team1Ids = this.normalizeArray(match.team1);
+                    const team2Ids = this.normalizeArray(match.team2);
                     
-                    if (this.viewingRound > this.rounds.length) {
-                        this.viewingRound = this.currentRound;
+                    team1Ids.forEach(id => {
+                        const s = stats.get(id);
+                        if (s) {
+                            s.totalPoints += score1;
+                            s.matchesPlayed++;
+                        }
+                    });
+                    
+                    team2Ids.forEach(id => {
+                        const s = stats.get(id);
+                        if (s) {
+                            s.totalPoints += score2;
+                            s.matchesPlayed++;
+                        }
+                    });
+                } else {
+                    // Team mode
+                    const s1 = stats.get(match.team1);
+                    const s2 = stats.get(match.team2);
+                    
+                    if (s1) {
+                        s1.totalPoints += score1;
+                        s1.matchesPlayed++;
                     }
-                    
-                    render();
+                    if (s2) {
+                        s2.totalPoints += score2;
+                        s2.matchesPlayed++;
+                    }
                 }
             });
-        }, this.VIEWER_POLL_INTERVAL);
-    }
-    
-    /**
-     * Upgrade from polling to real-time (when viewer becomes organiser)
-     */
-    upgradeToRealtime() {
-        if (this.pollingInterval) {
-            console.log('⬆️ Upgrading to real-time sync');
-            clearInterval(this.pollingInterval);
-            this.pollingInterval = null;
-            
-            const basePath = `${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`;
-            this.setupScoreListeners(basePath);
-        }
-    }
-    
-    /**
-     * Stop listening to Firebase changes
-     */
-    stopListening() {
-        // Clear real-time listener
-        if (this.firebaseListener) {
-            database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).off('value', this.firebaseListener);
-            this.firebaseListener = null;
-        }
-        
-        // Clear polling interval if active
-        if (this.pollingInterval) {
-            clearInterval(this.pollingInterval);
-            this.pollingInterval = null;
-            console.log('🛑 Stopped polling');
-        }
-    }
-    
-    // ===== IDLE DETECTION =====
-    
-    startIdleDetection() {
-        this.boundResetIdle = this.resetIdleTimer.bind(this);
-        this.activityEvents.forEach(event => {
-            document.addEventListener(event, this.boundResetIdle, { passive: true });
         });
-        this.resetIdleTimer();
-        console.log('👁️ Idle detection started (timeout: ' + (this.IDLE_TIMEOUT_MS / 60000) + ' min)');
-    }
-    
-    stopIdleDetection() {
-        if (this.boundResetIdle) {
-            this.activityEvents.forEach(event => {
-                document.removeEventListener(event, this.boundResetIdle);
-            });
-            this.boundResetIdle = null;
-        }
-        if (this.idleTimer) {
-            clearTimeout(this.idleTimer);
-            this.idleTimer = null;
-        }
-    }
-    
-    resetIdleTimer() {
-        const now = Date.now();
-        if (!this.isDisconnected && this.lastIdleReset && (now - this.lastIdleReset) < 5000) {
-            return;
-        }
-        this.lastIdleReset = now;
         
-        if (this.idleTimer) {
-            clearTimeout(this.idleTimer);
-        }
-        if (this.isDisconnected) {
-            this.reconnect();
-        }
-        this.idleTimer = setTimeout(() => {
-            this.onIdle();
-        }, this.IDLE_TIMEOUT_MS);
-    }
-    
-    onIdle() {
-        if (this.isDisconnected) return;
-        console.log('😴 User idle - disconnecting to save resources');
-        this.isDisconnected = true;
-        this.flushSaveImmediately();
-        this.stopListening();
-        this.showReconnectBanner();
-    }
-    
-    async reconnect() {
-        if (!this.isDisconnected) return;
-        console.log('🔄 User active - reconnecting...');
-        this.isDisconnected = false;
-        this.hideReconnectBanner();
-        
-        await this.loadFromFirebase();
-        this.setupRealtimeListener();
-        render();
-        console.log('✅ Reconnected successfully');
-    }
-    
-    showReconnectBanner() {
-        if (document.getElementById('idle-banner')) return;
-        const banner = document.createElement('div');
-        banner.id = 'idle-banner';
-        banner.className = 'fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 px-4 z-50 shadow-lg';
-        banner.innerHTML = `
-            <span>😴 Disconnected due to inactivity.</span>
-            <button onclick="state.resetIdleTimer()" class="ml-2 underline font-semibold hover:text-amber-100">
-                Click to reconnect
-            </button>
-        `;
-        document.body.prepend(banner);
-    }
-    
-    hideReconnectBanner() {
-        const banner = document.getElementById('idle-banner');
-        if (banner) banner.remove();
+        // Sort by points (desc), then by matches played (asc for tiebreaker)
+        return Array.from(stats.values())
+            .sort((a, b) => b.totalPoints - a.totalPoints || a.matchesPlayed - b.matchesPlayed);
     }
     
     /**
-     * Save state to Firebase - DEBOUNCED
+     * Get player/team stats by ID
      */
-    async saveToFirebase() {
-        this.pendingSave = true;
-        
-        // Debounce the actual save
-        if (this.saveDebounceTimer) {
-            clearTimeout(this.saveDebounceTimer);
-        }
-        
-        this.saveDebounceTimer = setTimeout(() => {
-            this.flushSave();
-        }, this.SAVE_DEBOUNCE_MS);
-        
-        return true; // Return immediately, actual save is async
+    getItemStats(id) {
+        const standings = this.getStandings();
+        return standings.find(s => s.id === id) || { totalPoints: 0, matchesPlayed: 0 };
     }
     
-    /**
-     * Flush pending save to Firebase
-     */
-    async flushSave() {
-        if (!this.tournamentId || !this.pendingSave) {
-            this.saveDebounceTimer = null;
-            return false;
-        }
-        
-        try {
-            const updates = {
-                'meta/updatedAt': new Date().toISOString(),
-                currentRound: this.currentRound,
-                rounds: this.rounds,
-                registeredPlayers: this.registeredPlayers || {}
-            };
-            
-            if (this.mode === 'individual') {
-                updates.players = this.players;
-            } else {
-                updates.teams = this.teams;
-            }
-            
-            await database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).update(updates);
-            console.log('✅ Saved tournament state');
-            this.pendingSave = false;
-            this.saveDebounceTimer = null;
-            return true;
-        } catch (error) {
-            console.error('❌ Error saving to Firebase:', error);
-            this.saveDebounceTimer = null;
-            return false;
-        }
-    }
+    // ========================================
+    // ROUND GENERATION
+    // ========================================
     
     /**
-     * Force immediate save (e.g., before page unload)
-     */
-    async flushSaveImmediately() {
-        if (this.saveDebounceTimer) {
-            clearTimeout(this.saveDebounceTimer);
-            this.saveDebounceTimer = null;
-        }
-        // Force pendingSave to true to ensure we save
-        this.pendingSave = true;
-        return await this.flushSave();
-    }
-    
-    /**
-     * Normalize rounds data from Firebase
-     * Firebase sometimes converts arrays to objects, this ensures proper structure
-     */
-    normalizeRoundsData(rounds) {
-        if (!rounds) return [];
-        
-        // Convert Firebase object-with-numeric-keys to array if needed
-        const roundsArray = Array.isArray(rounds) ? rounds : Object.values(rounds);
-        
-        return roundsArray.map(round => {
-            if (!round) return null;
-            
-            // Normalize matches array
-            const matches = Array.isArray(round.matches) 
-                ? round.matches 
-                : (round.matches ? Object.values(round.matches) : []);
-            
-            // Normalize sitting out array
-            const sittingOut = Array.isArray(round.sittingOut) 
-                ? round.sittingOut 
-                : (round.sittingOut ? Object.values(round.sittingOut) : []);
-            
-            return {
-                ...round,
-                matches: matches.map(match => {
-                    if (!match) return null;
-                    
-                    // Ensure team arrays are properly converted
-                    return {
-                        ...match,
-                        team1: Array.isArray(match.team1) ? match.team1 : (match.team1 ? Object.values(match.team1) : []),
-                        team2: Array.isArray(match.team2) ? match.team2 : (match.team2 ? Object.values(match.team2) : []),
-                        team1Names: Array.isArray(match.team1Names) ? match.team1Names : (match.team1Names ? Object.values(match.team1Names) : []),
-                        team2Names: Array.isArray(match.team2Names) ? match.team2Names : (match.team2Names ? Object.values(match.team2Names) : []),
-                        team1Indices: Array.isArray(match.team1Indices) ? match.team1Indices : (match.team1Indices ? Object.values(match.team1Indices) : []),
-                        team2Indices: Array.isArray(match.team2Indices) ? match.team2Indices : (match.team2Indices ? Object.values(match.team2Indices) : [])
-                    };
-                }).filter(m => m !== null),
-                sittingOut
-            };
-        }).filter(r => r !== null);
-    }
-    
-    /**
-     * Generate a round based on current standings
+     * Generate next round based on current standings
      */
     generateRound(roundNumber) {
+        console.log('🔄 Generating round', roundNumber);
+        
         if (this.mode === 'individual') {
             return this.generateIndividualRound(roundNumber);
         } else {
@@ -494,66 +141,59 @@ class MexicanoState {
      * Generate individual mode round
      */
     generateIndividualRound(roundNumber) {
-        console.log('🔄 Generating round', roundNumber, 'with players:', this.players);
+        // Get current standings
+        const standings = this.getStandings();
+        console.log('📊 Standings for round', roundNumber, ':', standings.map(s => `${s.name}:${s.totalPoints}`));
         
-        // Defensive check for players
-        if (!this.players || this.players.length < 4) {
-            console.error('❌ Not enough players to generate round:', this.players);
-            return {
-                roundNumber,
-                matches: [],
-                sittingOut: [],
-                completed: false
-            };
+        if (standings.length < 4) {
+            console.error('❌ Not enough players:', standings.length);
+            return { roundNumber, matches: [], sittingOut: [], completed: false };
         }
         
-        // Round 1: Random shuffle. After: Sort by standings
+        // Round 1: Random shuffle. After: Use standings order
         let sorted = roundNumber === 1 
-            ? this.shuffleArray([...this.players])
-            : [...this.players].sort((a, b) => 
-                (b.totalPoints || 0) - (a.totalPoints || 0) || (a.matchesPlayed || 0) - (b.matchesPlayed || 0)
-            );
-        
-        console.log('📋 Sorted players:', sorted);
+            ? this.shuffleArray([...standings])
+            : [...standings];
         
         const matches = [];
         const courts = Math.floor(sorted.length / 4);
         
         for (let c = 0; c < courts; c++) {
             const base = c * 4;
-            // Mexicano pairing: 1&3 vs 2&4
-            const team1 = [sorted[base], sorted[base + 2]];
-            const team2 = [sorted[base + 1], sorted[base + 3]];
+            // Mexicano pairing: 1&3 vs 2&4 (by ranking)
+            const p1 = sorted[base];
+            const p2 = sorted[base + 1];
+            const p3 = sorted[base + 2];
+            const p4 = sorted[base + 3];
             
-            // Skip if any player is undefined
-            if (!team1[0] || !team1[1] || !team2[0] || !team2[1]) {
-                console.error('❌ Missing player in pairing:', { team1, team2 });
-                continue;
-            }
+            if (!p1 || !p2 || !p3 || !p4) continue;
+            
+            // Find original player objects for indices
+            const getIndex = (id) => this.players.findIndex(p => p.id === id);
             
             matches.push({
                 id: this.generateId(),
                 court: c + 1,
-                team1: team1.map(p => p.id),
-                team1Names: team1.map(p => p.name || 'Unknown'),
-                team1Indices: team1.map(p => this.players.findIndex(x => x.id === p.id)),
-                team2: team2.map(p => p.id),
-                team2Names: team2.map(p => p.name || 'Unknown'),
-                team2Indices: team2.map(p => this.players.findIndex(x => x.id === p.id)),
+                team1: [p1.id, p3.id],
+                team1Names: [p1.name, p3.name],
+                team1Indices: [getIndex(p1.id), getIndex(p3.id)],
+                team2: [p2.id, p4.id],
+                team2Names: [p2.name, p4.name],
+                team2Indices: [getIndex(p2.id), getIndex(p4.id)],
                 score1: null,
                 score2: null,
                 completed: false
             });
         }
         
-        // Players sitting out this round
-        const sittingOut = sorted.slice(courts * 4).map(p => ({
-            id: p.id,
-            name: p.name || 'Unknown',
-            index: this.players.findIndex(x => x.id === p.id)
+        // Players sitting out
+        const sittingOut = sorted.slice(courts * 4).map(s => ({
+            id: s.id,
+            name: s.name,
+            index: this.players.findIndex(p => p.id === s.id)
         }));
         
-        console.log('✅ Generated round with', matches.length, 'matches');
+        console.log('✅ Generated', matches.length, 'matches for round', roundNumber);
         
         return {
             roundNumber,
@@ -567,188 +207,348 @@ class MexicanoState {
      * Generate team mode round
      */
     generateTeamRound(roundNumber) {
+        const standings = this.getStandings();
+        
+        if (standings.length < 2) {
+            return { roundNumber, matches: [], sittingOut: [], completed: false };
+        }
+        
         let sorted = roundNumber === 1
-            ? this.shuffleArray([...this.teams])
-            : [...this.teams].sort((a, b) =>
-                b.totalPoints - a.totalPoints || a.matchesPlayed - b.matchesPlayed
-            );
+            ? this.shuffleArray([...standings])
+            : [...standings];
         
         const matches = [];
         const numMatches = Math.floor(sorted.length / 2);
         
-        for (let i = 0; i < numMatches; i++) {
-            const t1 = sorted[i * 2];
-            const t2 = sorted[i * 2 + 1];
+        for (let m = 0; m < numMatches; m++) {
+            const t1 = sorted[m * 2];
+            const t2 = sorted[m * 2 + 1];
+            
+            if (!t1 || !t2) continue;
+            
+            const team1Obj = this.teams.find(t => t.id === t1.id);
+            const team2Obj = this.teams.find(t => t.id === t2.id);
             
             matches.push({
                 id: this.generateId(),
-                court: i + 1,
+                court: m + 1,
                 team1: t1.id,
-                team1Name: t1.teamName,
-                team1Players: [t1.player1, t1.player2],
-                team1Index: this.teams.findIndex(x => x.id === t1.id),
+                team1Players: team1Obj ? [team1Obj.player1, team1Obj.player2] : [t1.name],
+                team1Index: this.teams.findIndex(t => t.id === t1.id),
                 team2: t2.id,
-                team2Name: t2.teamName,
-                team2Players: [t2.player1, t2.player2],
-                team2Index: this.teams.findIndex(x => x.id === t2.id),
+                team2Players: team2Obj ? [team2Obj.player1, team2Obj.player2] : [t2.name],
+                team2Index: this.teams.findIndex(t => t.id === t2.id),
                 score1: null,
                 score2: null,
                 completed: false
             });
         }
         
-        // Team sitting out (odd number of teams)
-        const sittingOut = sorted.length % 2 !== 0 ? [{
-            id: sorted[sorted.length - 1].id,
-            name: sorted[sorted.length - 1].teamName,
-            index: this.teams.findIndex(x => x.id === sorted[sorted.length - 1].id)
-        }] : [];
+        const sittingOut = sorted.length % 2 !== 0 
+            ? [{ id: sorted[sorted.length - 1].id, name: sorted[sorted.length - 1].name }] 
+            : [];
         
-        return {
-            roundNumber,
-            matches,
-            sittingOut,
-            completed: false
-        };
+        return { roundNumber, matches, sittingOut, completed: false };
     }
     
+    // ========================================
+    // FIREBASE SYNC - Simplified
+    // ========================================
+    
     /**
-     * Update points after a match is completed
+     * Load tournament from Firebase
      */
-    updatePoints(match, score1, score2) {
-        console.log('📊 Updating points:', { score1, score2, team1: match.team1, team2: match.team2 });
+    async loadTournament() {
+        if (!this.tournamentId) return false;
         
-        // Normalize team arrays in case they came from Firebase as objects
-        const team1Ids = Array.isArray(match.team1) ? match.team1 : Object.values(match.team1 || {});
-        const team2Ids = Array.isArray(match.team2) ? match.team2 : Object.values(match.team2 || {});
-        
-        if (this.mode === 'individual') {
-            team1Ids.forEach(id => {
-                const player = this.players.find(p => p.id === id);
-                if (player) {
-                    player.totalPoints = (player.totalPoints || 0) + score1;
-                    player.matchesPlayed = (player.matchesPlayed || 0) + 1;
-                    console.log(`  ✅ ${player.name}: +${score1} pts = ${player.totalPoints} total`);
-                } else {
-                    console.error(`  ❌ Player not found: ${id}`);
-                }
-            });
-            team2Ids.forEach(id => {
-                const player = this.players.find(p => p.id === id);
-                if (player) {
-                    player.totalPoints = (player.totalPoints || 0) + score2;
-                    player.matchesPlayed = (player.matchesPlayed || 0) + 1;
-                    console.log(`  ✅ ${player.name}: +${score2} pts = ${player.totalPoints} total`);
-                } else {
-                    console.error(`  ❌ Player not found: ${id}`);
-                }
-            });
-        } else {
-            const t1 = this.teams.find(t => t.id === match.team1);
-            const t2 = this.teams.find(t => t.id === match.team2);
+        try {
+            const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).once('value');
             
-            if (t1) {
-                t1.totalPoints = (t1.totalPoints || 0) + score1;
-                t1.matchesPlayed = (t1.matchesPlayed || 0) + 1;
-            }
-            if (t2) {
-                t2.totalPoints = (t2.totalPoints || 0) + score2;
-                t2.matchesPlayed = (t2.matchesPlayed || 0) + 1;
-            }
+            if (!snapshot.exists()) return false;
+            
+            const data = snapshot.val();
+            this.applyData(data);
+            this.isInitialized = true;
+            
+            console.log('📦 Tournament loaded');
+            return true;
+        } catch (error) {
+            console.error('Error loading tournament:', error);
+            return false;
         }
     }
     
     /**
-     * Revert points (for editing completed matches)
+     * Apply data from Firebase
      */
-    revertPoints(match) {
-        if (this.mode === 'individual') {
-            match.team1.forEach(id => {
-                const player = this.players.find(p => p.id === id);
-                if (player) {
-                    player.totalPoints -= match.score1;
-                    player.matchesPlayed--;
-                }
-            });
-            match.team2.forEach(id => {
-                const player = this.players.find(p => p.id === id);
-                if (player) {
-                    player.totalPoints -= match.score2;
-                    player.matchesPlayed--;
-                }
-            });
-        } else {
-            const t1 = this.teams.find(t => t.id === match.team1);
-            const t2 = this.teams.find(t => t.id === match.team2);
-            
-            if (t1) {
-                t1.totalPoints -= match.score1;
-                t1.matchesPlayed--;
+    applyData(data) {
+        if (!data) return;
+        
+        // Meta
+        this.tournamentName = data.meta?.name || '';
+        this.mode = data.meta?.mode || 'individual';
+        this.pointsPerMatch = data.meta?.pointsPerMatch || CONFIG.DEFAULT_POINTS_PER_MATCH;
+        this.status = data.meta?.status || 'active';
+        
+        // Players/Teams (just names and IDs)
+        this.players = this.normalizeArray(data.players);
+        this.teams = this.normalizeArray(data.teams);
+        
+        // Rounds (source of truth for all scores)
+        this.rounds = this.normalizeRoundsData(data.rounds);
+        this.currentRound = data.currentRound || 1;
+        
+        if (this.viewingRound === 0 || this.viewingRound > this.rounds.length) {
+            this.viewingRound = this.currentRound;
+        }
+        
+        this.registeredPlayers = data.registeredPlayers || {};
+    }
+    
+    /**
+     * Setup real-time listener
+     */
+    setupRealtimeListener() {
+        if (!this.tournamentId) return;
+        
+        this.stopListening();
+        
+        const path = `${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`;
+        
+        this.firebaseListener = database.ref(path).on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                this.applyData(snapshot.val());
+                render();
             }
-            if (t2) {
-                t2.totalPoints -= match.score2;
-                t2.matchesPlayed--;
-            }
+        });
+        
+        console.log('🔄 Real-time sync enabled');
+    }
+    
+    /**
+     * Stop listening
+     */
+    stopListening() {
+        if (this.firebaseListener) {
+            database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).off('value', this.firebaseListener);
+            this.firebaseListener = null;
         }
     }
     
     /**
-     * Get sorted standings
+     * Save to Firebase (debounced)
      */
-    getStandings() {
-        const items = this.mode === 'individual' 
-            ? [...this.players] 
-            : [...this.teams];
+    saveToFirebase() {
+        if (this.saveDebounceTimer) {
+            clearTimeout(this.saveDebounceTimer);
+        }
         
-        return items.sort((a, b) => b.totalPoints - a.totalPoints);
+        this.saveDebounceTimer = setTimeout(() => {
+            this.doSave();
+        }, this.SAVE_DEBOUNCE_MS);
     }
     
-    // Utility methods
+    /**
+     * Immediate save
+     */
+    async saveNow() {
+        if (this.saveDebounceTimer) {
+            clearTimeout(this.saveDebounceTimer);
+            this.saveDebounceTimer = null;
+        }
+        return await this.doSave();
+    }
+    
+    /**
+     * Perform the actual save
+     */
+    async doSave() {
+        if (!this.tournamentId) return false;
+        
+        try {
+            const updates = {
+                'meta/updatedAt': new Date().toISOString(),
+                'meta/status': this.status,
+                currentRound: this.currentRound,
+                rounds: this.rounds,
+                registeredPlayers: this.registeredPlayers || {}
+            };
+            
+            // Players/teams don't change during gameplay - only save if needed
+            if (this.mode === 'individual') {
+                updates.players = this.players;
+            } else {
+                updates.teams = this.teams;
+            }
+            
+            await database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).update(updates);
+            console.log('✅ Saved to Firebase');
+            return true;
+        } catch (error) {
+            console.error('❌ Save error:', error);
+            return false;
+        }
+    }
+    
+    // ========================================
+    // MATCH OPERATIONS
+    // ========================================
+    
+    /**
+     * Update match score
+     */
+    updateMatchScore(matchId, score1, score2) {
+        const round = this.rounds.find(r => r.matches?.some(m => m.id === matchId));
+        if (!round) return false;
+        
+        const match = round.matches.find(m => m.id === matchId);
+        if (!match) return false;
+        
+        match.score1 = score1;
+        match.score2 = score2;
+        match.completed = (score1 !== null && score2 !== null && score1 + score2 === this.pointsPerMatch);
+        
+        this.saveToFirebase();
+        return true;
+    }
+    
+    /**
+     * Check if current round is complete
+     */
+    isCurrentRoundComplete() {
+        const round = this.rounds[this.currentRound - 1];
+        if (!round || !round.matches) return false;
+        return round.matches.every(m => m.completed);
+    }
+    
+    /**
+     * Complete current round and generate next
+     */
+    completeCurrentRound() {
+        if (!this.isCurrentRoundComplete()) return false;
+        
+        // Mark current round complete
+        this.rounds[this.currentRound - 1].completed = true;
+        
+        // Generate next round
+        const nextRound = this.generateRound(this.currentRound + 1);
+        
+        if (nextRound.matches.length === 0) {
+            console.error('❌ Failed to generate next round');
+            return false;
+        }
+        
+        this.rounds.push(nextRound);
+        this.currentRound++;
+        this.viewingRound = this.currentRound;
+        
+        this.saveToFirebase();
+        return true;
+    }
+    
+    // ========================================
+    // UTILITIES
+    // ========================================
+    
+    normalizeArray(data) {
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        return Object.values(data);
+    }
+    
+    normalizeRoundsData(rounds) {
+        if (!rounds) return [];
+        
+        const arr = Array.isArray(rounds) ? rounds : Object.values(rounds);
+        
+        return arr.map(round => {
+            if (!round) return null;
+            
+            const matches = Array.isArray(round.matches) 
+                ? round.matches 
+                : (round.matches ? Object.values(round.matches) : []);
+            
+            return {
+                ...round,
+                matches: matches.map(m => {
+                    if (!m) return null;
+                    return {
+                        ...m,
+                        team1: this.normalizeArray(m.team1),
+                        team2: this.normalizeArray(m.team2),
+                        team1Names: this.normalizeArray(m.team1Names),
+                        team2Names: this.normalizeArray(m.team2Names),
+                        team1Indices: this.normalizeArray(m.team1Indices),
+                        team2Indices: this.normalizeArray(m.team2Indices)
+                    };
+                }).filter(Boolean),
+                sittingOut: this.normalizeArray(round.sittingOut)
+            };
+        }).filter(Boolean);
+    }
+    
+    shuffleArray(array) {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+    
     generateId() {
         return Math.random().toString(36).substring(2, 9);
     }
     
-    shuffleArray(arr) {
-        const a = [...arr];
-        for (let i = a.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [a[i], a[j]] = [a[j], a[i]];
+    canEdit() {
+        return this.isOrganiser && this.status !== 'completed';
+    }
+    
+    /**
+     * Verify organiser key
+     */
+    async verifyOrganiserKey(key) {
+        try {
+            const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/meta/organiserKey`).once('value');
+            const storedKey = snapshot.val();
+            
+            if (storedKey && storedKey === key) {
+                this.organiserKey = key;
+                this.isOrganiser = true;
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error verifying organiser key:', error);
+            return false;
         }
-        return a;
     }
 }
 
 // Global state instance
 let state = null;
 
-/**
- * My Tournaments - Local storage management
- */
+// Local tournament storage
 const MyTournaments = {
-    KEY: CONFIG.STORAGE_KEY,
-    
     getAll() {
         try {
-            const data = localStorage.getItem(this.KEY);
-            return data ? JSON.parse(data) : [];
+            return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY)) || [];
         } catch (e) {
             return [];
         }
     },
     
     save(tournament) {
-        const all = this.getAll().filter(t => t.id !== tournament.id);
-        all.unshift(tournament);
-        if (all.length > CONFIG.MAX_STORED_TOURNAMENTS) {
-            all.pop();
-        }
-        localStorage.setItem(this.KEY, JSON.stringify(all));
+        const list = this.getAll().filter(t => t.id !== tournament.id);
+        list.unshift(tournament);
+        if (list.length > CONFIG.MAX_STORED_TOURNAMENTS) list.pop();
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(list));
     },
     
     remove(tournamentId) {
-        const tournaments = this.getAll().filter(t => t.id !== tournamentId);
-        localStorage.setItem(this.KEY, JSON.stringify(tournaments));
+        const list = this.getAll().filter(t => t.id !== tournamentId);
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(list));
     }
 };
 
-console.log('✅ Mexicano State loaded');
+console.log('✅ Mexicano State (v2) loaded');

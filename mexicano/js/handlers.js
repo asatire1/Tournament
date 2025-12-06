@@ -876,8 +876,7 @@ async function handleOrganiserLogin() {
 // ===== SCORE HANDLERS =====
 
 function onScoreFocus(matchId) {
-    if (!state) return;
-    state.scoresBeingEdited.add(matchId);
+    // No longer need editing lock with new architecture
 }
 
 function onScoreInput(matchId, team, value) {
@@ -912,52 +911,43 @@ function onScoreInput(matchId, team, value) {
 }
 
 async function onScoreBlur(matchId, team, value) {
-    if (!state) return;
-    
-    // Keep the editing lock until save completes
-    // state.scoresBeingEdited.delete(matchId); // Moved to after save
-    
-    if (!state.canEdit()) {
-        state.scoresBeingEdited.delete(matchId);
-        return;
-    }
+    if (!state || !state.canEdit()) return;
     
     const round = state.rounds[state.currentRound - 1];
     const match = round?.matches.find(m => m.id === matchId);
-    if (!match || match.completed) {
-        state.scoresBeingEdited.delete(matchId);
-        return;
-    }
+    if (!match || match.completed) return;
     
+    // Parse and clamp score
     let score = value === '' ? null : parseInt(value);
-    if (score !== null && score > state.pointsPerMatch) score = state.pointsPerMatch;
-    if (score !== null && score < 0) score = 0;
-    
-    if (team === 1) {
-        match.score1 = score;
-    } else {
-        match.score2 = score;
+    if (score !== null) {
+        score = Math.max(0, Math.min(score, state.pointsPerMatch));
     }
+    
+    // Auto-calculate other team's score
+    let score1 = team === 1 ? score : match.score1;
+    let score2 = team === 2 ? score : match.score2;
     
     if (score !== null) {
         const other = state.pointsPerMatch - score;
         if (team === 1) {
-            match.score2 = other;
+            score2 = other;
         } else {
-            match.score1 = other;
+            score1 = other;
         }
     }
     
-    // Check if match is complete
-    if (match.score1 !== null && match.score2 !== null && match.score1 + match.score2 === state.pointsPerMatch) {
-        match.completed = true;
-        state.updatePoints(match, match.score1, match.score2);
+    // Update match (this handles completion check internally)
+    match.score1 = score1;
+    match.score2 = score2;
+    match.completed = (score1 !== null && score2 !== null && score1 + score2 === state.pointsPerMatch);
+    
+    if (match.completed) {
         showToast('✅ Match saved!');
     }
     
-    // Save and wait for completion before releasing lock
-    await state.flushSaveImmediately();
-    state.scoresBeingEdited.delete(matchId);
+    // Save to Firebase
+    await state.saveNow();
+    render();
     render();
 }
 
@@ -1031,13 +1021,12 @@ async function saveEdit(matchId, roundIndex) {
         return;
     }
     
-    // Revert old points, apply new
-    state.revertPoints(match);
+    // Just update the match scores - standings are calculated automatically
     match.score1 = s1;
     match.score2 = s2;
-    state.updatePoints(match, s1, s2);
+    match.completed = true;
     
-    await state.saveToFirebase();
+    await state.saveNow();
     closeModal();
     showToast('✅ Score updated!');
     render();
@@ -1054,38 +1043,32 @@ function viewRound(roundNumber) {
 async function completeRound() {
     if (!state || !state.canEdit()) return;
     
-    console.log('🔄 Completing round', state.currentRound);
-    console.log('📋 Current players:', JSON.stringify(state.players.map(p => ({name: p.name, pts: p.totalPoints}))));
-    
-    // Prevent real-time updates from overwriting our state during round generation
-    state.scoresBeingEdited.add('completing-round');
-    
-    try {
-        state.rounds[state.currentRound - 1].completed = true;
-        
-        const newRound = state.generateRound(state.currentRound + 1);
-        console.log('✅ New round generated:', newRound);
-        console.log('📋 Matches in new round:', newRound.matches.length);
-        
-        if (newRound.matches.length === 0) {
-            console.error('❌ No matches generated! Players state:', state.players);
-            showToast('❌ Error generating next round');
-            state.scoresBeingEdited.delete('completing-round');
-            return;
-        }
-        
-        state.rounds.push(newRound);
-        state.currentRound++;
-        state.viewingRound = state.currentRound;
-        
-        // Force immediate save to ensure data is persisted
-        await state.flushSaveImmediately();
-        
-        showToast(`🎯 Round ${state.currentRound} generated!`);
-    } finally {
-        state.scoresBeingEdited.delete('completing-round');
+    // Check all matches are complete
+    if (!state.isCurrentRoundComplete()) {
+        showToast('⚠️ Complete all matches first');
+        return;
     }
     
+    console.log('🔄 Completing round', state.currentRound);
+    console.log('📊 Current standings:', state.getStandings().map(s => `${s.name}:${s.totalPoints}`));
+    
+    // Mark current round complete and generate next
+    state.rounds[state.currentRound - 1].completed = true;
+    
+    const newRound = state.generateRound(state.currentRound + 1);
+    console.log('✅ New round:', newRound.matches.length, 'matches');
+    
+    if (newRound.matches.length === 0) {
+        showToast('❌ Error generating next round');
+        return;
+    }
+    
+    state.rounds.push(newRound);
+    state.currentRound++;
+    state.viewingRound = state.currentRound;
+    
+    await state.saveNow();
+    showToast(`🎯 Round ${state.currentRound} generated!`);
     render();
 }
 

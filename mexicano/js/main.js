@@ -51,7 +51,7 @@ async function loadTournament(tournamentId, organiserKey) {
     state = new MexicanoState(tournamentId);
     
     // Try to load from Firebase
-    const loaded = await state.loadFromFirebase();
+    const loaded = await state.loadTournament();
     
     if (!loaded) {
         showToast('❌ Session not found');
