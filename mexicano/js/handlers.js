@@ -131,7 +131,32 @@ function goToStep2() {
 function showAddPlayersModal() {
     const isTeam = wizardData.mode === 'team';
     const min = isTeam ? CONFIG.MIN_TEAMS : CONFIG.MIN_PLAYERS_INDIVIDUAL;
+    const max = isTeam ? CONFIG.MAX_TEAMS : CONFIG.MAX_PLAYERS_INDIVIDUAL;
     const items = isTeam ? wizardData.teams : wizardData.players;
+    
+    // For individual mode, check if count is valid (divisible by 4)
+    const isValidCount = isTeam || items.length % 4 === 0;
+    const canProceed = items.length >= min && items.length <= max && isValidCount;
+    
+    // Calculate next valid count for hint
+    const nextValid = !isTeam && items.length > 0 ? getNextValidPlayerCount(items.length) : min;
+    const needMore = nextValid - items.length;
+    
+    // Status text for individual mode
+    let statusText = '';
+    if (!isTeam) {
+        if (items.length === 0) {
+            statusText = `Add ${min} players to start (must be divisible by 4)`;
+        } else if (items.length < min) {
+            statusText = `Need ${min - items.length} more players (min ${min})`;
+        } else if (items.length % 4 !== 0) {
+            statusText = `Add ${needMore} more for ${nextValid} players`;
+        } else {
+            statusText = `✓ ${items.length} players ready!`;
+        }
+    } else {
+        statusText = items.length < min ? `Minimum ${min} teams required` : `${items.length} teams ready`;
+    }
     
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4" onclick="if(event.target === this) closeModal()">
@@ -142,7 +167,8 @@ function showAddPlayersModal() {
                     <p class="text-teal-100 text-sm mt-1">Step 2 of 4: ${isTeam ? 'Teams' : 'Players'}</p>
                 </div>
                 <div class="p-6">
-                    <p class="text-gray-500 text-sm mb-4">Minimum ${min} ${isTeam ? 'teams' : 'players'} required</p>
+                    <p class="text-gray-500 text-sm mb-2">${statusText}</p>
+                    ${!isTeam ? `<p class="text-xs text-gray-400 mb-4">Valid counts: 8, 12, 16, 20, 24... up to ${max}</p>` : ''}
                     
                     ${isTeam ? `
                         <div class="flex gap-2 mb-4">
@@ -153,7 +179,7 @@ function showAddPlayersModal() {
                     ` : `
                         <div class="flex gap-2 mb-4">
                             <input type="text" id="player-input" class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none" placeholder="Player name" maxlength="20" onkeypress="if(event.key==='Enter')addPlayerToWizard()" />
-                            <button onclick="addPlayerToWizard()" class="px-5 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-xl font-semibold transition-colors">Add</button>
+                            <button onclick="addPlayerToWizard()" class="px-5 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-xl font-semibold transition-colors" ${items.length >= max ? 'disabled' : ''}>Add</button>
                         </div>
                     `}
                     
@@ -163,8 +189,8 @@ function showAddPlayersModal() {
                     
                     <div class="flex gap-3">
                         <button onclick="showCreateModal()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors">← Back</button>
-                        <button onclick="goToStep3()" id="btn-next" class="flex-1 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${items.length < min ? 'disabled' : ''}>
-                            Next (${items.length}/${min}+) →
+                        <button onclick="goToStep3()" id="btn-next" class="flex-1 py-3 rounded-xl ${canProceed ? 'bg-teal-500 hover:bg-teal-600' : 'bg-gray-300'} text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed" ${!canProceed ? 'disabled' : ''}>
+                            Next (${items.length}) →
                         </button>
                     </div>
                 </div>
@@ -204,6 +230,11 @@ function addPlayerToWizard() {
         return;
     }
     
+    if (wizardData.players.length >= CONFIG.MAX_PLAYERS_INDIVIDUAL) {
+        showToast(`⚠️ Maximum ${CONFIG.MAX_PLAYERS_INDIVIDUAL} players allowed`);
+        return;
+    }
+    
     if (wizardData.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
         showToast('⚠️ Player already added');
         return;
@@ -229,6 +260,11 @@ function addTeamToWizard() {
     
     if (!p1 || !p2) {
         showToast('⚠️ Enter both player names');
+        return;
+    }
+    
+    if (wizardData.teams.length >= CONFIG.MAX_TEAMS) {
+        showToast(`⚠️ Maximum ${CONFIG.MAX_TEAMS} teams allowed`);
         return;
     }
     
@@ -260,12 +296,51 @@ function refreshWizardPlayersList() {
     const isTeam = wizardData.mode === 'team';
     const items = isTeam ? wizardData.teams : wizardData.players;
     const min = isTeam ? CONFIG.MIN_TEAMS : CONFIG.MIN_PLAYERS_INDIVIDUAL;
+    const max = isTeam ? CONFIG.MAX_TEAMS : CONFIG.MAX_PLAYERS_INDIVIDUAL;
     
     document.getElementById('players-list').innerHTML = renderWizardPlayersList();
     
+    // For individual mode, check if count is valid (divisible by 4)
+    const isValidCount = isTeam || items.length % 4 === 0;
+    const canProceed = items.length >= min && items.length <= max && isValidCount;
+    
+    // Calculate next valid count for hint
+    const nextValid = !isTeam && items.length > 0 ? getNextValidPlayerCount(items.length) : min;
+    const needMore = nextValid - items.length;
+    
+    // Update status text
+    let statusText = '';
+    if (!isTeam) {
+        if (items.length === 0) {
+            statusText = `Add ${min} players to start (must be divisible by 4)`;
+        } else if (items.length < min) {
+            statusText = `Need ${min - items.length} more players (min ${min})`;
+        } else if (items.length % 4 !== 0) {
+            statusText = `Add ${needMore} more for ${nextValid} players`;
+        } else {
+            statusText = `✓ ${items.length} players ready!`;
+        }
+    } else {
+        statusText = items.length < min ? `Minimum ${min} teams required` : `${items.length} teams ready`;
+    }
+    
+    // Update status paragraph (first <p> in the form)
+    const statusEl = document.querySelector('#modal-container .p-6 > p');
+    if (statusEl) {
+        statusEl.textContent = statusText;
+    }
+    
+    // Update button
     const btn = document.getElementById('btn-next');
-    btn.disabled = items.length < min;
-    btn.textContent = `Next (${items.length}/${min}+) →`;
+    btn.disabled = !canProceed;
+    btn.textContent = `Next (${items.length}) →`;
+    btn.className = `flex-1 py-3 rounded-xl ${canProceed ? 'bg-teal-500 hover:bg-teal-600' : 'bg-gray-300'} text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed`;
+    
+    // Disable add button if at max
+    const addBtn = document.querySelector('#modal-container button[onclick="addPlayerToWizard()"]');
+    if (addBtn && !isTeam) {
+        addBtn.disabled = items.length >= max;
+    }
 }
 
 /**
@@ -275,9 +350,23 @@ function goToStep3() {
     const isTeam = wizardData.mode === 'team';
     const items = isTeam ? wizardData.teams : wizardData.players;
     const min = isTeam ? CONFIG.MIN_TEAMS : CONFIG.MIN_PLAYERS_INDIVIDUAL;
+    const max = isTeam ? CONFIG.MAX_TEAMS : CONFIG.MAX_PLAYERS_INDIVIDUAL;
     
     if (items.length < min) {
         showToast(`⚠️ Add at least ${min} ${isTeam ? 'teams' : 'players'}`);
+        return;
+    }
+    
+    if (items.length > max) {
+        showToast(`⚠️ Maximum ${max} ${isTeam ? 'teams' : 'players'} allowed`);
+        return;
+    }
+    
+    // For individual mode, player count must be divisible by 4
+    if (!isTeam && items.length % 4 !== 0) {
+        const nextValid = getNextValidPlayerCount(items.length);
+        const prevValid = items.length - (items.length % 4);
+        showToast(`⚠️ Player count must be divisible by 4. Add ${nextValid - items.length} more or remove ${items.length - prevValid}.`);
         return;
     }
     

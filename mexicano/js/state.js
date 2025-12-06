@@ -111,9 +111,9 @@ class MexicanoState {
             this.pointsPerMatch = data.meta?.pointsPerMatch || CONFIG.DEFAULT_POINTS_PER_MATCH;
             this.status = data.meta?.status || 'active';
             
-            // Players/Teams
-            this.players = data.players || [];
-            this.teams = data.teams || [];
+            // Players/Teams - normalize arrays (Firebase may convert to objects)
+            this.players = this.normalizeArray(data.players);
+            this.teams = this.normalizeArray(data.teams);
             
             // Rounds - normalize to ensure arrays are properly converted
             this.rounds = this.normalizeRoundsData(data.rounds || []);
@@ -146,11 +146,14 @@ class MexicanoState {
         
         if (!data) return;
         
-        // Update dynamic state only - normalize rounds data
+        // Update dynamic state only - normalize all data from Firebase
         this.rounds = this.normalizeRoundsData(data.rounds || []);
         this.currentRound = data.currentRound || 1;
-        this.players = data.players || [];
-        this.teams = data.teams || [];
+        
+        // Normalize players array (Firebase may convert arrays to objects)
+        this.players = this.normalizeArray(data.players);
+        this.teams = this.normalizeArray(data.teams);
+        
         this.status = data.meta?.status || 'active';
         this.registeredPlayers = data.registeredPlayers || {};
         
@@ -161,6 +164,16 @@ class MexicanoState {
         
         // Re-render
         render();
+    }
+    
+    /**
+     * Normalize array data from Firebase (converts object-with-numeric-keys to array)
+     */
+    normalizeArray(data) {
+        if (!data) return [];
+        if (Array.isArray(data)) return data;
+        // Firebase converts arrays to objects with numeric keys
+        return Object.values(data);
     }
     
     /**
@@ -216,10 +229,10 @@ class MexicanoState {
                 database.ref(`${basePath}/meta/status`).once('value')
             ]).then(([roundsSnap, currentRoundSnap, playersSnap, teamsSnap, statusSnap]) => {
                 if (this.scoresBeingEdited.size === 0) {
-                    this.rounds = roundsSnap.val() || [];
+                    this.rounds = this.normalizeRoundsData(roundsSnap.val() || []);
                     this.currentRound = currentRoundSnap.val() || 1;
-                    this.players = playersSnap.val() || [];
-                    this.teams = teamsSnap.val() || [];
+                    this.players = this.normalizeArray(playersSnap.val());
+                    this.teams = this.normalizeArray(teamsSnap.val());
                     this.status = statusSnap.val() || 'active';
                     
                     if (this.viewingRound > this.rounds.length) {
@@ -469,12 +482,27 @@ class MexicanoState {
      * Generate individual mode round
      */
     generateIndividualRound(roundNumber) {
+        console.log('🔄 Generating round', roundNumber, 'with players:', this.players);
+        
+        // Defensive check for players
+        if (!this.players || this.players.length < 4) {
+            console.error('❌ Not enough players to generate round:', this.players);
+            return {
+                roundNumber,
+                matches: [],
+                sittingOut: [],
+                completed: false
+            };
+        }
+        
         // Round 1: Random shuffle. After: Sort by standings
         let sorted = roundNumber === 1 
             ? this.shuffleArray([...this.players])
             : [...this.players].sort((a, b) => 
-                b.totalPoints - a.totalPoints || a.matchesPlayed - b.matchesPlayed
+                (b.totalPoints || 0) - (a.totalPoints || 0) || (a.matchesPlayed || 0) - (b.matchesPlayed || 0)
             );
+        
+        console.log('📋 Sorted players:', sorted);
         
         const matches = [];
         const courts = Math.floor(sorted.length / 4);
@@ -485,14 +513,20 @@ class MexicanoState {
             const team1 = [sorted[base], sorted[base + 2]];
             const team2 = [sorted[base + 1], sorted[base + 3]];
             
+            // Skip if any player is undefined
+            if (!team1[0] || !team1[1] || !team2[0] || !team2[1]) {
+                console.error('❌ Missing player in pairing:', { team1, team2 });
+                continue;
+            }
+            
             matches.push({
                 id: this.generateId(),
                 court: c + 1,
                 team1: team1.map(p => p.id),
-                team1Names: team1.map(p => p.name),
+                team1Names: team1.map(p => p.name || 'Unknown'),
                 team1Indices: team1.map(p => this.players.findIndex(x => x.id === p.id)),
                 team2: team2.map(p => p.id),
-                team2Names: team2.map(p => p.name),
+                team2Names: team2.map(p => p.name || 'Unknown'),
                 team2Indices: team2.map(p => this.players.findIndex(x => x.id === p.id)),
                 score1: null,
                 score2: null,
@@ -503,9 +537,11 @@ class MexicanoState {
         // Players sitting out this round
         const sittingOut = sorted.slice(courts * 4).map(p => ({
             id: p.id,
-            name: p.name,
+            name: p.name || 'Unknown',
             index: this.players.findIndex(x => x.id === p.id)
         }));
+        
+        console.log('✅ Generated round with', matches.length, 'matches');
         
         return {
             roundNumber,
