@@ -291,16 +291,203 @@ function renderStandingsTab() {
 }
 
 /**
- * Render settings tab
+ * Render settings tab with sub-tabs (like Americano)
  */
 function renderSettingsTab() {
     if (!state) return '';
     
     const canEdit = state.canEdit();
     
+    // View-only notice for non-organisers
+    if (!canEdit) {
+        return `
+            <div class="space-y-4">
+                <div class="bg-amber-50 rounded-2xl border border-amber-200 p-5">
+                    <h3 class="font-bold text-amber-800 mb-2 flex items-center gap-2">🔑 Need to Edit?</h3>
+                    <p class="text-sm text-amber-700 mb-4">You're in view-only mode. Login with your passcode to edit settings.</p>
+                    <button onclick="showOrganiserLoginModal()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors">
+                        Organiser Login
+                    </button>
+                </div>
+                ${renderSessionInfo(canEdit)}
+            </div>
+        `;
+    }
+    
     return `
         <div class="space-y-4">
-            <!-- Share Section -->
+            <!-- Settings Sub-tabs -->
+            <div class="flex gap-1 p-1 bg-gray-100 rounded-xl overflow-x-auto">
+                <button onclick="state.settingsSubTab = 'players'; render();" 
+                    class="settings-subtab ${state.settingsSubTab === 'players' ? 'active' : 'inactive'}">
+                    👥 ${state.mode === 'individual' ? 'Players' : 'Teams'}
+                </button>
+                <button onclick="state.settingsSubTab = 'courts'; render();" 
+                    class="settings-subtab ${state.settingsSubTab === 'courts' ? 'active' : 'inactive'}">
+                    🏟️ Courts
+                </button>
+                <button onclick="state.settingsSubTab = 'scoring'; render();" 
+                    class="settings-subtab ${state.settingsSubTab === 'scoring' ? 'active' : 'inactive'}">
+                    📊 Scoring
+                </button>
+                <button onclick="state.settingsSubTab = 'share'; render();" 
+                    class="settings-subtab ${state.settingsSubTab === 'share' ? 'active' : 'inactive'}">
+                    🔗 Share
+                </button>
+                <button onclick="state.settingsSubTab = 'danger'; render();" 
+                    class="settings-subtab ${state.settingsSubTab === 'danger' ? 'active' : 'inactive'}">
+                    ⚠️ Danger
+                </button>
+            </div>
+            
+            <!-- Sub-tab Content -->
+            ${state.settingsSubTab === 'players' ? renderPlayersSettings(canEdit) : ''}
+            ${state.settingsSubTab === 'courts' ? renderCourtsSettings(canEdit) : ''}
+            ${state.settingsSubTab === 'scoring' ? renderScoringSettings(canEdit) : ''}
+            ${state.settingsSubTab === 'share' ? renderShareSettings() : ''}
+            ${state.settingsSubTab === 'danger' ? renderDangerSettings(canEdit) : ''}
+        </div>
+    `;
+}
+
+/**
+ * Render session info card
+ */
+function renderSessionInfo(canEdit) {
+    return `
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">📊 Session Info</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-500">Mode</span>
+                    <span class="font-medium">${state.mode === 'individual' ? 'Individual' : 'Team'}</span>
+                </div>
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-500">Points per Match</span>
+                    <span class="font-medium">${state.pointsPerMatch}</span>
+                </div>
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-500">${state.mode === 'individual' ? 'Players' : 'Teams'}</span>
+                    <span class="font-medium">${state.mode === 'individual' ? state.players.length : state.teams.length}</span>
+                </div>
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-gray-500">Current Round</span>
+                    <span class="font-medium">${state.currentRound}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                    <span class="text-gray-500">Access Level</span>
+                    <span class="font-medium ${canEdit ? 'text-green-600' : 'text-amber-600'}">${canEdit ? '✓ Organiser' : '👁 View Only'}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Render players/teams settings
+ */
+function renderPlayersSettings(canEdit) {
+    const items = state.mode === 'individual' ? state.players : state.teams;
+    const label = state.mode === 'individual' ? 'Player' : 'Team';
+    
+    return `
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-800">${label} Names</h3>
+                <p class="text-sm text-gray-500 mt-1">Edit ${label.toLowerCase()} names for the tournament</p>
+            </div>
+            <div class="p-4 space-y-3">
+                ${items.map((item, index) => `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">${index + 1}</div>
+                        <input type="text" 
+                            value="${item.name || item.teamName || ''}" 
+                            placeholder="${label} ${index + 1}"
+                            class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
+                            ${!canEdit ? 'disabled' : ''}
+                            onchange="state.updatePlayerName(${index}, this.value); render();" />
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Render courts settings
+ */
+function renderCourtsSettings(canEdit) {
+    const numCourts = Math.floor((state.mode === 'individual' ? state.players.length : state.teams.length) / 4);
+    
+    // Ensure courtNames array exists
+    if (!state.courtNames) state.courtNames = [];
+    while (state.courtNames.length < numCourts) {
+        state.courtNames.push(`Court ${state.courtNames.length + 1}`);
+    }
+    
+    return `
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-800">Court Names</h3>
+                <p class="text-sm text-gray-500 mt-1">Customize court labels for display</p>
+            </div>
+            <div class="p-4 space-y-3">
+                ${numCourts > 0 ? state.courtNames.slice(0, numCourts).map((name, index) => `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600 font-bold">${index + 1}</div>
+                        <input type="text" 
+                            value="${name}" 
+                            placeholder="Court ${index + 1}"
+                            class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
+                            ${!canEdit ? 'disabled' : ''}
+                            onchange="state.updateCourtName(${index}, this.value)" />
+                    </div>
+                `).join('') : `
+                    <div class="text-center py-4 text-gray-500">
+                        <p>Courts are automatically assigned based on player count.</p>
+                        <p class="text-sm mt-1">With ${state.mode === 'individual' ? state.players.length : state.teams.length} ${state.mode === 'individual' ? 'players' : 'teams'}, you have ${numCourts} court${numCourts !== 1 ? 's' : ''}.</p>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Render scoring settings
+ */
+function renderScoringSettings(canEdit) {
+    return `
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-800">Scoring Settings</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Points per Match</label>
+                    <select 
+                        class="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
+                        ${!canEdit ? 'disabled' : ''}
+                        onchange="state.updateSettings({ pointsPerMatch: parseInt(this.value) }); render();">
+                        ${[16, 21, 24, 32].map(pts => `
+                            <option value="${pts}" ${state.pointsPerMatch === pts ? 'selected' : ''}>${pts} points</option>
+                        `).join('')}
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2">Total points available per match. Each team earns their score (e.g., 16-14 means 16 and 14 points awarded).</p>
+                </div>
+                
+                ${renderSessionInfo(canEdit)}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Render share settings
+ */
+function renderShareSettings() {
+    return `
+        <div class="space-y-4">
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                 <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">🔗 Share Session</h3>
                 <div class="bg-gray-50 rounded-xl p-4 mb-4 text-center">
@@ -316,52 +503,37 @@ function renderSettingsTab() {
                     </button>
                 </div>
             </div>
-            
-            <!-- Session Info -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">📊 Session Info</h3>
-                <div class="space-y-3 text-sm">
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-gray-500">Mode</span>
-                        <span class="font-medium">${state.mode === 'individual' ? 'Individual' : 'Team'}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-gray-500">Points per Match</span>
-                        <span class="font-medium">${state.pointsPerMatch}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-gray-500">${state.mode === 'individual' ? 'Players' : 'Teams'}</span>
-                        <span class="font-medium">${state.mode === 'individual' ? state.players.length : state.teams.length}</span>
-                    </div>
-                    <div class="flex justify-between py-2 border-b border-gray-100">
-                        <span class="text-gray-500">Current Round</span>
-                        <span class="font-medium">${state.currentRound}</span>
-                    </div>
-                    <div class="flex justify-between py-2">
-                        <span class="text-gray-500">Access Level</span>
-                        <span class="font-medium ${canEdit ? 'text-green-600' : 'text-amber-600'}">${canEdit ? '✓ Organiser' : '👁 View Only'}</span>
-                    </div>
+        </div>
+    `;
+}
+
+/**
+ * Render danger zone settings
+ */
+function renderDangerSettings(canEdit) {
+    return `
+        <div class="space-y-4">
+            <div class="bg-white rounded-2xl shadow-sm border border-red-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-red-100 bg-red-50">
+                    <h3 class="font-semibold text-red-800">⚠️ Danger Zone</h3>
+                    <p class="text-sm text-red-600 mt-1">These actions cannot be undone</p>
+                </div>
+                <div class="p-4 space-y-4">
+                    <button 
+                        onclick="if(confirm('Reset ALL scores? This will clear all match results. This cannot be undone!')) { state.resetAllScores(); render(); showToast('✅ All scores reset'); }"
+                        class="w-full px-4 py-3 border-2 border-red-300 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}"
+                        ${!canEdit ? 'disabled' : ''}>
+                        🗑️ Reset All Scores
+                    </button>
+                    
+                    <button 
+                        onclick="confirmEnd()"
+                        class="w-full px-4 py-3 border-2 border-red-300 text-red-600 rounded-xl font-medium hover:bg-red-50 transition-colors ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}"
+                        ${!canEdit ? 'disabled' : ''}>
+                        🏁 End Tournament
+                    </button>
                 </div>
             </div>
-            
-            <!-- Organiser Actions -->
-            ${canEdit ? `
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">🏁 End Tournament</h3>
-                    <p class="text-sm text-gray-500 mb-4">Declare the winner based on current standings.</p>
-                    <button onclick="confirmEnd()" class="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition-colors">
-                        End Tournament
-                    </button>
-                </div>
-            ` : `
-                <div class="bg-amber-50 rounded-2xl border border-amber-200 p-5">
-                    <h3 class="font-bold text-amber-800 mb-2 flex items-center gap-2">🔑 Need to Edit?</h3>
-                    <p class="text-sm text-amber-700 mb-4">You're in view-only mode. Login with your passcode to edit scores.</p>
-                    <button onclick="showOrganiserLoginModal()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors">
-                        Organiser Login
-                    </button>
-                </div>
-            `}
         </div>
     `;
 }

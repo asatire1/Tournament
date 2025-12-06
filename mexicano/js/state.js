@@ -34,8 +34,85 @@ class MexicanoState {
         this.currentRound = 0;
         this.viewingRound = 0;
         
+        // Court configuration
+        this.courtNames = [];
+        
         // UI state
         this.activeTab = 'matches';
+        this.settingsSubTab = 'players';
+    }
+    
+    // ========================================
+    // SETTINGS METHODS
+    // ========================================
+    
+    /**
+     * Update player name
+     */
+    updatePlayerName(index, name) {
+        if (!this.canEdit()) return;
+        if (this.mode === 'individual' && this.players[index]) {
+            this.players[index].name = name;
+        } else if (this.mode === 'team' && this.teams[index]) {
+            this.teams[index].teamName = name;
+        }
+        this.saveToFirebase();
+    }
+    
+    /**
+     * Update court name
+     */
+    updateCourtName(index, name) {
+        if (!this.canEdit()) return;
+        if (!this.courtNames) this.courtNames = [];
+        this.courtNames[index] = name;
+        this.saveToFirebase();
+    }
+    
+    /**
+     * Update tournament settings
+     */
+    updateSettings(settings) {
+        if (!this.canEdit()) return;
+        
+        if (settings.pointsPerMatch !== undefined) {
+            this.pointsPerMatch = settings.pointsPerMatch;
+        }
+        if (settings.tournamentName !== undefined) {
+            this.tournamentName = settings.tournamentName;
+        }
+        
+        this.saveToFirebase();
+    }
+    
+    /**
+     * Reset all scores
+     */
+    resetAllScores() {
+        if (!this.canEdit()) return;
+        
+        // Clear all match scores
+        this.rounds.forEach(round => {
+            if (round && round.matches) {
+                round.matches.forEach(match => {
+                    match.score1 = null;
+                    match.score2 = null;
+                    match.completed = false;
+                });
+            }
+        });
+        
+        this.saveToFirebase();
+    }
+    
+    /**
+     * Get court name
+     */
+    getCourtName(courtIndex) {
+        if (this.courtNames && this.courtNames[courtIndex]) {
+            return this.courtNames[courtIndex];
+        }
+        return `Court ${courtIndex + 1}`;
     }
     
     // ========================================
@@ -311,6 +388,9 @@ class MexicanoState {
         this.teams = this.normalizeArray(data.teams);
         console.log('📦 Loaded', this.players.length, 'players,', this.teams.length, 'teams');
         
+        // Court names
+        this.courtNames = this.normalizeArray(data.courtNames);
+        
         // Rounds (source of truth for all scores)
         this.rounds = this.normalizeRoundsData(data.rounds);
         this.currentRound = data.currentRound || 1;
@@ -386,9 +466,12 @@ class MexicanoState {
             const updates = {
                 'meta/updatedAt': new Date().toISOString(),
                 'meta/status': this.status,
+                'meta/name': this.tournamentName,
+                'meta/pointsPerMatch': this.pointsPerMatch,
                 currentRound: this.currentRound,
                 rounds: this.rounds,
-                registeredPlayers: this.registeredPlayers || {}
+                registeredPlayers: this.registeredPlayers || {},
+                courtNames: this.courtNames || []
             };
             
             // Players/teams don't change during gameplay - only save if needed
