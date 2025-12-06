@@ -142,17 +142,27 @@ class MexicanoState {
      */
     processDynamicData(data) {
         // Don't update if user is editing scores
-        if (this.scoresBeingEdited.size > 0) return;
+        if (this.scoresBeingEdited.size > 0) {
+            console.log('⏳ Skipping Firebase update - scores being edited');
+            return;
+        }
         
         if (!data) return;
         
-        // Update dynamic state only - normalize all data from Firebase
+        // Update rounds - normalize data from Firebase
         this.rounds = this.normalizeRoundsData(data.rounds || []);
         this.currentRound = data.currentRound || 1;
         
-        // Normalize players array (Firebase may convert arrays to objects)
-        this.players = this.normalizeArray(data.players);
-        this.teams = this.normalizeArray(data.teams);
+        // For ORGANISER: Don't overwrite local player data - organiser is source of truth
+        // Only update if we don't have players yet
+        if (this.isOrganiser && this.players.length > 0) {
+            console.log('👑 Organiser mode - keeping local player state');
+            // Don't overwrite players - local state is authoritative
+        } else {
+            // For VIEWERS: Always update from Firebase
+            this.players = this.normalizeArray(data.players);
+            this.teams = this.normalizeArray(data.teams);
+        }
         
         this.status = data.meta?.status || 'active';
         this.registeredPlayers = data.registeredPlayers || {};
