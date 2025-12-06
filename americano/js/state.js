@@ -171,18 +171,28 @@ class AmericanoState {
      * Process DYNAMIC data from Firebase (scores - changes frequently)
      */
     processDynamicData(scoresData) {
+        // Build new scores object
+        const newScores = {};
         if (scoresData) {
-            this.scores = {};
             Object.entries(scoresData).forEach(([key, value]) => {
                 const newKey = this._migrateScoreKey(key, this.courtCount);
-                this.scores[newKey] = {
+                newScores[newKey] = {
                     team1: value?.team1 === -1 ? null : value?.team1,
                     team2: value?.team2 === -1 ? null : value?.team2
                 };
             });
-        } else {
-            this.scores = {};
         }
+        
+        // Check if scores actually changed
+        const oldScoresStr = JSON.stringify(this.scores);
+        const newScoresStr = JSON.stringify(newScores);
+        
+        if (oldScoresStr === newScoresStr) {
+            // No change, skip render
+            return;
+        }
+        
+        this.scores = newScores;
         
         // Invalidate cache
         this._cachedTimeslots = null;

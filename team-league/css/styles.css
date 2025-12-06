@@ -807,6 +807,12 @@ select {
 
 /* ===== MOBILE RESPONSIVE ===== */
 @media (max-width: 640px) {
+    /* Prevent horizontal overflow */
+    html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+    
     .team-badge {
         min-width: 140px;
         padding: 8px 12px;
@@ -837,8 +843,9 @@ select {
     
     .team-match-card .score-input,
     .team-match-card .score-display {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         width: 40px;
+        min-height: 44px;
     }
     
     .standings-table {
@@ -885,20 +892,70 @@ select {
         height: 22px;
         font-size: 0.875rem;
     }
+    
+    /* Improved touch targets */
+    button, .btn, [role="button"] {
+        min-height: 44px;
+    }
+    
+    input[type="text"], input[type="number"], select {
+        min-height: 44px;
+        font-size: 16px; /* Prevents iOS zoom */
+    }
+    
+    /* Tab navigation */
+    .tab-active, .tab-inactive {
+        padding: 10px 14px;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+    
+    /* Smooth horizontal scroll */
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+        display: none;
+    }
+    
+    /* Group headers */
+    .group-header {
+        padding: 10px 12px;
+        font-size: 0.875rem;
+    }
+    
+    /* Knockout bracket */
+    .ko-match-card {
+        padding: 12px;
+    }
 }
 
 @media (max-width: 380px) {
     .team-badge-compact {
-        max-width: 110px;
+        max-width: 100px;
         padding: 5px 8px;
     }
     
     .team-badge-compact .team-name {
         font-size: 0.6875rem;
-        max-width: 100px;
+        max-width: 90px;
     }
     
     .team-badge-compact .team-players {
         font-size: 0.5625rem;
+    }
+    
+    /* Smaller logo on very small screens */
+    .h-16 {
+        height: 3rem;
+        width: 3rem;
+    }
+    
+    .team-match-card .score-input,
+    .team-match-card .score-display {
+        font-size: 1.25rem;
+        width: 36px;
     }
 }

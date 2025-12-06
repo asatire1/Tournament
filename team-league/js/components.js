@@ -1353,14 +1353,17 @@ const TeamLeagueApp = {
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
                     <div class="max-w-6xl mx-auto px-4 py-6">
                         <div class="flex items-center justify-between">
-                            <div>
-                                <div class="flex items-center gap-2 text-purple-200 text-sm mb-1">
-                                    <a href="../" class="hover:text-white transition-colors">← Back</a>
-                                    <span>•</span>
-                                    <span class="font-mono">${state.tournamentId?.toUpperCase() || ''}</span>
-                                    ${state.isOrganiser ? '<span class="bg-white/20 px-2 py-0.5 rounded text-xs">Organiser</span>' : ''}
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <a href="./" class="hover:scale-110 transition-transform flex-shrink-0">
+                                    <img src="../uberpadel-icon.svg" alt="UberPadel" class="h-10 w-10 sm:h-16 sm:w-16">
+                                </a>
+                                <div>
+                                    <div class="flex items-center gap-2 text-purple-200 text-sm mb-1">
+                                        <span class="font-mono">${state.tournamentId?.toUpperCase() || ''}</span>
+                                        ${state.isOrganiser ? '<span class="bg-white/20 px-2 py-0.5 rounded text-xs">Organiser</span>' : ''}
+                                    </div>
+                                    <h1 class="text-2xl font-bold">${state.tournamentName || 'Team Tournament'}</h1>
                                 </div>
-                                <h1 class="text-2xl font-bold">${state.tournamentName || 'Team Tournament'}</h1>
                             </div>
                             <button onclick="showShareModal()" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Share">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

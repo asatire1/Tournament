@@ -412,10 +412,20 @@ class MexicanoState {
         
         const path = `${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`;
         
+        // Store last data hash to detect changes
+        let lastDataHash = '';
+        
         this.firebaseListener = database.ref(path).on('value', (snapshot) => {
             if (snapshot.exists()) {
-                this.applyData(snapshot.val());
-                render();
+                const data = snapshot.val();
+                const dataHash = JSON.stringify(data);
+                
+                // Only render if data actually changed
+                if (dataHash !== lastDataHash) {
+                    lastDataHash = dataHash;
+                    this.applyData(data);
+                    render();
+                }
             }
         });
         

@@ -79,10 +79,10 @@ function renderTournament() {
             <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-purple-800 text-white">
                 <div class="max-w-5xl mx-auto px-4 py-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <button onclick="Router.navigate('home')" class="p-2 hover:bg-white/10 rounded-xl transition-colors">
-                                <span class="text-xl">←</span>
-                            </button>
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <a href="./" class="hover:scale-110 transition-transform flex-shrink-0">
+                                <img src="../uberpadel-icon.svg" alt="UberPadel" class="h-10 w-10 sm:h-16 sm:w-16">
+                            </a>
                             <div>
                                 <h1 class="text-lg font-bold truncate">${state.tournamentName || 'Americano Session'}</h1>
                                 <div class="flex items-center gap-2 text-sm text-white/70">

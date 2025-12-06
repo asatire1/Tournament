@@ -289,24 +289,43 @@ class TeamLeagueState {
     
     // Set up real-time listeners for scores only (organiser mode)
     setupScoreListeners(basePath) {
+        let lastGroupScores = '';
+        let lastKnockoutScores = '';
+        let lastKnockoutTeams = '';
+        
         database.ref(`${basePath}/groupMatchScores`).on('value', (snapshot) => {
             if (!this.isSaving) {
-                this.groupMatchScores = snapshot.val() || { A: {}, B: {} };
-                renderTeamLeague();
+                const newData = snapshot.val() || { A: {}, B: {} };
+                const newDataStr = JSON.stringify(newData);
+                if (newDataStr !== lastGroupScores) {
+                    lastGroupScores = newDataStr;
+                    this.groupMatchScores = newData;
+                    renderTeamLeague();
+                }
             }
         });
         
         database.ref(`${basePath}/knockoutScores`).on('value', (snapshot) => {
             if (!this.isSaving) {
-                this.knockoutScores = snapshot.val() || this.knockoutScores;
-                renderTeamLeague();
+                const newData = snapshot.val() || this.knockoutScores;
+                const newDataStr = JSON.stringify(newData);
+                if (newDataStr !== lastKnockoutScores) {
+                    lastKnockoutScores = newDataStr;
+                    this.knockoutScores = newData;
+                    renderTeamLeague();
+                }
             }
         });
         
         database.ref(`${basePath}/knockoutTeams`).on('value', (snapshot) => {
             if (!this.isSaving) {
-                this.knockoutTeams = snapshot.val() || this.knockoutTeams;
-                renderTeamLeague();
+                const newData = snapshot.val() || this.knockoutTeams;
+                const newDataStr = JSON.stringify(newData);
+                if (newDataStr !== lastKnockoutTeams) {
+                    lastKnockoutTeams = newDataStr;
+                    this.knockoutTeams = newData;
+                    renderTeamLeague();
+                }
             }
         });
     }

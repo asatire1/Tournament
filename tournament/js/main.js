@@ -593,7 +593,9 @@ function render() {
                     
                     <!-- Main header content -->
                     <div class="flex items-start gap-4 mb-4">
-                        <div class="text-4xl md:text-5xl">🏓</div>
+                        <a href="./" class="hover:scale-110 transition-transform flex-shrink-0">
+                            <img src="../uberpadel-icon.svg" alt="UberPadel" class="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20">
+                        </a>
                         <div class="flex-1 min-w-0">
                             <h1 class="text-2xl md:text-3xl font-bold mb-1 truncate" style="letter-spacing: -0.5px;">${state.tournamentName || 'Padel Tournament'}</h1>
                             <div class="flex items-center gap-3 text-sm">

@@ -23,8 +23,10 @@ function renderTournament() {
             <div class="bg-gradient-to-r from-teal-600 to-teal-500 text-white sticky top-0 z-30 shadow-lg">
                 <div class="max-w-3xl mx-auto px-4 py-4">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <a href="#" class="text-2xl hover:scale-110 transition-transform">🎯</a>
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <a href="./" class="hover:scale-110 transition-transform flex-shrink-0">
+                                <img src="../uberpadel-icon.svg" alt="UberPadel" class="h-10 w-10 sm:h-16 sm:w-16">
+                            </a>
                             <div>
                                 <h1 class="font-bold text-lg leading-tight">${state.tournamentName}</h1>
                                 <div class="flex items-center gap-2 text-sm text-teal-100">
@@ -114,7 +116,7 @@ function renderMatchesTab() {
                     <span class="resting-badge">⏳ Sitting Out</span>
                     ${round.sittingOut.map(p => `
                         <span class="player-badge-compact ${state.mode === 'individual' ? getPlayerColor(p.index) : getTeamColor(p.index)}" style="opacity: 0.7; max-width: none; width: auto;">
-                            ${p.name}
+                            ${p.name || 'TBD'}
                         </span>
                     `).join('')}
                 </div>
@@ -177,6 +179,13 @@ function renderMatchCard(match, index, canEditScores) {
         ? (t2IdxRaw || [2, 3]) 
         : [match.team2Index || 1, match.team2Index || 1];
     
+    // Ensure no undefined values in names
+    const safeName = (name, fallback) => name || fallback;
+    const t1Name0 = safeName(t1Names[0], 'TBD');
+    const t1Name1 = safeName(t1Names[1], 'TBD');
+    const t2Name0 = safeName(t2Names[0], 'TBD');
+    const t2Name1 = safeName(t2Names[1], 'TBD');
+    
     console.log('📋 Match names:', { t1Names, t2Names, t1Idx, t2Idx });
     
     const canEdit = state.canEdit();
@@ -196,8 +205,8 @@ function renderMatchCard(match, index, canEditScores) {
             <div class="match-row">
                 <!-- Team 1 -->
                 <div class="team-stack ${done && match.score1 > match.score2 ? 'winner' : ''}">
-                    <span class="player-badge-compact ${colorFn(t1Idx[0])}">${t1Names[0]}</span>
-                    <span class="player-badge-compact ${colorFn(t1Idx[1])}">${t1Names[1]}</span>
+                    <span class="player-badge-compact ${colorFn(t1Idx[0])}">${t1Name0}</span>
+                    <span class="player-badge-compact ${colorFn(t1Idx[1])}">${t1Name1}</span>
                 </div>
                 
                 <!-- Score Box -->
@@ -229,8 +238,8 @@ function renderMatchCard(match, index, canEditScores) {
                 
                 <!-- Team 2 -->
                 <div class="team-stack ${done && match.score2 > match.score1 ? 'winner' : ''}">
-                    <span class="player-badge-compact ${colorFn(t2Idx[0])}">${t2Names[0]}</span>
-                    <span class="player-badge-compact ${colorFn(t2Idx[1])}">${t2Names[1]}</span>
+                    <span class="player-badge-compact ${colorFn(t2Idx[0])}">${t2Name0}</span>
+                    <span class="player-badge-compact ${colorFn(t2Idx[1])}">${t2Name1}</span>
                 </div>
             </div>
         </div>

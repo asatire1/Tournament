@@ -271,19 +271,32 @@ class TournamentState {
     
     // Set up real-time listeners for scores only (organiser mode)
     setupScoreListeners(basePath) {
+        let lastMatchScores = '';
+        let lastKnockoutScores = '';
+        
         // Listen to match scores
         database.ref(`${basePath}/matchScores`).on('value', (snapshot) => {
             if (!this.isSaving) {
-                this.matchScores = snapshot.val() || {};
-                render();
+                const newData = snapshot.val() || {};
+                const newDataStr = JSON.stringify(newData);
+                if (newDataStr !== lastMatchScores) {
+                    lastMatchScores = newDataStr;
+                    this.matchScores = newData;
+                    render();
+                }
             }
         });
         
         // Listen to knockout scores
         database.ref(`${basePath}/knockoutScores`).on('value', (snapshot) => {
             if (!this.isSaving) {
-                this.knockoutScores = snapshot.val() || {};
-                render();
+                const newData = snapshot.val() || {};
+                const newDataStr = JSON.stringify(newData);
+                if (newDataStr !== lastKnockoutScores) {
+                    lastKnockoutScores = newDataStr;
+                    this.knockoutScores = newData;
+                    render();
+                }
             }
         });
     }
