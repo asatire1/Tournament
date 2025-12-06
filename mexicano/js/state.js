@@ -38,6 +38,9 @@ class MexicanoState {
         this.players = [];
         this.teams = [];
         
+        // Registered players (Phase 4 - Browse & Join)
+        this.registeredPlayers = {};
+        
         // Rounds and matches
         this.rounds = [];
         this.currentRound = 0;
@@ -149,6 +152,7 @@ class MexicanoState {
         this.players = data.players || [];
         this.teams = data.teams || [];
         this.status = data.meta?.status || 'active';
+        this.registeredPlayers = data.registeredPlayers || {};
         
         // Adjust viewing round if needed
         if (this.viewingRound > this.rounds.length) {
@@ -373,7 +377,8 @@ class MexicanoState {
             const updates = {
                 'meta/updatedAt': new Date().toISOString(),
                 currentRound: this.currentRound,
-                rounds: this.rounds
+                rounds: this.rounds,
+                registeredPlayers: this.registeredPlayers || {}
             };
             
             if (this.mode === 'individual') {

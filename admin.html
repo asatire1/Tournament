@@ -105,9 +105,17 @@
         
         <!-- Tab Navigation -->
         <div class="max-w-6xl mx-auto px-4 py-4">
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="setTab('players')" id="tab-players" 
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-green-100 text-green-700">
+                    👥 Player Verification
+                </button>
+                <button onclick="setTab('competitions')" id="tab-competitions"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    🏆 Competitions
+                </button>
                 <button onclick="setTab('reported')" id="tab-reported" 
-                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-amber-100 text-amber-700">
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
                     🚩 Reported Messages
                 </button>
                 <button onclick="setTab('all')" id="tab-all"
@@ -116,8 +124,61 @@
                 </button>
                 <button onclick="setTab('tournament')" id="tab-tournament"
                     class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
-                    🏆 Tournament Admin
+                    ⚙️ Tournament Reset
                 </button>
+            </div>
+        </div>
+        
+        <!-- Player Verification Panel -->
+        <div id="players-panel" class="max-w-6xl mx-auto px-4 pb-8">
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-pending-players" class="text-2xl font-bold text-amber-500">-</div>
+                    <div class="text-sm text-gray-500">Pending Verification</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-verified-players" class="text-2xl font-bold text-green-500">-</div>
+                    <div class="text-sm text-gray-500">Verified Players</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-total-players" class="text-2xl font-bold text-gray-700">-</div>
+                    <div class="text-sm text-gray-500">Total Players</div>
+                </div>
+            </div>
+            
+            <!-- Player Filters -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
+                <div class="flex flex-wrap gap-4 items-center">
+                    <select id="player-status-filter" onchange="renderPlayersList()" class="px-3 py-2 border border-gray-200 rounded-lg">
+                        <option value="pending">Pending</option>
+                        <option value="verified">Verified</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="all">All</option>
+                    </select>
+                    <input type="text" id="player-search" onkeyup="renderPlayersList()" placeholder="Search by name or email..." 
+                        class="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                </div>
+            </div>
+            
+            <!-- Players List -->
+            <div id="players-list" class="space-y-3">
+                <div class="text-center py-8 text-gray-400">Loading players...</div>
+            </div>
+        </div>
+        
+        <!-- Competitions Management Panel -->
+        <div id="competitions-panel" class="hidden max-w-6xl mx-auto px-4 pb-8">
+            <!-- Create Competition Button -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Manage Competitions</h2>
+                <button onclick="showCreateCompetitionModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                    + Create Competition
+                </button>
+            </div>
+            
+            <!-- Competitions List -->
+            <div id="competitions-list" class="space-y-4">
+                <div class="text-center py-8 text-gray-400">Loading competitions...</div>
             </div>
         </div>
         
@@ -240,6 +301,7 @@
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-dashboard').classList.remove('hidden');
             loadAllMessages();
+            setTab('players'); // Default to players verification tab
         }
         
         // Logout
@@ -279,26 +341,45 @@
             currentTab = tab;
             
             // Update tab styles
-            document.getElementById('tab-reported').className = 
-                tab === 'reported' 
-                    ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-amber-100 text-amber-700'
-                    : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
+            const tabConfigs = {
+                'players': { color: 'green' },
+                'competitions': { color: 'blue' },
+                'reported': { color: 'amber' },
+                'all': { color: 'blue' },
+                'tournament': { color: 'purple' }
+            };
             
-            document.getElementById('tab-all').className = 
-                tab === 'all' 
-                    ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-blue-100 text-blue-700'
-                    : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
-            
-            document.getElementById('tab-tournament').className = 
-                tab === 'tournament' 
-                    ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-purple-100 text-purple-700'
-                    : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
+            Object.keys(tabConfigs).forEach(t => {
+                const tabEl = document.getElementById(`tab-${t}`);
+                if (tabEl) {
+                    const config = tabConfigs[t];
+                    tabEl.className = tab === t 
+                        ? `px-4 py-2 rounded-lg font-medium transition-colors bg-${config.color}-100 text-${config.color}-700`
+                        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
+                }
+            });
             
             // Show/hide panels
-            document.getElementById('messages-list').parentElement.classList.toggle('hidden', tab === 'tournament');
-            document.getElementById('tournament-panel').classList.toggle('hidden', tab !== 'tournament');
+            const messagesPanel = document.getElementById('messages-list').parentElement;
+            const tournamentPanel = document.getElementById('tournament-panel');
+            const playersPanel = document.getElementById('players-panel');
+            const competitionsPanel = document.getElementById('competitions-panel');
             
-            if (tab !== 'tournament') {
+            messagesPanel.classList.add('hidden');
+            tournamentPanel.classList.add('hidden');
+            playersPanel.classList.add('hidden');
+            competitionsPanel.classList.add('hidden');
+            
+            if (tab === 'tournament') {
+                tournamentPanel.classList.remove('hidden');
+            } else if (tab === 'players') {
+                playersPanel.classList.remove('hidden');
+                loadPlayers();
+            } else if (tab === 'competitions') {
+                competitionsPanel.classList.remove('hidden');
+                loadCompetitions();
+            } else {
+                messagesPanel.classList.remove('hidden');
                 renderMessages();
             }
         }
@@ -532,6 +613,1149 @@
                 console.error('Error resetting tournament:', error);
                 showToast('❌ Failed to reset. Check console for details.');
             }
+        }
+        
+        // ===== PLAYER VERIFICATION FUNCTIONS =====
+        
+        const PLAYERS_DB_PATH = 'users';  // Changed from 'players' to match new auth system
+        const COMPETITIONS_DB_PATH = 'competitions';
+        let allPlayers = [];
+        let allCompetitions = [];
+        
+        async function loadPlayers() {
+            try {
+                const snapshot = await database.ref(PLAYERS_DB_PATH).once('value');
+                allPlayers = [];
+                
+                snapshot.forEach((child) => {
+                    const player = child.val();
+                    player.id = child.key;
+                    // Only include registered users, not guests
+                    if (player.type !== 'guest') {
+                        allPlayers.push(player);
+                    }
+                });
+                
+                // Sort by registration date (newest first)
+                allPlayers.sort((a, b) => new Date(b.registeredAt || 0) - new Date(a.registeredAt || 0));
+                
+                updatePlayerStats();
+                renderPlayersList();
+                
+            } catch (error) {
+                console.error('Error loading players:', error);
+                document.getElementById('players-list').innerHTML = `
+                    <div class="text-center py-8 text-red-500">Error loading players. Check console.</div>
+                `;
+            }
+        }
+        
+        function updatePlayerStats() {
+            const pending = allPlayers.filter(p => p.status === 'pending').length;
+            const verified = allPlayers.filter(p => p.status === 'verified').length;
+            
+            document.getElementById('stat-pending-players').textContent = pending;
+            document.getElementById('stat-verified-players').textContent = verified;
+            document.getElementById('stat-total-players').textContent = allPlayers.length;
+        }
+        
+        function renderPlayersList() {
+            const container = document.getElementById('players-list');
+            const statusFilter = document.getElementById('player-status-filter').value;
+            const search = document.getElementById('player-search').value.toLowerCase();
+            
+            let filtered = [...allPlayers];
+            
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(p => p.status === statusFilter);
+            }
+            
+            // Filter by search
+            if (search) {
+                filtered = filtered.filter(p => 
+                    (p.name && p.name.toLowerCase().includes(search)) ||
+                    (p.email && p.email.toLowerCase().includes(search)) ||
+                    (p.playtomicUsername && p.playtomicUsername.toLowerCase().includes(search))
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <div class="text-4xl mb-2">👥</div>
+                        <p>No players found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filtered.map(player => {
+                const statusColors = {
+                    'pending': 'bg-amber-100 text-amber-700',
+                    'verified': 'bg-green-100 text-green-700',
+                    'rejected': 'bg-red-100 text-red-700'
+                };
+                
+                const typeLabel = player.type === 'registered' ? '🔵 Google' : '👤 Legacy';
+                
+                return `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                        <div class="flex flex-col md:flex-row md:items-center gap-4">
+                            <!-- Player Info -->
+                            <div class="flex items-center gap-4 flex-1">
+                                ${player.photoURL ? 
+                                    `<img src="${player.photoURL}" alt="${escapeHtml(player.name)}" class="w-12 h-12 rounded-full flex-shrink-0 border-2 border-gray-200">` :
+                                    `<div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                                        ${player.name ? player.name.charAt(0).toUpperCase() : '?'}
+                                    </div>`
+                                }
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                        <h3 class="font-semibold text-gray-800">${escapeHtml(player.name || 'Unknown')}</h3>
+                                        <span class="text-xs px-2 py-0.5 rounded-full ${statusColors[player.status] || 'bg-gray-100 text-gray-600'}">${player.status}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">${typeLabel}</span>
+                                        ${player.isOrganiser ? '<span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Organiser</span>' : ''}
+                                    </div>
+                                    <div class="text-sm text-gray-500 space-y-1">
+                                        <div>📧 ${escapeHtml(player.email || '-')}</div>
+                                        <div class="flex items-center gap-2">
+                                            <span>🎾 @${escapeHtml(player.playtomicUsername || '-')}</span>
+                                            ${player.playtomicUsername ? `<a href="https://www.playtomic.io/user/${encodeURIComponent(player.playtomicUsername)}" target="_blank" 
+                                                class="text-blue-600 hover:underline text-xs">[View Profile]</a>` : ''}
+                                        </div>
+                                        ${player.phone ? `<div>📱 ${escapeHtml(player.phone)}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Level & Actions -->
+                            <div class="flex items-center gap-3">
+                                ${player.status === 'verified' ? `
+                                    <div class="text-center">
+                                        <div class="text-xs text-gray-400">Level</div>
+                                        <div class="text-xl font-bold text-blue-600">${formatLevel(player.playtomicLevel)}</div>
+                                    </div>
+                                    <button onclick="toggleOrganiser('${player.id}', ${!player.isOrganiser})" 
+                                        class="px-3 py-2 ${player.isOrganiser ? 'bg-purple-100 hover:bg-purple-200 text-purple-700' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} rounded-lg text-sm font-medium transition-colors"
+                                        title="${player.isOrganiser ? 'Remove organiser role' : 'Make organiser'}">
+                                        ${player.isOrganiser ? '👑 Organiser' : '☆ Make Organiser'}
+                                    </button>
+                                    <button onclick="showEditLevelModal('${player.id}', '${escapeHtml(player.name)}', ${player.playtomicLevel || 0})" 
+                                        class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+                                        ✏️ Edit
+                                    </button>
+                                ` : player.status === 'pending' ? `
+                                    <button onclick="showVerifyModal('${player.id}', '${escapeHtml(player.name)}', '${escapeHtml(player.playtomicUsername)}')" 
+                                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                                        ✓ Verify
+                                    </button>
+                                    <button onclick="rejectPlayer('${player.id}')" 
+                                        class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors">
+                                        ✗ Reject
+                                    </button>
+                                ` : `
+                                    <button onclick="reinstatePlayer('${player.id}')" 
+                                        class="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium transition-colors">
+                                        Reinstate
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <!-- Meta Info -->
+                        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-400">
+                            <span>ID: ${player.id}</span>
+                            <span>Registered: ${formatDate(player.registeredAt)}</span>
+                            ${player.verifiedAt ? `<span>Verified: ${formatDate(player.verifiedAt)}</span>` : ''}
+                            ${player.googleUid ? `<span class="text-blue-500">Google linked</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function toggleOrganiser(playerId, makeOrganiser) {
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    isOrganiser: makeOrganiser,
+                    organiserUpdatedAt: new Date().toISOString()
+                });
+                
+                showToast(makeOrganiser ? '⭐ Player is now an organiser!' : 'Organiser role removed');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error updating organiser status:', error);
+                showToast('❌ Failed to update');
+            }
+        }
+        
+        function showVerifyModal(playerId, playerName, playtomicUsername) {
+            const modal = document.createElement('div');
+            modal.id = 'verify-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">✓ Verify Player</h3>
+                    
+                    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div class="font-semibold text-gray-800 mb-1">${playerName}</div>
+                        <div class="text-sm text-gray-500">
+                            <a href="https://www.playtomic.io/user/${encodeURIComponent(playtomicUsername)}" target="_blank" 
+                                class="text-blue-600 hover:underline">@${playtomicUsername} ↗</a>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Playtomic Level (0.00 - 10.00)</label>
+                        <input type="number" id="verify-level-input" step="0.01" min="0" max="10" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none text-lg text-center"
+                            placeholder="e.g., 4.25" />
+                        <p class="text-xs text-gray-500 mt-1">Check the player's Playtomic profile to find their level</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeVerifyModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="confirmVerify('${playerId}')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold">
+                            Verify Player
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeVerifyModal();
+            });
+            
+            setTimeout(() => document.getElementById('verify-level-input').focus(), 100);
+        }
+        
+        function closeVerifyModal() {
+            const modal = document.getElementById('verify-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function confirmVerify(playerId) {
+            const levelInput = document.getElementById('verify-level-input');
+            const level = parseFloat(levelInput.value);
+            
+            if (isNaN(level) || level < 0 || level > 10) {
+                showToast('❌ Please enter a valid level (0.00 - 10.00)');
+                return;
+            }
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    status: 'verified',
+                    playtomicLevel: level,
+                    verifiedAt: new Date().toISOString(),
+                    verifiedBy: 'admin'
+                });
+                
+                closeVerifyModal();
+                showToast('✅ Player verified!');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error verifying player:', error);
+                showToast('❌ Failed to verify player');
+            }
+        }
+        
+        function showEditLevelModal(playerId, playerName, currentLevel) {
+            const modal = document.createElement('div');
+            modal.id = 'edit-level-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">✏️ Edit Level</h3>
+                    
+                    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div class="font-semibold text-gray-800">${playerName}</div>
+                        <div class="text-sm text-gray-500">Current level: ${formatLevel(currentLevel)}</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">New Level (0.00 - 10.00)</label>
+                        <input type="number" id="edit-level-input" step="0.01" min="0" max="10" value="${currentLevel || ''}"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg text-center" />
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeEditLevelModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="confirmEditLevel('${playerId}')" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeEditLevelModal();
+            });
+        }
+        
+        function closeEditLevelModal() {
+            const modal = document.getElementById('edit-level-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function confirmEditLevel(playerId) {
+            const levelInput = document.getElementById('edit-level-input');
+            const level = parseFloat(levelInput.value);
+            
+            if (isNaN(level) || level < 0 || level > 10) {
+                showToast('❌ Please enter a valid level (0.00 - 10.00)');
+                return;
+            }
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    playtomicLevel: level,
+                    levelUpdatedAt: new Date().toISOString()
+                });
+                
+                closeEditLevelModal();
+                showToast('✅ Level updated!');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error updating level:', error);
+                showToast('❌ Failed to update level');
+            }
+        }
+        
+        async function rejectPlayer(playerId) {
+            if (!confirm('Are you sure you want to reject this player?')) return;
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    status: 'rejected',
+                    rejectedAt: new Date().toISOString()
+                });
+                
+                showToast('Player rejected');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error rejecting player:', error);
+                showToast('❌ Failed to reject player');
+            }
+        }
+        
+        async function reinstatePlayer(playerId) {
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    status: 'pending'
+                });
+                
+                showToast('Player reinstated to pending');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error reinstating player:', error);
+                showToast('❌ Failed to reinstate player');
+            }
+        }
+        
+        // ===== COMPETITION MANAGEMENT FUNCTIONS =====
+        
+        async function loadCompetitions() {
+            try {
+                const snapshot = await database.ref(COMPETITIONS_DB_PATH).once('value');
+                allCompetitions = [];
+                
+                snapshot.forEach((child) => {
+                    const comp = child.val();
+                    comp.id = child.key;
+                    if (comp.meta) {
+                        allCompetitions.push(comp);
+                    }
+                });
+                
+                // Sort by creation date (newest first)
+                allCompetitions.sort((a, b) => new Date(b.meta.createdAt || 0) - new Date(a.meta.createdAt || 0));
+                
+                renderCompetitionsList();
+                
+            } catch (error) {
+                console.error('Error loading competitions:', error);
+                document.getElementById('competitions-list').innerHTML = `
+                    <div class="text-center py-8 text-red-500">Error loading competitions</div>
+                `;
+            }
+        }
+        
+        function renderCompetitionsList() {
+            const container = document.getElementById('competitions-list');
+            
+            if (allCompetitions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-gray-200">
+                        <div class="text-4xl mb-2">🏆</div>
+                        <p class="text-gray-500 mb-4">No competitions yet</p>
+                        <button onclick="showCreateCompetitionModal()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                            Create First Competition
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = allCompetitions.map(comp => {
+                const meta = comp.meta;
+                const registeredCount = Object.keys(comp.registeredPlayers || {}).length;
+                const statusColors = {
+                    'registration': 'bg-green-100 text-green-700',
+                    'closed': 'bg-amber-100 text-amber-700',
+                    'active': 'bg-blue-100 text-blue-700',
+                    'completed': 'bg-gray-100 text-gray-600'
+                };
+                
+                // Determine minimum players for each format
+                const minPlayersForFormat = {
+                    'americano': 4,
+                    'mexicano': 4,
+                    'mix': 20,
+                    'team-league': 8
+                };
+                const minPlayers = minPlayersForFormat[meta.format] || 4;
+                const canStartTournament = registeredCount >= minPlayers && meta.status !== 'active' && meta.status !== 'completed';
+                
+                return `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <div class="flex flex-col md:flex-row md:items-center gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="font-bold text-gray-800">${escapeHtml(meta.name)}</h3>
+                                    <span class="text-xs px-2 py-1 rounded-lg ${statusColors[meta.status] || 'bg-gray-100'}">${meta.status}</span>
+                                </div>
+                                <div class="flex flex-wrap gap-3 text-sm text-gray-500">
+                                    <span>📅 ${formatDate(meta.startDate)}</span>
+                                    <span>⭐ Level ${formatLevel(meta.minLevel)}-${formatLevel(meta.maxLevel)}</span>
+                                    <span>👥 ${registeredCount}/${meta.maxPlayers}</span>
+                                    <span class="uppercase">${meta.format || 'tournament'}</span>
+                                </div>
+                                ${meta.tournamentId ? `
+                                    <div class="mt-2">
+                                        <a href="${getTournamentUrl(meta.format, meta.tournamentId, meta.organiserKey)}" target="_blank" 
+                                            class="text-blue-600 hover:underline text-sm font-medium">
+                                            🔗 View Tournament →
+                                        </a>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="viewCompetitionPlayers('${comp.id}')" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">
+                                    👥 Players
+                                </button>
+                                ${canStartTournament ? `
+                                    <button onclick="showStartTournamentModal('${comp.id}')" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
+                                        🚀 Start Tournament
+                                    </button>
+                                ` : registeredCount < minPlayers && meta.status !== 'active' && meta.status !== 'completed' ? `
+                                    <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm" title="Need at least ${minPlayers} players">
+                                        🚀 Need ${minPlayers - registeredCount} more
+                                    </span>
+                                ` : ''}
+                                <select onchange="updateCompetitionStatus('${comp.id}', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                    <option value="registration" ${meta.status === 'registration' ? 'selected' : ''}>Open</option>
+                                    <option value="closed" ${meta.status === 'closed' ? 'selected' : ''}>Closed</option>
+                                    <option value="active" ${meta.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="completed" ${meta.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                </select>
+                                <button onclick="deleteCompetition('${comp.id}')" class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showCreateCompetitionModal() {
+            const modal = document.createElement('div');
+            modal.id = 'create-competition-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 my-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🏆 Create Competition</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Competition Name *</label>
+                            <input type="text" id="comp-name" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="e.g., Winter League 2024" maxlength="100" />
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                            <textarea id="comp-description" rows="2" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none resize-none" placeholder="Optional description..."></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Format *</label>
+                                <select id="comp-format" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                                    <option value="americano">Americano</option>
+                                    <option value="mexicano">Mexicano</option>
+                                    <option value="mix">Mix Tournament</option>
+                                    <option value="team-league">Team League</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Max Players *</label>
+                                <input type="number" id="comp-max-players" value="16" min="4" max="100" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Min Level *</label>
+                                <input type="number" id="comp-min-level" step="0.01" min="0" max="10" value="0.00" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Max Level *</label>
+                                <input type="number" id="comp-max-level" step="0.01" min="0" max="10" value="10.00" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Start Date *</label>
+                                <input type="date" id="comp-start-date" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Registration Deadline</label>
+                                <input type="date" id="comp-deadline" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="closeCreateCompetitionModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="createCompetition()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold">
+                            Create
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeCreateCompetitionModal();
+            });
+        }
+        
+        function closeCreateCompetitionModal() {
+            const modal = document.getElementById('create-competition-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function createCompetition() {
+            const name = document.getElementById('comp-name').value.trim();
+            const description = document.getElementById('comp-description').value.trim();
+            const format = document.getElementById('comp-format').value;
+            const maxPlayers = parseInt(document.getElementById('comp-max-players').value);
+            const minLevel = parseFloat(document.getElementById('comp-min-level').value);
+            const maxLevel = parseFloat(document.getElementById('comp-max-level').value);
+            const startDate = document.getElementById('comp-start-date').value;
+            const deadline = document.getElementById('comp-deadline').value;
+            
+            if (!name || !startDate) {
+                showToast('❌ Please fill in required fields');
+                return;
+            }
+            
+            if (minLevel >= maxLevel) {
+                showToast('❌ Max level must be greater than min level');
+                return;
+            }
+            
+            try {
+                const competitionId = generateCompetitionId();
+                
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}`).set({
+                    meta: {
+                        name: name,
+                        description: description || null,
+                        format: format,
+                        maxPlayers: maxPlayers,
+                        minLevel: minLevel,
+                        maxLevel: maxLevel,
+                        startDate: startDate,
+                        registrationDeadline: deadline || null,
+                        status: 'registration',
+                        createdAt: new Date().toISOString(),
+                        createdBy: 'admin'
+                    },
+                    registeredPlayers: {}
+                });
+                
+                closeCreateCompetitionModal();
+                showToast('✅ Competition created!');
+                loadCompetitions();
+                
+            } catch (error) {
+                console.error('Error creating competition:', error);
+                showToast('❌ Failed to create competition');
+            }
+        }
+        
+        function generateCompetitionId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let id = 'comp_';
+            for (let i = 0; i < 8; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+        
+        async function updateCompetitionStatus(competitionId, status) {
+            try {
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/meta/status`).set(status);
+                showToast('✅ Status updated');
+                loadCompetitions();
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast('❌ Failed to update status');
+            }
+        }
+        
+        async function deleteCompetition(competitionId) {
+            if (!confirm('Are you sure you want to delete this competition? This cannot be undone.')) return;
+            
+            try {
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}`).remove();
+                showToast('Competition deleted');
+                loadCompetitions();
+            } catch (error) {
+                console.error('Error deleting competition:', error);
+                showToast('❌ Failed to delete competition');
+            }
+        }
+        
+        function viewCompetitionPlayers(competitionId) {
+            const comp = allCompetitions.find(c => c.id === competitionId);
+            if (!comp) return;
+            
+            const players = comp.registeredPlayers || {};
+            const playerList = Object.entries(players);
+            
+            const modal = document.createElement('div');
+            modal.id = 'players-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white">${escapeHtml(comp.meta.name)} - Players (${playerList.length})</h3>
+                    </div>
+                    <div class="p-4 overflow-y-auto max-h-[60vh]">
+                        ${playerList.length === 0 ? `
+                            <div class="text-center py-8 text-gray-400">No players registered yet</div>
+                        ` : `
+                            <div class="space-y-2">
+                                ${playerList.map(([id, data], index) => `
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-bold">${index + 1}</span>
+                                            <div>
+                                                <div class="font-medium text-gray-800">${escapeHtml(data.name || 'Unknown')}</div>
+                                                <div class="text-xs text-gray-500">Level: ${formatLevel(data.level)}</div>
+                                            </div>
+                                        </div>
+                                        <button onclick="removePlayerFromCompetition('${competitionId}', '${id}')" class="text-red-500 hover:text-red-700 text-sm">Remove</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                    <div class="px-6 py-4 border-t border-gray-100">
+                        <button onclick="closePlayersModal()" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closePlayersModal();
+            });
+        }
+        
+        function closePlayersModal() {
+            const modal = document.getElementById('players-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function removePlayerFromCompetition(competitionId, playerId) {
+            if (!confirm('Remove this player from the competition?')) return;
+            
+            try {
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/registeredPlayers/${playerId}`).remove();
+                closePlayersModal();
+                showToast('Player removed');
+                loadCompetitions();
+                viewCompetitionPlayers(competitionId);
+            } catch (error) {
+                console.error('Error removing player:', error);
+                showToast('❌ Failed to remove player');
+            }
+        }
+        
+        // ===== TOURNAMENT CREATION FUNCTIONS =====
+        
+        const TOURNAMENT_PATHS = {
+            'americano': 'americano-tournaments',
+            'mexicano': 'mexicano-tournaments',
+            'mix': 'tournaments',
+            'team-league': 'team-tournaments'
+        };
+        
+        const TOURNAMENT_URLS = {
+            'americano': '/americano/',
+            'mexicano': '/mexicano/',
+            'mix': '/tournament/',
+            'team-league': '/team-league/'
+        };
+        
+        function getTournamentUrl(format, tournamentId, organiserKey) {
+            const baseUrl = TOURNAMENT_URLS[format] || '/';
+            if (organiserKey) {
+                return `${baseUrl}?id=${tournamentId}&key=${organiserKey}`;
+            }
+            return `${baseUrl}?id=${tournamentId}`;
+        }
+        
+        function generateTournamentId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let id = '';
+            for (let i = 0; i < 6; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+        
+        function generateOrganiserKey() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let key = '';
+            for (let i = 0; i < 12; i++) {
+                key += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return key;
+        }
+        
+        function showStartTournamentModal(competitionId) {
+            const comp = allCompetitions.find(c => c.id === competitionId);
+            if (!comp) return;
+            
+            const players = comp.registeredPlayers || {};
+            const playerList = Object.entries(players);
+            const format = comp.meta.format;
+            
+            const formatInfo = {
+                'americano': { name: 'Americano', minPlayers: 4, maxPlayers: 24, courts: true },
+                'mexicano': { name: 'Mexicano', minPlayers: 4, maxPlayers: 24, courts: false },
+                'mix': { name: 'Mix Tournament', minPlayers: 20, maxPlayers: 28, courts: false },
+                'team-league': { name: 'Team League', minPlayers: 8, maxPlayers: 32, courts: false }
+            };
+            
+            const info = formatInfo[format] || formatInfo['americano'];
+            
+            const modal = document.createElement('div');
+            modal.id = 'start-tournament-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8">
+                    <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 rounded-t-2xl">
+                        <h3 class="text-xl font-bold text-white">🚀 Start ${info.name}</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                            <div class="font-semibold text-gray-800 mb-1">${escapeHtml(comp.meta.name)}</div>
+                            <div class="text-sm text-gray-500">${playerList.length} players registered</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament Passcode *</label>
+                            <input type="text" id="tournament-passcode" 
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
+                                placeholder="Enter passcode for organisers" maxlength="20" />
+                            <p class="text-xs text-gray-500 mt-1">Organisers will need this to manage the tournament</p>
+                        </div>
+                        
+                        ${info.courts ? `
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Number of Courts</label>
+                                <select id="tournament-courts" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none">
+                                    <option value="1">1 Court</option>
+                                    <option value="2" selected>2 Courts</option>
+                                    <option value="3">3 Courts</option>
+                                    <option value="4">4 Courts</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                            <div class="flex gap-3">
+                                <span class="text-xl">ℹ️</span>
+                                <div class="text-sm text-blue-800">
+                                    <p class="font-semibold mb-1">What happens next:</p>
+                                    <ol class="list-decimal list-inside space-y-1 text-blue-700">
+                                        <li>A new ${info.name} tournament will be created</li>
+                                        <li>All ${playerList.length} registered players will be added</li>
+                                        <li>You'll get organiser and player links to share</li>
+                                        <li>Competition status will change to "Active"</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Players (${playerList.length})</label>
+                            <div class="max-h-40 overflow-y-auto bg-gray-50 rounded-xl p-3">
+                                ${playerList.map(([id, data], i) => `
+                                    <div class="flex items-center gap-2 py-1 ${i > 0 ? 'border-t border-gray-200' : ''}">
+                                        <span class="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">${i + 1}</span>
+                                        <span class="text-sm text-gray-700">${escapeHtml(data.name)}</span>
+                                        <span class="text-xs text-gray-400 ml-auto">Lvl ${formatLevel(data.level)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button onclick="closeStartTournamentModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                                Cancel
+                            </button>
+                            <button onclick="createTournamentFromCompetition('${competitionId}')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold">
+                                Create Tournament
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeStartTournamentModal();
+            });
+            
+            setTimeout(() => document.getElementById('tournament-passcode')?.focus(), 100);
+        }
+        
+        function closeStartTournamentModal() {
+            const modal = document.getElementById('start-tournament-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function createTournamentFromCompetition(competitionId) {
+            const passcode = document.getElementById('tournament-passcode')?.value.trim();
+            if (!passcode) {
+                showToast('❌ Please enter a passcode');
+                return;
+            }
+            
+            const comp = allCompetitions.find(c => c.id === competitionId);
+            if (!comp) {
+                showToast('❌ Competition not found');
+                return;
+            }
+            
+            const format = comp.meta.format;
+            const players = comp.registeredPlayers || {};
+            const playerList = Object.entries(players);
+            const courtCount = parseInt(document.getElementById('tournament-courts')?.value || '2');
+            
+            try {
+                let result;
+                
+                switch (format) {
+                    case 'americano':
+                        result = await createAmericanoTournament(comp, playerList, passcode, courtCount);
+                        break;
+                    case 'mexicano':
+                        result = await createMexicanoTournament(comp, playerList, passcode);
+                        break;
+                    case 'mix':
+                        result = await createMixTournament(comp, playerList, passcode);
+                        break;
+                    case 'team-league':
+                        result = await createTeamLeagueTournament(comp, playerList, passcode);
+                        break;
+                    default:
+                        showToast('❌ Unknown format');
+                        return;
+                }
+                
+                // Update competition with tournament link
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/meta`).update({
+                    status: 'active',
+                    tournamentId: result.tournamentId,
+                    organiserKey: result.organiserKey,
+                    tournamentCreatedAt: new Date().toISOString()
+                });
+                
+                closeStartTournamentModal();
+                showTournamentSuccessModal(format, result.tournamentId, result.organiserKey, comp.meta.name);
+                loadCompetitions();
+                
+            } catch (error) {
+                console.error('Error creating tournament:', error);
+                showToast('❌ Failed to create tournament');
+            }
+        }
+        
+        async function createAmericanoTournament(comp, playerList, passcode, courtCount) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            const playerCount = playerList.length;
+            
+            // Generate player names object
+            const playerNames = {};
+            playerList.forEach(([id, data], index) => {
+                playerNames[index] = data.name;
+            });
+            
+            // Generate court names
+            const courtNames = {};
+            for (let i = 0; i < courtCount; i++) {
+                courtNames[i] = `Court ${i + 1}`;
+            }
+            
+            // Initialize empty scores
+            const scores = {};
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    createdFromCompetition: comp.id
+                },
+                playerCount,
+                playerNames,
+                courtCount,
+                courtNames,
+                fixedPoints: false,
+                totalPoints: 32,
+                scores,
+                tournamentStarted: true
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['americano']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        async function createMexicanoTournament(comp, playerList, passcode) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            
+            // Generate players array
+            const players = playerList.map(([id, data]) => ({
+                name: data.name,
+                points: 0,
+                wins: 0,
+                losses: 0,
+                gamesWon: 0,
+                gamesLost: 0
+            }));
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    mode: 'individual',
+                    pointsPerMatch: 32,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    status: 'active',
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdFromCompetition: comp.id
+                },
+                currentRound: 0,
+                playerCount: players.length,
+                players,
+                rounds: []
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['mexicano']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        async function createMixTournament(comp, playerList, passcode) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            
+            // Generate players object (Mix format uses different structure)
+            const players = {};
+            playerList.forEach(([id, data], index) => {
+                players[index + 1] = { name: data.name };
+            });
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    createdFromCompetition: comp.id
+                },
+                players
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['mix']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        async function createTeamLeagueTournament(comp, playerList, passcode) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            
+            // For team league, we need to pair players into teams
+            // For now, we'll create placeholder teams
+            const teams = [];
+            for (let i = 0; i < playerList.length; i += 2) {
+                const player1 = playerList[i]?.[1]?.name || `Player ${i + 1}`;
+                const player2 = playerList[i + 1]?.[1]?.name || `Player ${i + 2}`;
+                teams.push({
+                    name: `Team ${Math.floor(i / 2) + 1}`,
+                    player1,
+                    player2,
+                    points: 0,
+                    gamesWon: 0,
+                    gamesLost: 0
+                });
+            }
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    createdFromCompetition: comp.id
+                },
+                teams,
+                currentWeek: 1,
+                status: 'setup'
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['team-league']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        function showTournamentSuccessModal(format, tournamentId, organiserKey, competitionName) {
+            const playerLink = window.location.origin + getTournamentUrl(format, tournamentId, null);
+            const organiserLink = window.location.origin + getTournamentUrl(format, tournamentId, organiserKey);
+            
+            const modal = document.createElement('div');
+            modal.id = 'tournament-success-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4 rounded-t-2xl">
+                        <h3 class="text-xl font-bold text-white">🎉 Tournament Created!</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="text-center mb-6">
+                            <div class="text-6xl mb-4">✅</div>
+                            <p class="text-gray-600">${escapeHtml(competitionName)} is ready!</p>
+                        </div>
+                        
+                        <div class="space-y-4 mb-6">
+                            <div class="bg-blue-50 rounded-xl p-4">
+                                <div class="text-sm font-semibold text-blue-800 mb-2">📋 Tournament Code</div>
+                                <div class="font-mono text-2xl font-bold text-blue-600 tracking-wider">${tournamentId.toUpperCase()}</div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <div class="text-sm font-semibold text-gray-700 mb-2">👥 Player Link (share with players)</div>
+                                <div class="flex gap-2">
+                                    <input type="text" readonly value="${playerLink}" 
+                                        class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm" id="player-link-input" />
+                                    <button onclick="copyToClipboard('${playerLink}', 'Player link copied!')" 
+                                        class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-amber-50 rounded-xl p-4">
+                                <div class="text-sm font-semibold text-amber-700 mb-2">🔑 Organiser Link (keep private)</div>
+                                <div class="flex gap-2">
+                                    <input type="text" readonly value="${organiserLink}" 
+                                        class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm" id="organiser-link-input" />
+                                    <button onclick="copyToClipboard('${organiserLink}', 'Organiser link copied!')" 
+                                        class="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button onclick="closeTournamentSuccessModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                                Close
+                            </button>
+                            <a href="${organiserLink}" target="_blank" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-center">
+                                Open Tournament →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function closeTournamentSuccessModal() {
+            const modal = document.getElementById('tournament-success-modal');
+            if (modal) modal.remove();
+        }
+        
+        function copyToClipboard(text, message) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(message || 'Copied!');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                showToast('❌ Failed to copy');
+            });
+        }
+        
+        // ===== UTILITY FUNCTIONS =====
+        
+        function formatLevel(level) {
+            if (level === null || level === undefined) return '-';
+            return parseFloat(level).toFixed(2);
+        }
+        
+        function formatDate(isoString) {
+            if (!isoString) return '-';
+            const date = new Date(isoString);
+            return date.toLocaleDateString('en-GB', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
         }
     </script>
 </body>

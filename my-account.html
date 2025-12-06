@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>My Account | Uber Padel</title>
+    <meta name="description" content="View your player profile, verification status, and tournaments on Uber Padel.">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="uberpadel-icon.svg">
+    <link rel="apple-touch-icon" href="uberpadel-icon-512.png">
+    
+    <!-- Theme -->
+    <meta name="theme-color" content="#2563EB">
+    
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-guest {
+            background: #F3F4F6;
+            color: #4B5563;
+        }
+        
+        .status-pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .status-verified {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center gap-3">
+                    <img src="uberpadel-icon.svg" alt="Uber Padel" class="w-10 h-10">
+                    <span class="font-bold text-xl text-gray-800">Uber Padel</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Home</a>
+                    <a href="my-account.html" class="text-blue-600 font-semibold">My Account</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Loading State -->
+    <div id="loading-state" class="max-w-4xl mx-auto px-4 py-12">
+        <div class="bg-white rounded-3xl shadow-xl p-8 text-center">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-500">Loading your account...</p>
+        </div>
+    </div>
+    
+    <!-- Not Logged In -->
+    <div id="not-logged-in" class="hidden max-w-xl mx-auto px-4 py-12">
+        <div class="bg-white rounded-3xl shadow-xl p-8 text-center animate-fade-in-up">
+            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span class="text-4xl">🔐</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Sign In Required</h1>
+            <p class="text-gray-600 mb-6">Please sign in to view your account and join tournaments.</p>
+            <a href="login.html?return=my-account.html" class="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                Sign In
+            </a>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard -->
+    <main id="dashboard" class="hidden max-w-4xl mx-auto px-4 py-8">
+        
+        <!-- Profile Header -->
+        <div class="bg-white rounded-3xl shadow-xl p-8 mb-6 animate-fade-in-up">
+            <div class="flex flex-col md:flex-row md:items-center gap-6">
+                <!-- Avatar -->
+                <div id="avatar-container" class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold flex-shrink-0">
+                    <span id="avatar-initial">?</span>
+                </div>
+                
+                <!-- Info -->
+                <div class="flex-1">
+                    <div class="flex flex-wrap items-center gap-3 mb-2">
+                        <h1 class="text-2xl font-bold text-gray-800" id="user-name">Loading...</h1>
+                        <span id="status-badge" class="status-badge status-guest">
+                            <span>👤</span>
+                            Guest
+                        </span>
+                    </div>
+                    
+                    <div id="user-details" class="flex flex-wrap items-center gap-4 text-gray-600 text-sm">
+                        <!-- Filled by JS -->
+                    </div>
+                    
+                    <!-- Level Badge (shown when verified) -->
+                    <div id="level-container" class="hidden mt-4">
+                        <div class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-xl">
+                            <span class="text-lg">⭐</span>
+                            <span class="font-semibold">Level: <span id="user-level">-</span></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex flex-col gap-2">
+                    <button onclick="handleSignOut()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors text-sm">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Guest Message -->
+        <div id="guest-message" class="hidden bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6 animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="flex gap-4">
+                <span class="text-2xl">💡</span>
+                <div class="flex-1">
+                    <h3 class="font-semibold text-blue-800 mb-1">You're using Guest Mode</h3>
+                    <p class="text-blue-700 text-sm mb-4">
+                        Sign in with Google to unlock all features: verified status, level-based tournaments, and sync across devices.
+                    </p>
+                    <a href="login.html" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-sm transition-colors">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        </svg>
+                        Upgrade to Google Account
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pending Message -->
+        <div id="pending-message" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 mb-6 animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="flex gap-4">
+                <span class="text-2xl">⏳</span>
+                <div>
+                    <h3 class="font-semibold text-amber-800 mb-1">Awaiting Verification</h3>
+                    <p class="text-amber-700 text-sm">
+                        An admin will verify your Playtomic profile and assign your skill level. 
+                        This usually takes 24-48 hours. Once verified, you'll be able to join level-based tournaments.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Verified Message -->
+        <div id="verified-message" class="hidden bg-green-50 border border-green-200 rounded-2xl p-6 mb-6 animate-fade-in-up" style="animation-delay: 0.1s;">
+            <div class="flex gap-4">
+                <span class="text-2xl">✅</span>
+                <div>
+                    <h3 class="font-semibold text-green-800 mb-1">Account Verified</h3>
+                    <p class="text-green-700 text-sm">
+                        You have full access to all tournaments and features. You can also organise level-restricted competitions!
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Permissions Card -->
+        <div class="bg-white rounded-3xl shadow-xl p-6 mb-6 animate-fade-in-up" style="animation-delay: 0.15s;">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span>🎯</span> Your Permissions
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <!-- Join Tournaments -->
+                <div class="border border-gray-200 rounded-xl p-4">
+                    <h3 class="font-semibold text-gray-800 mb-3">Join Tournaments</h3>
+                    <div class="space-y-2 text-sm">
+                        <div id="perm-join-anyone" class="flex items-center gap-2">
+                            <span class="text-green-500">✓</span>
+                            <span class="text-gray-600">Open tournaments (anyone)</span>
+                        </div>
+                        <div id="perm-join-registered" class="flex items-center gap-2">
+                            <span class="text-gray-300">✗</span>
+                            <span class="text-gray-400">Registered-only tournaments</span>
+                        </div>
+                        <div id="perm-join-level" class="flex items-center gap-2">
+                            <span class="text-gray-300">✗</span>
+                            <span class="text-gray-400">Level-based tournaments</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Organise Tournaments -->
+                <div class="border border-gray-200 rounded-xl p-4">
+                    <h3 class="font-semibold text-gray-800 mb-3">Organise Tournaments</h3>
+                    <div class="space-y-2 text-sm">
+                        <div id="perm-org-anyone" class="flex items-center gap-2">
+                            <span class="text-green-500">✓</span>
+                            <span class="text-gray-600">Open tournaments (anyone)</span>
+                        </div>
+                        <div id="perm-org-registered" class="flex items-center gap-2">
+                            <span class="text-gray-300">✗</span>
+                            <span class="text-gray-400">Registered-only tournaments</span>
+                        </div>
+                        <div id="perm-org-level" class="flex items-center gap-2">
+                            <span class="text-gray-300">✗</span>
+                            <span class="text-gray-400">Level-based tournaments</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-3xl shadow-xl p-6 mb-6 animate-fade-in-up" style="animation-delay: 0.2s;">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span>⚡</span> Quick Actions
+            </h2>
+            
+            <!-- Browse Tournaments - Primary Action -->
+            <a href="browse.html" class="flex items-center gap-4 p-4 mb-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl transition-colors">
+                <span class="text-3xl">🔍</span>
+                <div>
+                    <span class="font-bold text-lg">Browse Tournaments</span>
+                    <p class="text-blue-100 text-sm">Find and join tournaments open to you</p>
+                </div>
+                <span class="ml-auto text-2xl">→</span>
+            </a>
+            
+            <p class="text-sm text-gray-500 mb-3">Or create a new tournament:</p>
+            
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="tournament/" class="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl transition-colors">
+                    <span class="text-3xl">🏆</span>
+                    <span class="font-semibold text-blue-800">Mix Tournament</span>
+                </a>
+                <a href="americano/" class="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl transition-colors">
+                    <span class="text-3xl">🔄</span>
+                    <span class="font-semibold text-green-800">Americano</span>
+                </a>
+                <a href="mexicano/" class="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl transition-colors">
+                    <span class="text-3xl">🌶️</span>
+                    <span class="font-semibold text-orange-800">Mexicano</span>
+                </a>
+                <a href="team-league/" class="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl transition-colors">
+                    <span class="text-3xl">👥</span>
+                    <span class="font-semibold text-purple-800">Team League</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Account Details (for registered users) -->
+        <div id="account-details" class="hidden bg-white rounded-3xl shadow-xl p-6 animate-fade-in-up" style="animation-delay: 0.25s;">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <span>📋</span> Account Details
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                    <span class="text-gray-600">User ID</span>
+                    <span class="font-mono font-semibold text-gray-800" id="detail-user-id">-</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                    <span class="text-gray-600">Email</span>
+                    <span class="font-medium text-gray-800" id="detail-email">-</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                    <span class="text-gray-600">Playtomic Username</span>
+                    <span class="font-medium text-gray-800" id="detail-playtomic">-</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                    <span class="text-gray-600">Playtomic Level</span>
+                    <span class="font-medium text-gray-800" id="detail-level">Pending verification</span>
+                </div>
+                <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                    <span class="text-gray-600">Registered</span>
+                    <span class="font-medium text-gray-800" id="detail-registered">-</span>
+                </div>
+                <div id="detail-verified-row" class="hidden flex justify-between items-center py-3">
+                    <span class="text-gray-600">Verified</span>
+                    <span class="font-medium text-green-600" id="detail-verified">-</span>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+    
+    <script>
+        // ===== FIREBASE CONFIG =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyBBy1eJi2cLixBNJX0I1fmHKrZ1NfUfVTg",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.firebasestorage.app",
+            messagingSenderId: "854426178729",
+            appId: "1:854426178729:web:0cd7d073f3fb3ed29b3230"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // ===== CONSTANTS =====
+        const USERS_DB_PATH = 'users';
+        const USER_STORAGE_KEY = 'uber_padel_user';
+        
+        // Current user data
+        let currentUser = null;
+        let fullUserData = null;
+        
+        // ===== UTILITY FUNCTIONS =====
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-green-600' : 'bg-gray-800';
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg animate-fade-in-up`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        function hideAllSections() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('not-logged-in').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+        
+        function getStoredUser() {
+            try {
+                const data = localStorage.getItem(USER_STORAGE_KEY);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        function setStoredUser(user) {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+        }
+        
+        function clearStoredUser() {
+            localStorage.removeItem(USER_STORAGE_KEY);
+        }
+        
+        function formatDate(isoString) {
+            if (!isoString) return '-';
+            return new Date(isoString).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+        
+        // ===== LOAD USER DATA =====
+        
+        async function loadUserData() {
+            currentUser = getStoredUser();
+            
+            if (!currentUser) {
+                hideAllSections();
+                document.getElementById('not-logged-in').classList.remove('hidden');
+                return;
+            }
+            
+            // For guests, show dashboard immediately
+            if (currentUser.type === 'guest') {
+                showDashboard();
+                return;
+            }
+            
+            // For registered users, fetch full data from Firebase
+            try {
+                const snapshot = await database.ref(`${USERS_DB_PATH}/${currentUser.id}`).once('value');
+                
+                if (snapshot.exists()) {
+                    fullUserData = snapshot.val();
+                    
+                    // Update local cache with latest status
+                    currentUser.status = fullUserData.status;
+                    currentUser.playtomicLevel = fullUserData.playtomicLevel;
+                    setStoredUser(currentUser);
+                    
+                    showDashboard();
+                } else {
+                    // User no longer exists
+                    clearStoredUser();
+                    hideAllSections();
+                    document.getElementById('not-logged-in').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                showToast('Error loading account data', 'error');
+                showDashboard(); // Show with cached data
+            }
+        }
+        
+        // ===== SHOW DASHBOARD =====
+        
+        function showDashboard() {
+            hideAllSections();
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Update profile header
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('avatar-initial').textContent = currentUser.name.charAt(0).toUpperCase();
+            
+            // Update status badge and messages based on user type
+            const statusBadge = document.getElementById('status-badge');
+            const guestMessage = document.getElementById('guest-message');
+            const pendingMessage = document.getElementById('pending-message');
+            const verifiedMessage = document.getElementById('verified-message');
+            const levelContainer = document.getElementById('level-container');
+            const accountDetails = document.getElementById('account-details');
+            
+            // Hide all messages first
+            guestMessage.classList.add('hidden');
+            pendingMessage.classList.add('hidden');
+            verifiedMessage.classList.add('hidden');
+            levelContainer.classList.add('hidden');
+            accountDetails.classList.add('hidden');
+            
+            if (currentUser.type === 'guest') {
+                // Guest user
+                statusBadge.className = 'status-badge status-guest';
+                statusBadge.innerHTML = '<span>👤</span> Guest';
+                guestMessage.classList.remove('hidden');
+                
+                document.getElementById('user-details').innerHTML = `
+                    <span class="text-gray-500">Session stored locally on this device</span>
+                `;
+                
+            } else if (currentUser.status === 'verified') {
+                // Verified user
+                statusBadge.className = 'status-badge status-verified';
+                statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-500"></span> Verified';
+                verifiedMessage.classList.remove('hidden');
+                accountDetails.classList.remove('hidden');
+                
+                // Show level
+                if (fullUserData && fullUserData.playtomicLevel) {
+                    levelContainer.classList.remove('hidden');
+                    document.getElementById('user-level').textContent = fullUserData.playtomicLevel;
+                }
+                
+                updateUserDetails();
+                updateAccountDetails();
+                
+            } else {
+                // Pending user
+                statusBadge.className = 'status-badge status-pending';
+                statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Pending';
+                pendingMessage.classList.remove('hidden');
+                accountDetails.classList.remove('hidden');
+                
+                updateUserDetails();
+                updateAccountDetails();
+            }
+            
+            // Update permissions
+            updatePermissions();
+        }
+        
+        function updateUserDetails() {
+            if (!fullUserData) return;
+            
+            let detailsHtml = '';
+            
+            if (fullUserData.email) {
+                detailsHtml += `
+                    <span class="flex items-center gap-1">
+                        <span>📧</span>
+                        <span>${fullUserData.email}</span>
+                    </span>
+                `;
+            }
+            
+            if (fullUserData.playtomicUsername) {
+                detailsHtml += `
+                    <span class="flex items-center gap-1">
+                        <span>🎾</span>
+                        <span>@${fullUserData.playtomicUsername}</span>
+                    </span>
+                `;
+            }
+            
+            document.getElementById('user-details').innerHTML = detailsHtml;
+        }
+        
+        function updateAccountDetails() {
+            if (!fullUserData) return;
+            
+            document.getElementById('detail-user-id').textContent = currentUser.id.toUpperCase();
+            document.getElementById('detail-email').textContent = fullUserData.email || '-';
+            document.getElementById('detail-playtomic').textContent = fullUserData.playtomicUsername ? `@${fullUserData.playtomicUsername}` : '-';
+            document.getElementById('detail-level').textContent = fullUserData.playtomicLevel || 'Pending verification';
+            document.getElementById('detail-registered').textContent = formatDate(fullUserData.registeredAt);
+            
+            if (fullUserData.status === 'verified' && fullUserData.verifiedAt) {
+                document.getElementById('detail-verified-row').classList.remove('hidden');
+                document.getElementById('detail-verified').textContent = formatDate(fullUserData.verifiedAt);
+            }
+        }
+        
+        function updatePermissions() {
+            const isGuest = currentUser.type === 'guest';
+            const isPending = currentUser.type === 'registered' && currentUser.status === 'pending';
+            const isVerified = currentUser.type === 'registered' && currentUser.status === 'verified';
+            
+            // Join permissions
+            updatePermissionItem('perm-join-anyone', true);
+            updatePermissionItem('perm-join-registered', !isGuest);
+            updatePermissionItem('perm-join-level', isVerified);
+            
+            // Organise permissions
+            updatePermissionItem('perm-org-anyone', true);
+            updatePermissionItem('perm-org-registered', isVerified);
+            updatePermissionItem('perm-org-level', isVerified);
+        }
+        
+        function updatePermissionItem(id, allowed) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            const icon = el.querySelector('span:first-child');
+            const text = el.querySelector('span:last-child');
+            
+            if (allowed) {
+                icon.textContent = '✓';
+                icon.className = 'text-green-500';
+                text.className = 'text-gray-600';
+            } else {
+                icon.textContent = '✗';
+                icon.className = 'text-gray-300';
+                text.className = 'text-gray-400';
+            }
+        }
+        
+        // ===== SIGN OUT =====
+        
+        async function handleSignOut() {
+            try {
+                await auth.signOut();
+                clearStoredUser();
+                showToast('Signed out successfully', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Sign out error:', error);
+                showToast('Sign out failed', 'error');
+            }
+        }
+        
+        // ===== INITIALIZE =====
+        document.addEventListener('DOMContentLoaded', loadUserData);
+    </script>
+</body>
+</html>

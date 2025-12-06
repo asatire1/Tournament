@@ -238,10 +238,14 @@ function renderLandingPage() {
 
 // Create Tournament Modal
 function showCreateTournamentModal() {
+    // Check user permissions for mode selection
+    const currentUser = getCurrentUser();
+    const isVerified = currentUser && currentUser.type === 'registered' && currentUser.status === 'verified';
+    
     const modal = document.getElementById('modal-container');
     modal.innerHTML = `
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
-            <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden" style="font-family: 'Space Grotesk', sans-serif;">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden max-h-[90vh] overflow-y-auto" style="font-family: 'Space Grotesk', sans-serif;">
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-5">
                     <h2 class="text-xl font-bold text-white">✨ Create New Mix Tournament</h2>
                 </div>
@@ -290,6 +294,58 @@ function showCreateTournamentModal() {
                             </button>
                         </div>
                         <input type="hidden" id="selected-player-count" value="24" />
+                    </div>
+                    
+                    <!-- Tournament Mode Selection -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Who Can Join?</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-3 p-3 border-2 border-blue-500 bg-blue-50 rounded-xl cursor-pointer tournament-mode-option" data-mode="anyone">
+                                <input type="radio" name="tournament-mode" value="anyone" checked class="w-4 h-4 text-blue-600" onchange="selectTournamentMode('anyone')">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-800">🌍 Anyone</div>
+                                    <div class="text-xs text-gray-500">Guests and registered players can join</div>
+                                </div>
+                            </label>
+                            
+                            <label class="flex items-center gap-3 p-3 border-2 ${isVerified ? 'border-gray-200 hover:border-blue-300' : 'border-gray-100 opacity-50'} rounded-xl ${isVerified ? 'cursor-pointer' : 'cursor-not-allowed'} tournament-mode-option" data-mode="registered">
+                                <input type="radio" name="tournament-mode" value="registered" ${!isVerified ? 'disabled' : ''} class="w-4 h-4 text-blue-600" onchange="selectTournamentMode('registered')">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-800">👥 Registered Only</div>
+                                    <div class="text-xs text-gray-500">Only registered players can join</div>
+                                </div>
+                                ${!isVerified ? '<span class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Verified only</span>' : ''}
+                            </label>
+                            
+                            <label class="flex items-center gap-3 p-3 border-2 ${isVerified ? 'border-gray-200 hover:border-blue-300' : 'border-gray-100 opacity-50'} rounded-xl ${isVerified ? 'cursor-pointer' : 'cursor-not-allowed'} tournament-mode-option" data-mode="level-based">
+                                <input type="radio" name="tournament-mode" value="level-based" ${!isVerified ? 'disabled' : ''} class="w-4 h-4 text-blue-600" onchange="selectTournamentMode('level-based')">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-800">🎯 Level-Based</div>
+                                    <div class="text-xs text-gray-500">Only verified players within level range</div>
+                                </div>
+                                ${!isVerified ? '<span class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">Verified only</span>' : ''}
+                            </label>
+                        </div>
+                        <input type="hidden" id="selected-tournament-mode" value="anyone" />
+                    </div>
+                    
+                    <!-- Level Range (shown only for level-based mode) -->
+                    <div id="level-range-container" class="hidden mb-4 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                        <label class="block text-sm font-semibold text-purple-800 mb-3">Level Range</label>
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1">
+                                <label class="block text-xs text-purple-600 mb-1">Min Level</label>
+                                <input type="number" id="level-min" step="0.1" min="0" max="10" value="0.0"
+                                    class="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:outline-none text-center font-semibold">
+                            </div>
+                            <span class="text-purple-400 mt-5">to</span>
+                            <div class="flex-1">
+                                <label class="block text-xs text-purple-600 mb-1">Max Level</label>
+                                <input type="number" id="level-max" step="0.1" min="0" max="10" value="10.0"
+                                    class="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:outline-none text-center font-semibold">
+                            </div>
+                        </div>
+                        <p class="text-xs text-purple-600 mt-2">Only verified players with Playtomic level in this range can join</p>
                     </div>
                     
                     <div class="mb-4">
@@ -354,6 +410,45 @@ function showCreateTournamentModal() {
     setTimeout(() => {
         document.getElementById('tournament-name-input')?.focus();
     }, 100);
+}
+
+// Select tournament mode
+function selectTournamentMode(mode) {
+    document.getElementById('selected-tournament-mode').value = mode;
+    
+    // Update visual selection
+    document.querySelectorAll('.tournament-mode-option').forEach(opt => {
+        const optMode = opt.dataset.mode;
+        if (optMode === mode) {
+            opt.classList.remove('border-gray-200', 'border-gray-100');
+            opt.classList.add('border-blue-500', 'bg-blue-50');
+        } else {
+            opt.classList.remove('border-blue-500', 'bg-blue-50');
+            if (!opt.querySelector('input').disabled) {
+                opt.classList.add('border-gray-200');
+            } else {
+                opt.classList.add('border-gray-100');
+            }
+        }
+    });
+    
+    // Show/hide level range
+    const levelContainer = document.getElementById('level-range-container');
+    if (mode === 'level-based') {
+        levelContainer.classList.remove('hidden');
+    } else {
+        levelContainer.classList.add('hidden');
+    }
+}
+
+// Get current user from localStorage
+function getCurrentUser() {
+    try {
+        const data = localStorage.getItem('uber_padel_user');
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        return null;
+    }
 }
 
 // Select player count
@@ -435,8 +530,15 @@ function showJoinTournamentModal() {
 }
 
 // Show tournament created success modal with links
-function showTournamentCreatedModal(tournamentId, passcode, name) {
+function showTournamentCreatedModal(tournamentId, passcode, name, mode = 'anyone') {
     const playerLink = Router.getPlayerLink(tournamentId);
+    
+    const modeLabels = {
+        'anyone': '🌍 Open to Anyone',
+        'registered': '👥 Registered Only',
+        'level-based': '🎯 Level-Based'
+    };
+    const modeLabel = modeLabels[mode] || modeLabels['anyone'];
     
     const modal = document.getElementById('modal-container');
     modal.innerHTML = `
@@ -450,7 +552,11 @@ function showTournamentCreatedModal(tournamentId, passcode, name) {
                 <div class="p-6 space-y-5">
                     <div class="text-center">
                         <div class="text-2xl font-bold text-gray-800">${name}</div>
-                        <div class="text-sm text-gray-500 mt-1">Code: <span class="font-mono font-bold text-blue-600">${tournamentId.toUpperCase()}</span></div>
+                        <div class="text-sm text-gray-500 mt-1">
+                            Code: <span class="font-mono font-bold text-blue-600">${tournamentId.toUpperCase()}</span>
+                            <span class="mx-2">•</span>
+                            <span class="text-gray-600">${modeLabel}</span>
+                        </div>
                     </div>
                     
                     <!-- Player Link -->
@@ -508,6 +614,9 @@ async function createTournament() {
     const passcodeInput = document.getElementById('organiser-passcode-input');
     const passcodeConfirm = document.getElementById('organiser-passcode-confirm');
     const playerCountInput = document.getElementById('selected-player-count');
+    const tournamentModeInput = document.getElementById('selected-tournament-mode');
+    const levelMinInput = document.getElementById('level-min');
+    const levelMaxInput = document.getElementById('level-max');
     const passcodeError = document.getElementById('passcode-error');
     const passcodeErrorText = document.getElementById('passcode-error-text');
     
@@ -515,6 +624,9 @@ async function createTournament() {
     const passcode = passcodeInput?.value;
     const passcodeConfirmValue = passcodeConfirm?.value;
     const playerCount = parseInt(playerCountInput?.value || '24', 10);
+    const tournamentMode = tournamentModeInput?.value || 'anyone';
+    const levelMin = parseFloat(levelMinInput?.value || '0');
+    const levelMax = parseFloat(levelMaxInput?.value || '10');
     
     // Hide previous errors
     passcodeError?.classList.add('hidden');
@@ -539,8 +651,32 @@ async function createTournament() {
         return;
     }
     
+    // Validate level range for level-based mode
+    if (tournamentMode === 'level-based') {
+        if (levelMin >= levelMax) {
+            passcodeErrorText.textContent = '❌ Max level must be greater than min level';
+            passcodeError?.classList.remove('hidden');
+            return;
+        }
+    }
+    
+    // Get current user for creator info
+    const currentUser = getCurrentUser();
+    
     // Generate tournament ID (passcode is used instead of random organiserKey)
     const tournamentId = Router.generateTournamentId();
+    
+    // Prepare mode settings
+    const modeSettings = {
+        mode: tournamentMode,
+        allowGuests: tournamentMode === 'anyone',
+        requireRegistered: tournamentMode === 'registered' || tournamentMode === 'level-based',
+        requireVerified: tournamentMode === 'level-based',
+        levelCriteria: tournamentMode === 'level-based' ? {
+            min: levelMin,
+            max: levelMax
+        } : null
+    };
     
     try {
         // Show loading state
@@ -551,7 +687,7 @@ async function createTournament() {
         }
         
         // Create tournament in Firebase (passcode is stored as organiserKey)
-        await createTournamentInFirebase(tournamentId, passcode, name, playerCount);
+        await createTournamentInFirebase(tournamentId, passcode, name, playerCount, modeSettings, currentUser);
         
         // Save to my tournaments (with passcode)
         MyTournaments.add(tournamentId, passcode, name);
@@ -581,7 +717,7 @@ function joinTournament() {
 }
 
 // Create tournament data in Firebase
-async function createTournamentInFirebase(tournamentId, organiserKey, name, playerCount = 24) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, playerCount = 24, modeSettings = null, creatorUser = null) {
     // Get the correct fixtures file path based on player count
     const fixturesPath = getFixturesPath(playerCount);
     const playerConfig = CONFIG.PLAYER_CONFIGS[playerCount];
@@ -615,6 +751,15 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
     // Generate match names based on player count
     const matchNames = generateMatchNames(playerConfig.matchesPerRound);
     
+    // Default mode settings if not provided
+    const defaultModeSettings = {
+        mode: 'anyone',
+        allowGuests: true,
+        requireRegistered: false,
+        requireVerified: false,
+        levelCriteria: null
+    };
+    
     // Create tournament object
     const tournamentData = {
         meta: {
@@ -624,7 +769,15 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
             totalRounds: playerConfig.totalRounds,
             matchesPerRound: playerConfig.matchesPerRound,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            // New mode settings
+            ...(modeSettings || defaultModeSettings),
+            // Creator info
+            createdBy: creatorUser ? {
+                id: creatorUser.id,
+                name: creatorUser.name,
+                type: creatorUser.type
+            } : null
         },
         playerNames: playerNames,
         skillRatings: skillRatings,
@@ -639,13 +792,15 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
         semiMaxScore: CONFIG.SEMI_MAX_SCORE,
         finalMaxScore: CONFIG.FINAL_MAX_SCORE,
         showFairnessTabs: true,
-        savedVersions: []
+        savedVersions: [],
+        // Registered players tracking (for registered/level-based modes)
+        registeredPlayers: {}
     };
     
     // Save to Firebase
     await database.ref(`tournaments/${tournamentId}`).set(tournamentData);
     
-    console.log(`✅ Tournament ${tournamentId} created successfully with ${playerCount} players`);
+    console.log(`✅ Tournament ${tournamentId} created successfully with ${playerCount} players (mode: ${modeSettings?.mode || 'anyone'})`);
     return tournamentData;
 }
 

@@ -479,12 +479,76 @@ function renderWizardStep4() {
         'quarter_final': 'Quarter-Finals → Semi-Finals → Final'
     };
     
+    // Check user permissions for mode selection
+    const currentUser = getCurrentUser();
+    const isVerified = currentUser && currentUser.type === 'registered' && currentUser.status === 'verified';
+    
+    // Initialize access mode in wizard state if not set
+    if (!WizardState.accessMode) {
+        WizardState.accessMode = 'anyone';
+    }
+    
     return `
         <div id="wizard-content">
             <h3 class="text-lg font-bold text-gray-800 mb-1">Tournament Options</h3>
             <p class="text-gray-500 text-sm mb-6">Final settings before creating your tournament</p>
             
             <div class="space-y-4">
+                <!-- Who Can Join -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Who Can Join?</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${WizardState.accessMode === 'anyone' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'} tournament-mode-option" data-mode="anyone">
+                            <input type="radio" name="access-mode" value="anyone" 
+                                ${WizardState.accessMode === 'anyone' ? 'checked' : ''}
+                                onchange="setAccessMode('anyone')"
+                                class="w-4 h-4 text-purple-500" />
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800 text-sm">🌍 Anyone</span>
+                                <p class="text-xs text-gray-500">Guests and registered players</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 ${isVerified ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} transition-colors ${WizardState.accessMode === 'registered' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'} tournament-mode-option" data-mode="registered">
+                            <input type="radio" name="access-mode" value="registered" 
+                                ${WizardState.accessMode === 'registered' ? 'checked' : ''}
+                                ${!isVerified ? 'disabled' : ''}
+                                onchange="setAccessMode('registered')"
+                                class="w-4 h-4 text-purple-500" />
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800 text-sm">👥 Registered Only</span>
+                                <p class="text-xs text-gray-500">Only registered players</p>
+                            </div>
+                            ${!isVerified ? '<span class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Verified only</span>' : ''}
+                        </label>
+                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 ${isVerified ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'} transition-colors ${WizardState.accessMode === 'level-based' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'} tournament-mode-option" data-mode="level-based">
+                            <input type="radio" name="access-mode" value="level-based" 
+                                ${WizardState.accessMode === 'level-based' ? 'checked' : ''}
+                                ${!isVerified ? 'disabled' : ''}
+                                onchange="setAccessMode('level-based')"
+                                class="w-4 h-4 text-purple-500" />
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800 text-sm">🎯 Level-Based</span>
+                                <p class="text-xs text-gray-500">Verified players in level range</p>
+                            </div>
+                            ${!isVerified ? '<span class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Verified only</span>' : ''}
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Level Range (shown only for level-based mode) -->
+                <div id="level-range-container" class="${WizardState.accessMode === 'level-based' ? '' : 'hidden'} p-3 bg-pink-50 rounded-xl border border-pink-200">
+                    <label class="block text-xs font-semibold text-pink-800 mb-2">Level Range</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="level-min" step="0.1" min="0" max="10" value="${WizardState.levelMin || 0}"
+                            onchange="WizardState.levelMin = parseFloat(this.value)"
+                            class="flex-1 px-2 py-1.5 border border-pink-200 rounded-lg text-center text-sm font-semibold">
+                        <span class="text-pink-400 text-sm">to</span>
+                        <input type="number" id="level-max" step="0.1" min="0" max="10" value="${WizardState.levelMax || 10}"
+                            onchange="WizardState.levelMax = parseFloat(this.value)"
+                            class="flex-1 px-2 py-1.5 border border-pink-200 rounded-lg text-center text-sm font-semibold">
+                    </div>
+                </div>
+                
                 <!-- Knockout Format -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-3">Knockout Format</label>
@@ -558,6 +622,10 @@ function renderWizardStep4() {
                         <span class="font-medium text-gray-800">${WizardState.groupMode === 'two_groups' ? 'Two Groups' : 'Single Group'}</span>
                     </div>
                     <div class="flex justify-between">
+                        <span class="text-gray-600">Access</span>
+                        <span class="font-medium text-gray-800">${{'anyone': '🌍 Open', 'registered': '👥 Registered', 'level-based': '🎯 Level'}[WizardState.accessMode] || '🌍 Open'}</span>
+                    </div>
+                    <div class="flex justify-between">
                         <span class="text-gray-600">Knockout Format</span>
                         <span class="font-medium text-gray-800">${knockoutLabels[WizardState.knockoutFormat]}</span>
                     </div>
@@ -584,6 +652,39 @@ function renderWizardStep4() {
             </button>
         </div>
     `;
+}
+
+function setAccessMode(mode) {
+    WizardState.accessMode = mode;
+    const levelContainer = document.getElementById('level-range-container');
+    if (levelContainer) {
+        if (mode === 'level-based') {
+            levelContainer.classList.remove('hidden');
+        } else {
+            levelContainer.classList.add('hidden');
+        }
+    }
+    
+    // Update visual selection
+    document.querySelectorAll('.tournament-mode-option').forEach(opt => {
+        const optMode = opt.dataset.mode;
+        if (optMode === mode) {
+            opt.classList.remove('border-gray-200');
+            opt.classList.add('border-purple-500', 'bg-purple-50');
+        } else {
+            opt.classList.remove('border-purple-500', 'bg-purple-50');
+            opt.classList.add('border-gray-200');
+        }
+    });
+}
+
+function getCurrentUser() {
+    try {
+        const data = localStorage.getItem('uber_padel_user');
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        return null;
+    }
 }
 
 function setKnockoutFormat(format) {
@@ -689,6 +790,29 @@ function setGroupMode(mode) {
 async function createTournamentFromWizard() {
     const tournamentId = Router.generateTournamentId();
     
+    // Validate level range if level-based
+    if (WizardState.accessMode === 'level-based') {
+        const levelMin = WizardState.levelMin || 0;
+        const levelMax = WizardState.levelMax || 10;
+        if (levelMin >= levelMax) {
+            showWizardError('Max level must be greater than min level');
+            return;
+        }
+    }
+    
+    // Prepare mode settings
+    const accessMode = WizardState.accessMode || 'anyone';
+    const modeSettings = {
+        mode: accessMode,
+        allowGuests: accessMode === 'anyone',
+        requireRegistered: accessMode === 'registered' || accessMode === 'level-based',
+        requireVerified: accessMode === 'level-based',
+        levelCriteria: accessMode === 'level-based' ? { 
+            min: WizardState.levelMin || 0, 
+            max: WizardState.levelMax || 10 
+        } : null
+    };
+    
     try {
         await createTournamentInFirebase(
             tournamentId, 
@@ -697,7 +821,8 @@ async function createTournamentFromWizard() {
             WizardState.teamCount,
             WizardState.groupMode,
             WizardState.includeThirdPlace,
-            WizardState.knockoutFormat
+            WizardState.knockoutFormat,
+            modeSettings
         );
         
         WizardState.tournamentId = tournamentId;
@@ -1117,14 +1242,34 @@ function removeFromMyTournaments(tournamentId) {
 
 // ===== FIREBASE OPERATIONS =====
 
-async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final') {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final', modeSettings = null) {
+    // Get current user for creator info
+    const currentUser = getCurrentUser();
+    
+    // Default mode settings
+    const defaultModeSettings = {
+        mode: 'anyone',
+        allowGuests: true,
+        requireRegistered: false,
+        requireVerified: false,
+        levelCriteria: null
+    };
+    
     const data = {
         meta: {
             name: name,
             organiserKey: organiserKey,
             formatType: 'team_league',
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            // Mode settings
+            ...(modeSettings || defaultModeSettings),
+            // Creator info
+            createdBy: currentUser ? {
+                id: currentUser.id,
+                name: currentUser.name,
+                type: currentUser.type
+            } : null
         },
         teamCount: teamCount,
         groupMode: groupMode,
@@ -1166,11 +1311,13 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, team
             sf1: 'SF1', sf2: 'SF2',
             thirdPlace: '3rd Place', final: 'Final'
         },
-        savedVersions: []
+        savedVersions: [],
+        // For registered modes
+        registeredPlayers: {}
     };
     
     await database.ref(`team-tournaments/${tournamentId}`).set(data);
-    console.log(`✅ Tournament ${tournamentId} created`);
+    console.log(`✅ Tournament ${tournamentId} created (mode: ${modeSettings?.mode || 'anyone'})`);
 }
 
 async function checkTournamentExists(tournamentId) {

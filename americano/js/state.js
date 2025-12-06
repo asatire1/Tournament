@@ -52,6 +52,9 @@ class AmericanoState {
         // Tournament status
         this.tournamentStarted = false;
         
+        // Registered players (Phase 4 - Browse & Join)
+        this.registeredPlayers = {};
+        
         // UI state
         this.currentTab = 'fixtures';
         this.settingsSubTab = 'players';
@@ -139,6 +142,9 @@ class AmericanoState {
         
         // Status (static)
         this.tournamentStarted = data.tournamentStarted || false;
+        
+        // Registered players (Phase 4)
+        this.registeredPlayers = data.registeredPlayers || {};
         
         // Also load initial scores
         if (data.scores) {
@@ -418,7 +424,8 @@ class AmericanoState {
             fixedPoints: this.fixedPoints,
             totalPoints: this.totalPoints,
             scores: firebaseScores,
-            tournamentStarted: this.tournamentStarted
+            tournamentStarted: this.tournamentStarted,
+            registeredPlayers: this.registeredPlayers || {}
         });
     }
     
@@ -507,9 +514,13 @@ class AmericanoState {
         const numValue = value === '' || value === null ? null : parseInt(value);
         this.scores[key][team] = numValue;
         
-        // Auto-calculate other team's score if fixed points
-        if (this.fixedPoints && team === 'team1' && numValue !== null) {
-            this.scores[key].team2 = this.totalPoints - numValue;
+        // Auto-calculate other team's score if fixed points mode
+        if (this.fixedPoints && numValue !== null) {
+            if (team === 'team1') {
+                this.scores[key].team2 = this.totalPoints - numValue;
+            } else if (team === 'team2') {
+                this.scores[key].team1 = this.totalPoints - numValue;
+            }
         }
         
         this.saveMatchScoreToFirebase(

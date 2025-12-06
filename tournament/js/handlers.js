@@ -456,4 +456,346 @@ if (typeof copyToClipboard === 'undefined') {
     }
 }
 
+// ===== REGISTERED PLAYERS MANAGEMENT =====
+
+/**
+ * Show registered players modal (for organisers)
+ */
+function showRegisteredPlayersModal() {
+    if (!state || !state.canEdit()) return;
+    
+    const registeredPlayers = state.registeredPlayers || {};
+    const playersList = Object.entries(registeredPlayers);
+    
+    const modal = document.getElementById('modal-container');
+    modal.innerHTML = `
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+                <div class="bg-gradient-to-r from-green-500 to-teal-500 px-6 py-5">
+                    <h2 class="text-xl font-bold text-white">📋 Registered Players</h2>
+                    <p class="text-white/80 text-sm">Players who have signed up to join</p>
+                </div>
+                
+                <div class="p-6 overflow-y-auto max-h-[60vh]">
+                    ${playersList.length === 0 ? `
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                                <span class="text-3xl">👥</span>
+                            </div>
+                            <p class="text-gray-500">No players have registered yet</p>
+                            <p class="text-sm text-gray-400 mt-2">Share your tournament link to get players!</p>
+                        </div>
+                    ` : `
+                        <div class="space-y-3">
+                            ${playersList.map(([id, player]) => `
+                                <div class="bg-gray-50 rounded-xl p-4 flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                        ${(player.name || 'U').charAt(0).toUpperCase()}
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-gray-800">${escapeHtml(player.name || 'Unknown')}</div>
+                                        <div class="text-sm text-gray-500">
+                                            Rating: ${player.rating || '?'} • 
+                                            ${player.userType === 'registered' ? '<span class="text-green-600">Registered</span>' : '<span class="text-gray-400">Guest</span>'}
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button onclick="showAssignPlayerModal('${id}')" 
+                                            class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
+                                            Assign
+                                        </button>
+                                        <button onclick="removeRegisteredPlayer('${id}')"
+                                            class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-sm font-medium transition-colors">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+                
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                    <button onclick="closeModal()" class="w-full px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Show modal to assign a registered player to a slot
+ */
+function showAssignPlayerModal(registeredPlayerId) {
+    if (!state || !state.canEdit()) return;
+    
+    const player = state.registeredPlayers?.[registeredPlayerId];
+    if (!player) return;
+    
+    const playerCount = state.playerCount || 24;
+    const playerNames = state.playerNames || {};
+    
+    // Create slot options
+    let slotOptions = '';
+    for (let i = 1; i <= playerCount; i++) {
+        const currentName = playerNames[i] || `Player ${i}`;
+        const isDefault = currentName === `Player ${i}` || currentName.startsWith('Player ');
+        slotOptions += `<option value="${i}" ${isDefault ? 'class="text-gray-400"' : ''}>${i}. ${currentName}</option>`;
+    }
+    
+    const modal = document.getElementById('modal-container');
+    modal.innerHTML = `
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-5">
+                    <h2 class="text-xl font-bold text-white">📍 Assign Player to Slot</h2>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                                ${(player.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-800">${escapeHtml(player.name || 'Unknown')}</div>
+                                <div class="text-sm text-gray-500">Rating: ${player.rating || '?'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Assign to Slot</label>
+                        <select id="assign-slot-select" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none">
+                            ${slotOptions}
+                        </select>
+                        <p class="text-xs text-gray-500 mt-2">This will replace the current player in that slot</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="showRegisteredPlayersModal()" 
+                            class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                            ← Back
+                        </button>
+                        <button onclick="confirmAssignPlayer('${registeredPlayerId}')"
+                            class="flex-1 px-5 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors">
+                            Assign
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Confirm assigning player to slot
+ */
+function confirmAssignPlayer(registeredPlayerId) {
+    if (!state || !state.canEdit()) return;
+    
+    const player = state.registeredPlayers?.[registeredPlayerId];
+    if (!player) return;
+    
+    const slotSelect = document.getElementById('assign-slot-select');
+    const slotNumber = parseInt(slotSelect.value);
+    
+    if (!slotNumber) return;
+    
+    // Update player name and rating
+    if (!state.playerNames) state.playerNames = {};
+    if (!state.skillRatings) state.skillRatings = {};
+    
+    state.playerNames[slotNumber] = player.name;
+    state.skillRatings[slotNumber] = player.rating || 2.5;
+    
+    // Remove from registered players
+    delete state.registeredPlayers[registeredPlayerId];
+    
+    // Save to Firebase
+    state.saveToFirebase();
+    
+    closeModal();
+    showToast(`✅ ${player.name} assigned to slot ${slotNumber}`);
+    render();
+}
+
+/**
+ * Remove a registered player
+ */
+function removeRegisteredPlayer(registeredPlayerId) {
+    if (!state || !state.canEdit()) return;
+    
+    if (!confirm('Remove this player from the registration list?')) return;
+    
+    if (state.registeredPlayers && state.registeredPlayers[registeredPlayerId]) {
+        delete state.registeredPlayers[registeredPlayerId];
+        state.saveToFirebase();
+        showRegisteredPlayersModal(); // Refresh the modal
+        showToast('✅ Player removed');
+    }
+}
+
+/**
+ * Get count of registered players
+ */
+function getRegisteredPlayersCount() {
+    if (!state || !state.registeredPlayers) return 0;
+    return Object.keys(state.registeredPlayers).length;
+}
+
+/**
+ * Escape HTML for safe display
+ */
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
+}
+
+// ===== TOURNAMENT STATUS MANAGEMENT =====
+
+/**
+ * Show tournament status modal
+ */
+function showTournamentStatusModal() {
+    if (!state || !state.canEdit()) return;
+    
+    const currentStatus = state.tournamentStatus || 'open';
+    
+    const modal = document.getElementById('modal-container');
+    modal.innerHTML = `
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-5">
+                    <h2 class="text-xl font-bold text-white">⚙️ Tournament Status</h2>
+                    <p class="text-white/80 text-sm">Control registration and visibility</p>
+                </div>
+                
+                <div class="p-6">
+                    <div class="space-y-3 mb-6">
+                        <label class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${currentStatus === 'open' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'}" onclick="selectTournamentStatus('open')">
+                            <input type="radio" name="tournament-status" value="open" ${currentStatus === 'open' ? 'checked' : ''} class="hidden">
+                            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                                <span class="text-xl">🟢</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-800">Open for Registration</div>
+                                <div class="text-sm text-gray-500">Players can browse and join</div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${currentStatus === 'in-progress' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'}" onclick="selectTournamentStatus('in-progress')">
+                            <input type="radio" name="tournament-status" value="in-progress" ${currentStatus === 'in-progress' ? 'checked' : ''} class="hidden">
+                            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                                <span class="text-xl">🟡</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-800">In Progress</div>
+                                <div class="text-sm text-gray-500">Tournament started, no new players</div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-colors ${currentStatus === 'completed' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}" onclick="selectTournamentStatus('completed')">
+                            <input type="radio" name="tournament-status" value="completed" ${currentStatus === 'completed' ? 'checked' : ''} class="hidden">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span class="text-xl">🔵</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-800">Completed</div>
+                                <div class="text-sm text-gray-500">Tournament finished</div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <input type="hidden" id="selected-status" value="${currentStatus}">
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeModal()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                            Cancel
+                        </button>
+                        <button onclick="saveTournamentStatus()" class="flex-1 px-5 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-semibold transition-colors">
+                            Save Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Select tournament status (visual update)
+ */
+function selectTournamentStatus(status) {
+    document.getElementById('selected-status').value = status;
+    
+    // Update visual selection
+    document.querySelectorAll('[name="tournament-status"]').forEach(radio => {
+        const label = radio.closest('label');
+        const isSelected = radio.value === status;
+        
+        if (isSelected) {
+            label.classList.remove('border-gray-200', 'hover:border-gray-300');
+            if (status === 'open') label.classList.add('border-green-500', 'bg-green-50');
+            if (status === 'in-progress') label.classList.add('border-amber-500', 'bg-amber-50');
+            if (status === 'completed') label.classList.add('border-blue-500', 'bg-blue-50');
+            radio.checked = true;
+        } else {
+            label.classList.remove('border-green-500', 'bg-green-50', 'border-amber-500', 'bg-amber-50', 'border-blue-500', 'bg-blue-50');
+            label.classList.add('border-gray-200', 'hover:border-gray-300');
+            radio.checked = false;
+        }
+    });
+}
+
+/**
+ * Save tournament status to Firebase
+ */
+async function saveTournamentStatus() {
+    if (!state || !state.canEdit()) return;
+    
+    const status = document.getElementById('selected-status').value;
+    
+    try {
+        await database.ref(`${state.getBasePath()}/meta/status`).set(status);
+        state.tournamentStatus = status;
+        
+        closeModal();
+        showToast(`✅ Tournament status updated to ${status.replace('-', ' ')}`);
+        render();
+    } catch (error) {
+        console.error('Error saving status:', error);
+        showToast('❌ Failed to update status');
+    }
+}
+
+/**
+ * Get current tournament status label
+ */
+function getTournamentStatusBadge() {
+    const status = state?.tournamentStatus || 'open';
+    const badges = {
+        'open': '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">🟢 Open</span>',
+        'in-progress': '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">🟡 In Progress</span>',
+        'completed': '<span class="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">🔵 Completed</span>'
+    };
+    return badges[status] || badges['open'];
+}
+
+/**
+ * Close any open modal
+ */
+function closeModal() {
+    const modal = document.getElementById('modal-container');
+    if (modal) {
+        modal.innerHTML = '';
+    }
+}
+
 console.log('✅ Handlers loaded');

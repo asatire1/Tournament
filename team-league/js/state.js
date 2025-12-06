@@ -75,6 +75,9 @@ class TeamLeagueState {
             final: { team1Score: null, team2Score: null }
         };
         
+        // Registered players (Phase 4 - Browse & Join)
+        this.registeredPlayers = {};
+        
         // Knockout team assignments
         this.knockoutTeams = {
             qf1: { team1: null, team2: null },
@@ -223,6 +226,9 @@ class TeamLeagueState {
         this.groupMatchScores = data.groupMatchScores || { A: {}, B: {} };
         this.knockoutScores = data.knockoutScores || this.knockoutScores;
         this.knockoutTeams = data.knockoutTeams || this.knockoutTeams;
+        
+        // Registered players (Phase 4)
+        this.registeredPlayers = data.registeredPlayers || {};
         
         console.log('📦 Static data loaded');
         return true;
@@ -481,6 +487,7 @@ class TeamLeagueState {
         updates[`${basePath}/knockoutNames`] = this.knockoutNames;
         updates[`${basePath}/courtNames`] = this.courtNames;
         updates[`${basePath}/savedVersions`] = this.savedVersions;
+        updates[`${basePath}/registeredPlayers`] = this.registeredPlayers || {};
         
         database.ref().update(updates).then(() => {
             setTimeout(() => {

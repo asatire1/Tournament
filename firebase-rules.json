@@ -1,5 +1,39 @@
 {
   "rules": {
+    // Users - for auth system
+    "users": {
+      ".read": true,
+      "$userId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['name', 'type'])",
+        
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+        },
+        "type": {
+          ".validate": "newData.isString() && (newData.val() == 'guest' || newData.val() == 'registered')"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'verified')"
+        },
+        "email": {
+          ".validate": "newData.isString()"
+        },
+        "googleUid": {
+          ".validate": "newData.isString()"
+        },
+        "playtomicUsername": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+        },
+        "playtomicLevel": {
+          ".validate": "newData.isNumber() || newData.val() == null"
+        },
+        "phone": {
+          ".validate": "newData.isString() || newData.val() == null"
+        }
+      }
+    },
+    
     // Tournament data - existing rules (Mix format)
     "tournaments": {
       "$tournamentId": {

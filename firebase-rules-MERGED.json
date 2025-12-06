@@ -1,0 +1,96 @@
+{
+  "rules": {
+    // NEW: Player Registry
+    "players": {
+      ".read": true,
+      "$playerId": {
+        ".write": true
+      }
+    },
+    
+    // NEW: Competitions
+    "competitions": {
+      ".read": true,
+      "$competitionId": {
+        ".write": true
+      }
+    },
+    
+    // Tournament data - existing rules (Mix format)
+    "tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Americano tournaments
+    "americano-tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Mexicano tournaments
+    "mexicano-tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Team League tournaments
+    "team-tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    
+    // Community messages with rate limiting
+    "community": {
+      "messages": {
+        ".read": true,
+        
+        // Allow creating new messages
+        "$messageId": {
+          ".write": true,
+          
+          // Validate message structure
+          ".validate": "newData.hasChildren(['name', 'text', 'timestamp'])",
+          
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
+          },
+          
+          "text": {
+            // No URLs allowed, max 280 chars
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 280 && !newData.val().contains('http://') && !newData.val().contains('https://') && !newData.val().contains('www.')"
+          },
+          
+          "timestamp": {
+            ".validate": "newData.isNumber()"
+          },
+          
+          "reported": {
+            ".validate": "newData.isBoolean()"
+          },
+          
+          "reportCount": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          }
+        }
+      },
+      
+      // Rate limiting tracker (optional - for server-side rate limiting)
+      "rateLimit": {
+        "$ipHash": {
+          ".read": false,
+          ".write": true,
+          ".validate": "newData.hasChildren(['lastPost', 'count'])"
+        }
+      }
+    }
+  }
+}

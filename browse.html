@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Tournaments | Uber Padel</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .loading-pulse { animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <img src="uberpadel-icon.svg" alt="Uber Padel" class="h-8 w-8">
+                <span class="text-xl font-bold text-gray-800">Uber Padel</span>
+            </a>
+            <div id="user-nav"></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Browse Tournaments</h1>
+            <p class="text-gray-600">Find and join tournaments that match your level</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Filter Toggle -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-600">Show:</span>
+                    <div class="flex bg-gray-100 rounded-xl p-1">
+                        <button onclick="setFilter('open')" id="filter-open" 
+                            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white shadow-sm text-gray-800">
+                            Open to Me
+                        </button>
+                        <button onclick="setFilter('all')" id="filter-all" 
+                            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-500 hover:text-gray-700">
+                            All Tournaments
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-600">Status:</span>
+                    <select id="status-filter" onchange="applyFilters()" 
+                        class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none">
+                        <option value="all">All Status</option>
+                        <option value="open">🟢 Open</option>
+                        <option value="in-progress">🟡 In Progress</option>
+                        <option value="completed">🔵 Completed</option>
+                    </select>
+                </div>
+
+                <!-- Format Filter -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-600">Format:</span>
+                    <select id="format-filter" onchange="applyFilters()" 
+                        class="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none">
+                        <option value="all">All Formats</option>
+                        <option value="mix">🎯 Mix Tournament</option>
+                        <option value="americano">🔄 Americano</option>
+                        <option value="mexicano">🌮 Mexicano</option>
+                        <option value="team-league">👥 Team League</option>
+                    </select>
+                </div>
+
+                <!-- Search -->
+                <div class="flex-1 min-w-[200px]">
+                    <input type="text" id="search-input" placeholder="Search tournaments..." 
+                        oninput="applyFilters()"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none">
+                </div>
+
+                <!-- Refresh -->
+                <button onclick="loadAllTournaments()" 
+                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- User Status Banner -->
+        <div id="user-status-banner" class="mb-6"></div>
+
+        <!-- Tournament List -->
+        <div id="tournament-list" class="space-y-4">
+            <!-- Loading state -->
+            <div class="text-center py-12">
+                <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4 loading-pulse">
+                    <span class="text-2xl">🎾</span>
+                </div>
+                <p class="text-gray-500">Loading tournaments...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">📋</span>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">No tournaments found</h3>
+            <p class="text-gray-500 mb-6">Try adjusting your filters or create a new tournament</p>
+            <a href="index.html" class="inline-flex px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors">
+                Create Tournament
+            </a>
+        </div>
+    </main>
+
+    <!-- Join Modal -->
+    <div id="modal-container"></div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWnPXT3pPeJ_Q6gxuXPzSGT5gpcAjfLOQ",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.firebasestorage.app",
+            messagingSenderId: "786015466498",
+            appId: "1:786015466498:web:4f26fec5898df9c91fe3ba"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+    </script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        // ===== STATE =====
+        let allTournaments = [];
+        let currentFilter = 'open'; // 'open' or 'all'
+        let currentUser = null;
+
+        // Format configurations
+        const FORMAT_CONFIG = {
+            'mix': {
+                path: 'tournaments',
+                icon: '🎯',
+                label: 'Mix Tournament',
+                color: 'blue',
+                baseUrl: 'tournament/'
+            },
+            'americano': {
+                path: 'americano-tournaments',
+                icon: '🔄',
+                label: 'Americano',
+                color: 'indigo',
+                baseUrl: 'americano/'
+            },
+            'mexicano': {
+                path: 'mexicano-tournaments',
+                icon: '🌮',
+                label: 'Mexicano',
+                color: 'teal',
+                baseUrl: 'mexicano/'
+            },
+            'team-league': {
+                path: 'team-tournaments',
+                icon: '👥',
+                label: 'Team League',
+                color: 'purple',
+                baseUrl: 'team-league/'
+            }
+        };
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', async () => {
+            currentUser = await UberAuth.init();
+            updateUserNav();
+            updateUserStatusBanner();
+            loadAllTournaments();
+        });
+
+        function updateUserNav() {
+            document.getElementById('user-nav').innerHTML = UberAuth.getNavHTML();
+        }
+
+        function updateUserStatusBanner() {
+            const banner = document.getElementById('user-status-banner');
+            
+            if (!currentUser) {
+                banner.innerHTML = `
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
+                        <span class="text-2xl">👋</span>
+                        <div class="flex-1">
+                            <p class="font-medium text-amber-800">Sign in to see tournaments open to you</p>
+                            <p class="text-sm text-amber-600">Some tournaments require registration or verification</p>
+                        </div>
+                        <a href="login.html?return=${encodeURIComponent(window.location.href)}" 
+                            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium text-sm transition-colors">
+                            Sign In
+                        </a>
+                    </div>
+                `;
+            } else if (currentUser.type === 'guest') {
+                banner.innerHTML = `
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-4">
+                        <span class="text-2xl">💡</span>
+                        <div class="flex-1">
+                            <p class="font-medium text-blue-800">Welcome, ${currentUser.name}!</p>
+                            <p class="text-sm text-blue-600">Register with Google to access more tournaments</p>
+                        </div>
+                        <a href="login.html" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-colors">
+                            Upgrade Account
+                        </a>
+                    </div>
+                `;
+            } else if (currentUser.status === 'pending') {
+                banner.innerHTML = `
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
+                        <span class="text-2xl">⏳</span>
+                        <div class="flex-1">
+                            <p class="font-medium text-amber-800">Your account is pending verification</p>
+                            <p class="text-sm text-amber-600">You can join open and registered-only tournaments. Level-based tournaments require verification.</p>
+                        </div>
+                    </div>
+                `;
+            } else if (currentUser.status === 'verified') {
+                banner.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-4">
+                        <span class="text-2xl">✅</span>
+                        <div class="flex-1">
+                            <p class="font-medium text-green-800">Verified Player • Level ${currentUser.playtomicLevel || '?'}</p>
+                            <p class="text-sm text-green-600">You have full access to all tournaments within your level range</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                banner.innerHTML = '';
+            }
+        }
+
+        // ===== LOAD TOURNAMENTS =====
+        async function loadAllTournaments() {
+            allTournaments = [];
+            
+            // Show loading
+            document.getElementById('tournament-list').innerHTML = `
+                <div class="text-center py-12">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4 loading-pulse">
+                        <span class="text-2xl">🎾</span>
+                    </div>
+                    <p class="text-gray-500">Loading tournaments...</p>
+                </div>
+            `;
+            document.getElementById('empty-state').classList.add('hidden');
+
+            try {
+                // Load from all format paths
+                const promises = Object.entries(FORMAT_CONFIG).map(async ([format, config]) => {
+                    const snapshot = await database.ref(config.path).once('value');
+                    const data = snapshot.val();
+                    
+                    if (data) {
+                        Object.entries(data).forEach(([id, tournament]) => {
+                            allTournaments.push({
+                                id,
+                                format,
+                                ...tournament,
+                                // Normalize meta access
+                                meta: tournament.meta || {},
+                                mode: tournament.meta?.mode || 'anyone',
+                                levelCriteria: tournament.meta?.levelCriteria || null
+                            });
+                        });
+                    }
+                });
+
+                await Promise.all(promises);
+                
+                // Sort by creation date (newest first)
+                allTournaments.sort((a, b) => {
+                    const dateA = new Date(a.meta?.createdAt || 0);
+                    const dateB = new Date(b.meta?.createdAt || 0);
+                    return dateB - dateA;
+                });
+
+                applyFilters();
+            } catch (error) {
+                console.error('Error loading tournaments:', error);
+                document.getElementById('tournament-list').innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                            <span class="text-3xl">❌</span>
+                        </div>
+                        <p class="text-red-600 font-medium">Failed to load tournaments</p>
+                        <button onclick="loadAllTournaments()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // ===== FILTERS =====
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            // Update button styles
+            document.getElementById('filter-open').className = filter === 'open' 
+                ? 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white shadow-sm text-gray-800'
+                : 'px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-500 hover:text-gray-700';
+            document.getElementById('filter-all').className = filter === 'all'
+                ? 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white shadow-sm text-gray-800'
+                : 'px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-500 hover:text-gray-700';
+            
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const formatFilter = document.getElementById('format-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            
+            let filtered = allTournaments;
+            
+            // Format filter
+            if (formatFilter !== 'all') {
+                filtered = filtered.filter(t => t.format === formatFilter);
+            }
+            
+            // Status filter
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(t => getTournamentStatus(t) === statusFilter);
+            }
+            
+            // Search filter
+            if (searchQuery) {
+                filtered = filtered.filter(t => {
+                    const name = (t.meta?.name || '').toLowerCase();
+                    const id = t.id.toLowerCase();
+                    return name.includes(searchQuery) || id.includes(searchQuery);
+                });
+            }
+            
+            // Open to me filter
+            if (currentFilter === 'open' && currentUser) {
+                filtered = filtered.filter(t => {
+                    // Must be open status
+                    if (getTournamentStatus(t) !== 'open') return false;
+                    
+                    const result = UberAuth.canJoinTournament({
+                        mode: t.mode,
+                        levelCriteria: t.levelCriteria
+                    });
+                    return result.allowed;
+                });
+            }
+            
+            renderTournaments(filtered);
+        }
+        
+        /**
+         * Determine tournament status based on format-specific logic
+         */
+        function getTournamentStatus(tournament) {
+            const format = tournament.format;
+            
+            // Check explicit status in meta
+            if (tournament.meta?.status) {
+                return tournament.meta.status;
+            }
+            
+            // Format-specific logic
+            if (format === 'mix') {
+                // Check if any match scores exist
+                const hasScores = tournament.matchScores && Object.keys(tournament.matchScores).length > 0;
+                if (!hasScores) return 'open';
+                
+                // Check if all matches complete (simplified)
+                const scoreCount = Object.keys(tournament.matchScores).length;
+                // Rough estimate: 7 rounds * 6 matches = 42 for 24 players
+                if (scoreCount >= 35) return 'completed';
+                return 'in-progress';
+            }
+            
+            if (format === 'americano') {
+                if (!tournament.tournamentStarted) return 'open';
+                const hasScores = tournament.scores && Object.keys(tournament.scores).length > 0;
+                if (!hasScores) return 'open';
+                return 'in-progress';
+            }
+            
+            if (format === 'mexicano') {
+                const status = tournament.meta?.status || 'setup';
+                if (status === 'setup') return 'open';
+                if (status === 'completed') return 'completed';
+                return 'in-progress';
+            }
+            
+            if (format === 'team-league') {
+                // Check if matches have been played
+                const hasScores = tournament.matches && Object.values(tournament.matches).some(m => m.team1Score !== undefined);
+                if (!hasScores) return 'open';
+                return 'in-progress';
+            }
+            
+            return 'open';
+        }
+
+        // ===== RENDER =====
+        function renderTournaments(tournaments) {
+            const container = document.getElementById('tournament-list');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (tournaments.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            
+            container.innerHTML = tournaments.map(t => renderTournamentCard(t)).join('');
+        }
+
+        function renderTournamentCard(tournament) {
+            const config = FORMAT_CONFIG[tournament.format];
+            const name = tournament.meta?.name || 'Unnamed Tournament';
+            const createdAt = tournament.meta?.createdAt ? formatDate(tournament.meta.createdAt) : 'Unknown';
+            const mode = tournament.mode || 'anyone';
+            const levelCriteria = tournament.levelCriteria;
+            const status = getTournamentStatus(tournament);
+            
+            // Get player/team count info
+            const countInfo = getCountInfo(tournament);
+            
+            // Check if user can join
+            const joinCheck = UberAuth.canJoinTournament({
+                mode: mode,
+                levelCriteria: levelCriteria
+            });
+            
+            // Can only join open tournaments
+            const canJoin = joinCheck.allowed && status === 'open';
+            
+            // Mode badge
+            const modeBadges = {
+                'anyone': '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">🌍 Open</span>',
+                'registered': '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">👥 Registered</span>',
+                'level-based': `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">🎯 Level ${levelCriteria?.min || 0}-${levelCriteria?.max || 10}</span>`
+            };
+            
+            // Status badge
+            const statusBadges = {
+                'open': '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">🟢 Open</span>',
+                'in-progress': '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">🟡 In Progress</span>',
+                'completed': '<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">🔵 Completed</span>'
+            };
+            
+            // Determine reason why can't join
+            let lockReason = '';
+            if (!joinCheck.allowed) {
+                lockReason = joinCheck.reason;
+            } else if (status !== 'open') {
+                lockReason = status === 'completed' ? 'This tournament has ended' : 'This tournament has already started';
+            }
+            
+            // Check if user should see upgrade prompt
+            const showUpgradePrompt = currentUser && currentUser.type === 'guest' && mode !== 'anyone';
+            const showVerifyPrompt = currentUser && currentUser.type === 'registered' && currentUser.status === 'pending' && mode === 'level-based';
+            
+            return `
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow animate-fade-in">
+                    <div class="p-5">
+                        <div class="flex items-start gap-4">
+                            <!-- Format Icon -->
+                            <div class="w-14 h-14 rounded-xl bg-${config.color}-100 flex items-center justify-center flex-shrink-0">
+                                <span class="text-2xl">${config.icon}</span>
+                            </div>
+                            
+                            <!-- Info -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap mb-1">
+                                    <h3 class="font-semibold text-gray-800 truncate">${escapeHtml(name)}</h3>
+                                    ${statusBadges[status] || statusBadges['open']}
+                                    ${modeBadges[mode] || modeBadges['anyone']}
+                                </div>
+                                
+                                <div class="flex items-center gap-3 text-sm text-gray-500 mb-2">
+                                    <span class="font-mono text-${config.color}-600">${tournament.id.toUpperCase()}</span>
+                                    <span>•</span>
+                                    <span>${config.label}</span>
+                                    <span>•</span>
+                                    <span>${createdAt}</span>
+                                </div>
+                                
+                                <div class="flex items-center gap-4 text-sm">
+                                    <span class="text-gray-600">${countInfo}</span>
+                                    ${tournament.meta?.createdBy ? `<span class="text-gray-400">by ${escapeHtml(tournament.meta.createdBy.name || 'Unknown')}</span>` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex flex-col gap-2">
+                                <a href="${config.baseUrl}#${tournament.id}" 
+                                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-colors text-center">
+                                    View
+                                </a>
+                                ${currentUser ? `
+                                    ${status === 'open' ? `
+                                        <button onclick="showJoinModal('${tournament.id}', '${tournament.format}')"
+                                            class="px-4 py-2 ${canJoin ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'} rounded-xl text-sm font-medium transition-colors"
+                                            ${!canJoin ? 'disabled' : ''}>
+                                            ${canJoin ? '+ Join' : '🔒 Locked'}
+                                        </button>
+                                    ` : `
+                                        <span class="px-4 py-2 bg-gray-100 text-gray-400 rounded-xl text-sm font-medium text-center">
+                                            ${status === 'completed' ? '✓ Ended' : '▶ Started'}
+                                        </span>
+                                    `}
+                                ` : `
+                                    <a href="login.html?return=${encodeURIComponent(window.location.href)}"
+                                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors text-center">
+                                        Sign In
+                                    </a>
+                                `}
+                            </div>
+                        </div>
+                        
+                        ${lockReason && currentUser && status === 'open' ? `
+                            <div class="mt-3 pt-3 border-t border-gray-100">
+                                <p class="text-sm text-amber-600">
+                                    <span class="font-medium">🔒</span> ${lockReason}
+                                </p>
+                                ${showUpgradePrompt ? `
+                                    <a href="login.html" class="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                        ⬆️ Upgrade to registered account to join
+                                    </a>
+                                ` : ''}
+                                ${showVerifyPrompt ? `
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Your account is pending verification. Contact an admin to get verified.
+                                    </p>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCountInfo(tournament) {
+            const format = tournament.format;
+            
+            if (format === 'mix') {
+                const count = tournament.meta?.playerCount || 24;
+                return `${count} player slots`;
+            }
+            if (format === 'americano') {
+                const count = tournament.playerCount || 6;
+                return `${count} players`;
+            }
+            if (format === 'mexicano') {
+                if (tournament.meta?.mode === 'team') {
+                    const teams = tournament.teams?.length || 0;
+                    return `${teams} teams`;
+                }
+                const players = tournament.players?.length || 0;
+                return `${players} players`;
+            }
+            if (format === 'team-league') {
+                const teams = tournament.teams?.length || tournament.teamCount || 0;
+                return `${teams} teams`;
+            }
+            return '';
+        }
+
+        // ===== JOIN MODAL =====
+        function showJoinModal(tournamentId, format) {
+            const tournament = allTournaments.find(t => t.id === tournamentId && t.format === format);
+            if (!tournament) return;
+            
+            const config = FORMAT_CONFIG[format];
+            const joinCheck = UberAuth.canJoinTournament({
+                mode: tournament.mode,
+                levelCriteria: tournament.levelCriteria
+            });
+            
+            if (!joinCheck.allowed) {
+                showToast(`❌ ${joinCheck.reason}`);
+                return;
+            }
+            
+            const name = tournament.meta?.name || 'Tournament';
+            const userLevel = currentUser?.playtomicLevel;
+            const isVerified = currentUser?.type === 'registered' && currentUser?.status === 'verified';
+            
+            document.getElementById('modal-container').innerHTML = `
+                <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
+                    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-fade-in">
+                        <div class="bg-gradient-to-r from-${config.color}-500 to-${config.color}-600 px-6 py-5">
+                            <h2 class="text-xl font-bold text-white">${config.icon} Join Tournament</h2>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div class="text-center mb-6">
+                                <h3 class="text-xl font-bold text-gray-800">${escapeHtml(name)}</h3>
+                                <p class="text-sm text-gray-500 mt-1">Code: ${tournamentId.toUpperCase()}</p>
+                            </div>
+                            
+                            <div class="space-y-4 mb-6">
+                                <!-- Player Name -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Your Name</label>
+                                    <input type="text" id="join-name" value="${escapeHtml(currentUser?.name || '')}"
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-${config.color}-500 focus:outline-none"
+                                        placeholder="Enter your name" />
+                                </div>
+                                
+                                <!-- Rating -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                        Your Rating
+                                        ${isVerified ? '<span class="text-green-600 text-xs font-normal">(from your verified profile)</span>' : ''}
+                                    </label>
+                                    <input type="number" id="join-rating" 
+                                        value="${userLevel || '2.5'}"
+                                        min="0" max="10" step="0.1"
+                                        ${isVerified ? 'readonly' : ''}
+                                        class="w-full px-4 py-3 border-2 ${isVerified ? 'border-green-200 bg-green-50' : 'border-gray-200'} rounded-xl focus:border-${config.color}-500 focus:outline-none ${isVerified ? 'text-green-700 font-semibold' : ''}"
+                                        placeholder="0.0 - 10.0" />
+                                    ${!isVerified ? '<p class="text-xs text-gray-500 mt-1">Enter your approximate skill level (0-10)</p>' : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">ℹ️</span>
+                                    <div class="text-sm text-gray-600">
+                                        <p>You'll be added to the tournament. The organiser will assign you to a slot.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-3">
+                                <button onclick="closeModal()" 
+                                    class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                                    Cancel
+                                </button>
+                                <button onclick="confirmJoin('${tournamentId}', '${format}')"
+                                    class="flex-1 px-5 py-3 bg-${config.color}-500 hover:bg-${config.color}-600 text-white rounded-xl font-semibold transition-colors">
+                                    Join Tournament
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function confirmJoin(tournamentId, format) {
+            const name = document.getElementById('join-name')?.value.trim();
+            const rating = parseFloat(document.getElementById('join-rating')?.value || '2.5');
+            
+            if (!name) {
+                showToast('❌ Please enter your name');
+                return;
+            }
+            
+            if (isNaN(rating) || rating < 0 || rating > 10) {
+                showToast('❌ Please enter a valid rating (0-10)');
+                return;
+            }
+            
+            const config = FORMAT_CONFIG[format];
+            
+            try {
+                // Create registration entry
+                const registration = {
+                    name: name,
+                    rating: rating,
+                    userId: currentUser?.id || null,
+                    userType: currentUser?.type || 'unknown',
+                    registeredAt: new Date().toISOString()
+                };
+                
+                // Save to tournament's registeredPlayers
+                const regRef = database.ref(`${config.path}/${tournamentId}/registeredPlayers`).push();
+                await regRef.set(registration);
+                
+                closeModal();
+                showToast('✅ Successfully joined! The organiser will assign you to a slot.');
+                
+                // Refresh the list
+                loadAllTournaments();
+                
+            } catch (error) {
+                console.error('Error joining tournament:', error);
+                showToast('❌ Failed to join tournament');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').innerHTML = '';
+        }
+
+        // ===== UTILITIES =====
+        function formatDate(isoString) {
+            if (!isoString) return 'Unknown';
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;');
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg animate-fade-in mb-2';
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

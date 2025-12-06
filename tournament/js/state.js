@@ -57,6 +57,13 @@ class TournamentState {
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
         this.savedVersions = [];
         this.showFairnessTabs = true;
+        
+        // Registered players (Phase 4 - Browse & Join)
+        this.registeredPlayers = {};
+        this.playerCount = 24;
+        
+        // Tournament status (Phase 5)
+        this.tournamentStatus = 'open'; // 'open', 'in-progress', 'completed'
     }
 
     // Get Firebase base path for this tournament
@@ -191,6 +198,13 @@ class TournamentState {
         this.finalMaxScore = data.finalMaxScore || CONFIG.FINAL_MAX_SCORE;
         this.savedVersions = data.savedVersions || [];
         this.showFairnessTabs = data.showFairnessTabs !== undefined ? data.showFairnessTabs : true;
+        
+        // Registered players (Phase 4)
+        this.registeredPlayers = data.registeredPlayers || {};
+        this.playerCount = data.meta?.playerCount || 24;
+        
+        // Tournament status (Phase 5)
+        this.tournamentStatus = data.meta?.status || 'open';
         
         // Also load initial scores
         this.matchScores = data.matchScores || {};
@@ -484,6 +498,7 @@ class TournamentState {
         updates[`${basePath}/finalMaxScore`] = this.finalMaxScore;
         updates[`${basePath}/savedVersions`] = this.savedVersions;
         updates[`${basePath}/showFairnessTabs`] = this.showFairnessTabs;
+        updates[`${basePath}/registeredPlayers`] = this.registeredPlayers || {};
         
         database.ref().update(updates).then(() => {
             // Clear saving flag after a short delay to allow Firebase listener to settle

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>Login | Uber Padel</title>
+    <meta name="description" content="Sign in to Uber Padel to join tournaments, track your progress, and compete with other players.">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="uberpadel-icon.svg">
+    <link rel="apple-touch-icon" href="uberpadel-icon-512.png">
+    
+    <!-- Theme -->
+    <meta name="theme-color" content="#2563EB">
+    
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .animate-pulse-soft {
+            animation: pulse-soft 2s ease-in-out infinite;
+        }
+        
+        .btn-google {
+            background: white;
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-google:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        .btn-guest {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-guest:hover {
+            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+            transform: translateY(-1px);
+        }
+        
+        .input-field {
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center gap-3">
+                    <img src="uberpadel-icon.svg" alt="Uber Padel" class="w-10 h-10">
+                    <span class="font-bold text-xl text-gray-800">Uber Padel</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Home</a>
+                    <a href="about.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">About</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="max-w-md mx-auto px-4 py-12">
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center py-20">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-500">Loading...</p>
+        </div>
+        
+        <!-- Already Logged In -->
+        <div id="already-logged-in" class="hidden">
+            <div class="bg-white rounded-3xl shadow-xl p-8 text-center animate-fade-in-up">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-4xl">✓</span>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">You're Already Signed In</h1>
+                <p id="logged-in-name" class="text-gray-600 mb-6">Welcome back!</p>
+                <div class="flex flex-col gap-3">
+                    <a href="my-account.html" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                        Go to My Account
+                    </a>
+                    <button onclick="handleSignOut()" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Login Options -->
+        <div id="login-options" class="hidden">
+            <div class="text-center mb-8 animate-fade-in-up">
+                <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                    <span>🏓</span> Welcome to Uber Padel
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">Sign In</h1>
+                <p class="text-gray-600">Join tournaments and track your progress</p>
+            </div>
+            
+            <div class="bg-white rounded-3xl shadow-xl p-8 animate-fade-in-up" style="animation-delay: 0.1s;">
+                
+                <!-- Google Sign In -->
+                <button onclick="handleGoogleSignIn()" class="btn-google w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-gray-700 mb-4">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+                
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-white text-gray-500">or</span>
+                    </div>
+                </div>
+                
+                <!-- Guest Sign In -->
+                <button onclick="showGuestForm()" class="btn-guest w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-gray-700">
+                    <span class="text-xl">👤</span>
+                    Continue as Guest
+                </button>
+                
+                <!-- Feature Comparison -->
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <p class="text-xs text-gray-500 text-center mb-4">What's the difference?</p>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-gray-50 rounded-xl p-4">
+                            <div class="font-semibold text-gray-700 mb-2">👤 Guest</div>
+                            <ul class="text-gray-500 space-y-1 text-xs">
+                                <li>✓ Join open tournaments</li>
+                                <li>✓ Organise casual events</li>
+                                <li>✗ Level-based tournaments</li>
+                                <li>✗ Saved across devices</li>
+                            </ul>
+                        </div>
+                        <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                            <div class="font-semibold text-blue-700 mb-2">🔵 Google</div>
+                            <ul class="text-gray-600 space-y-1 text-xs">
+                                <li>✓ All guest features</li>
+                                <li>✓ Get verified status</li>
+                                <li>✓ Join any tournament</li>
+                                <li>✓ Saved profile</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Guest Form -->
+        <div id="guest-form" class="hidden">
+            <div class="text-center mb-8 animate-fade-in-up">
+                <button onclick="showLoginOptions()" class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Back
+                </button>
+                <h1 class="text-3xl font-bold text-gray-800 mb-3">Guest Login</h1>
+                <p class="text-gray-600">Enter your name to continue</p>
+            </div>
+            
+            <div class="bg-white rounded-3xl shadow-xl p-8 animate-fade-in-up">
+                <form id="guest-login-form" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Your Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="guest-name" required
+                            class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
+                            placeholder="Enter your name"
+                            maxlength="30"
+                            autofocus />
+                    </div>
+                    
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                        <div class="flex gap-3">
+                            <span class="text-xl">💡</span>
+                            <div class="text-sm text-amber-800">
+                                <p class="font-medium mb-1">Guest Mode</p>
+                                <p class="text-amber-700">Your session is saved on this device only. Sign in with Google to sync across devices and unlock more features.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="guest-submit-btn"
+                        class="w-full px-6 py-4 bg-gray-800 hover:bg-gray-900 text-white rounded-xl font-semibold text-lg transition-colors">
+                        Continue as Guest
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Google Profile Completion -->
+        <div id="complete-profile" class="hidden">
+            <div class="text-center mb-8 animate-fade-in-up">
+                <div class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                    <span>✓</span> Google Connected
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-3">Complete Your Profile</h1>
+                <p class="text-gray-600">Just a few more details to get started</p>
+            </div>
+            
+            <div class="bg-white rounded-3xl shadow-xl p-8 animate-fade-in-up">
+                <form id="complete-profile-form" class="space-y-6">
+                    
+                    <!-- Google Info Display -->
+                    <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                        <img id="google-photo" src="" alt="Profile" class="w-12 h-12 rounded-full bg-gray-200">
+                        <div>
+                            <p id="google-name" class="font-semibold text-gray-800"></p>
+                            <p id="google-email" class="text-sm text-gray-500"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Display Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Display Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="profile-name" required
+                            class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
+                            placeholder="How others will see you"
+                            maxlength="30" />
+                    </div>
+                    
+                    <!-- Playtomic Username -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Playtomic Username <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">@</span>
+                            <input type="text" id="profile-playtomic" required
+                                class="input-field w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
+                                placeholder="your_playtomic_username"
+                                maxlength="50" />
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Used to verify your level. 
+                            <a href="https://playtomic.io" target="_blank" class="text-blue-600 hover:underline">Find yours →</a>
+                        </p>
+                    </div>
+                    
+                    <!-- Phone (Optional) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Phone Number <span class="text-gray-400 font-normal">(optional)</span>
+                        </label>
+                        <input type="tel" id="profile-phone"
+                            class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg"
+                            placeholder="+44 7XXX XXXXXX" />
+                        <p class="text-xs text-gray-500 mt-1">For WhatsApp group invites</p>
+                    </div>
+                    
+                    <!-- Info Box -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <div class="flex gap-3">
+                            <span class="text-xl">📋</span>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-medium mb-1">What happens next?</p>
+                                <ul class="text-blue-700 space-y-1">
+                                    <li>• Your account starts as <strong>Pending</strong></li>
+                                    <li>• Admin will verify your Playtomic username</li>
+                                    <li>• Once verified, you unlock all features</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="profile-submit-btn"
+                        class="w-full px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg transition-colors">
+                        Complete Registration
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Registration Success -->
+        <div id="registration-success" class="hidden">
+            <div class="bg-white rounded-3xl shadow-xl p-8 text-center animate-fade-in-up">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-4xl">🎉</span>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Welcome to Uber Padel!</h1>
+                <p class="text-gray-600 mb-6">Your account has been created successfully.</p>
+                
+                <div id="success-status" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                    <div class="flex items-center justify-center gap-2 text-amber-800">
+                        <span class="text-xl">⏳</span>
+                        <span class="font-medium">Status: Pending Verification</span>
+                    </div>
+                    <p class="text-sm text-amber-700 mt-2">An admin will verify your Playtomic username soon.</p>
+                </div>
+                
+                <div class="flex flex-col gap-3">
+                    <a href="my-account.html" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                        Go to My Account
+                    </a>
+                    <a href="index.html" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                        Browse Tournaments
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+    
+    <script>
+        // ===== FIREBASE CONFIG =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyBBy1eJi2cLixBNJX0I1fmHKrZ1NfUfVTg",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.firebasestorage.app",
+            messagingSenderId: "854aborede426178729",
+            appId: "1:854426178729:web:0cd7d073f3fb3ed29b3230"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // ===== CONSTANTS =====
+        const USERS_DB_PATH = 'users';
+        const GUEST_STORAGE_KEY = 'uber_padel_guest';
+        const USER_STORAGE_KEY = 'uber_padel_user';
+        
+        // ===== UTILITY FUNCTIONS =====
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-green-600' : 'bg-gray-800';
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg animate-fade-in-up`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        function sanitizeInput(input) {
+            return input.trim().replace(/[<>]/g, '');
+        }
+        
+        function generateUserId() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let id = '';
+            for (let i = 0; i < 6; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id.toLowerCase();
+        }
+        
+        function hideAllSections() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('already-logged-in').classList.add('hidden');
+            document.getElementById('login-options').classList.add('hidden');
+            document.getElementById('guest-form').classList.add('hidden');
+            document.getElementById('complete-profile').classList.add('hidden');
+            document.getElementById('registration-success').classList.add('hidden');
+        }
+        
+        function showLoginOptions() {
+            hideAllSections();
+            document.getElementById('login-options').classList.remove('hidden');
+        }
+        
+        function showGuestForm() {
+            hideAllSections();
+            document.getElementById('guest-form').classList.remove('hidden');
+        }
+        
+        // ===== LOCAL STORAGE =====
+        
+        function getStoredUser() {
+            try {
+                const data = localStorage.getItem(USER_STORAGE_KEY);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        function setStoredUser(user) {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+        }
+        
+        function clearStoredUser() {
+            localStorage.removeItem(USER_STORAGE_KEY);
+            localStorage.removeItem(GUEST_STORAGE_KEY);
+        }
+        
+        // ===== AUTH STATE CHECK =====
+        
+        async function checkAuthState() {
+            // Check for guest user first
+            const storedUser = getStoredUser();
+            
+            if (storedUser && storedUser.type === 'guest') {
+                // Guest user exists
+                hideAllSections();
+                document.getElementById('logged-in-name').textContent = `Welcome back, ${storedUser.name}!`;
+                document.getElementById('already-logged-in').classList.remove('hidden');
+                return;
+            }
+            
+            // Check Firebase auth state
+            auth.onAuthStateChanged(async (firebaseUser) => {
+                if (firebaseUser) {
+                    // User is signed in with Google
+                    await handleFirebaseUser(firebaseUser);
+                } else {
+                    // No user signed in
+                    showLoginOptions();
+                }
+            });
+        }
+        
+        async function handleFirebaseUser(firebaseUser) {
+            try {
+                // Check if user exists in our database
+                const snapshot = await database.ref(`${USERS_DB_PATH}`)
+                    .orderByChild('googleUid')
+                    .equalTo(firebaseUser.uid)
+                    .once('value');
+                
+                if (snapshot.exists()) {
+                    // User exists - they're logged in
+                    let userData = null;
+                    snapshot.forEach(child => {
+                        userData = { id: child.key, ...child.val() };
+                    });
+                    
+                    setStoredUser({
+                        type: 'registered',
+                        id: userData.id,
+                        name: userData.name,
+                        status: userData.status,
+                        email: userData.email
+                    });
+                    
+                    hideAllSections();
+                    document.getElementById('logged-in-name').textContent = `Welcome back, ${userData.name}!`;
+                    document.getElementById('already-logged-in').classList.remove('hidden');
+                } else {
+                    // New Google user - needs to complete profile
+                    showCompleteProfile(firebaseUser);
+                }
+            } catch (error) {
+                console.error('Error checking user:', error);
+                showToast('Error checking account. Please try again.', 'error');
+                showLoginOptions();
+            }
+        }
+        
+        function showCompleteProfile(firebaseUser) {
+            hideAllSections();
+            
+            // Pre-fill with Google data
+            document.getElementById('google-photo').src = firebaseUser.photoURL || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%239ca3af"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+            document.getElementById('google-name').textContent = firebaseUser.displayName || 'Google User';
+            document.getElementById('google-email').textContent = firebaseUser.email;
+            
+            // Pre-fill name field
+            document.getElementById('profile-name').value = firebaseUser.displayName || '';
+            
+            document.getElementById('complete-profile').classList.remove('hidden');
+        }
+        
+        // ===== GOOGLE SIGN IN =====
+        
+        async function handleGoogleSignIn() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({
+                    prompt: 'select_account'
+                });
+                
+                await auth.signInWithPopup(provider);
+                // Auth state change will handle the rest
+            } catch (error) {
+                console.error('Google sign-in error:', error);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    showToast('Sign-in failed. Please try again.', 'error');
+                }
+            }
+        }
+        
+        // ===== GUEST LOGIN =====
+        
+        async function handleGuestLogin(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('guest-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+            
+            const name = sanitizeInput(document.getElementById('guest-name').value);
+            
+            if (!name || name.length < 2) {
+                showToast('Please enter your name', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Continue as Guest';
+                return;
+            }
+            
+            try {
+                // Generate guest ID
+                const guestId = 'guest_' + generateUserId();
+                
+                // Store guest locally (not in Firebase)
+                const guestUser = {
+                    type: 'guest',
+                    id: guestId,
+                    name: name,
+                    createdAt: new Date().toISOString()
+                };
+                
+                setStoredUser(guestUser);
+                
+                showToast('Welcome, ' + name + '!', 'success');
+                
+                // Redirect to home or previous page
+                setTimeout(() => {
+                    const returnUrl = new URLSearchParams(window.location.search).get('return');
+                    window.location.href = returnUrl || 'index.html';
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Guest login error:', error);
+                showToast('Login failed. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Continue as Guest';
+            }
+        }
+        
+        // ===== COMPLETE PROFILE (Google Users) =====
+        
+        async function handleCompleteProfile(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('profile-submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating account...';
+            
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                showToast('Session expired. Please sign in again.', 'error');
+                showLoginOptions();
+                return;
+            }
+            
+            const name = sanitizeInput(document.getElementById('profile-name').value);
+            const playtomic = sanitizeInput(document.getElementById('profile-playtomic').value).toLowerCase();
+            const phone = sanitizeInput(document.getElementById('profile-phone').value);
+            
+            // Validate
+            if (!name || name.length < 2) {
+                showToast('Please enter your name', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Complete Registration';
+                return;
+            }
+            
+            if (!playtomic || playtomic.length < 2) {
+                showToast('Please enter your Playtomic username', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Complete Registration';
+                return;
+            }
+            
+            try {
+                // Check if Playtomic username already exists
+                const playtomicCheck = await database.ref(USERS_DB_PATH)
+                    .orderByChild('playtomicUsername')
+                    .equalTo(playtomic)
+                    .once('value');
+                
+                if (playtomicCheck.exists()) {
+                    showToast('This Playtomic username is already registered', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Complete Registration';
+                    return;
+                }
+                
+                // Generate unique user ID
+                let userId = generateUserId();
+                let exists = true;
+                let attempts = 0;
+                
+                while (exists && attempts < 10) {
+                    const check = await database.ref(`${USERS_DB_PATH}/${userId}`).once('value');
+                    exists = check.exists();
+                    if (exists) {
+                        userId = generateUserId();
+                        attempts++;
+                    }
+                }
+                
+                // Create user record
+                const userData = {
+                    name: name,
+                    email: currentUser.email,
+                    googleUid: currentUser.uid,
+                    photoURL: currentUser.photoURL || null,
+                    playtomicUsername: playtomic,
+                    phone: phone || null,
+                    playtomicLevel: null,
+                    status: 'pending',  // pending | verified
+                    type: 'registered', // guest | registered
+                    isOrganiser: true,  // All registered users can organise
+                    registeredAt: new Date().toISOString(),
+                    verifiedAt: null,
+                    verifiedBy: null
+                };
+                
+                await database.ref(`${USERS_DB_PATH}/${userId}`).set(userData);
+                
+                // Store locally
+                setStoredUser({
+                    type: 'registered',
+                    id: userId,
+                    name: name,
+                    status: 'pending',
+                    email: currentUser.email
+                });
+                
+                // Show success
+                hideAllSections();
+                document.getElementById('registration-success').classList.remove('hidden');
+                
+                showToast('Account created successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                showToast('Registration failed. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Complete Registration';
+            }
+        }
+        
+        // ===== SIGN OUT =====
+        
+        async function handleSignOut() {
+            try {
+                await auth.signOut();
+                clearStoredUser();
+                showToast('Signed out successfully', 'success');
+                showLoginOptions();
+            } catch (error) {
+                console.error('Sign out error:', error);
+                showToast('Sign out failed', 'error');
+            }
+        }
+        
+        // ===== INITIALIZE =====
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthState();
+            
+            document.getElementById('guest-login-form').addEventListener('submit', handleGuestLogin);
+            document.getElementById('complete-profile-form').addEventListener('submit', handleCompleteProfile);
+        });
+    </script>
+</body>
+</html>

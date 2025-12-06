@@ -263,7 +263,7 @@ function refreshWizardPlayersList() {
 }
 
 /**
- * Step 3: Passcode
+ * Step 3: Tournament Mode (who can join)
  */
 function goToStep3() {
     const isTeam = wizardData.mode === 'team';
@@ -275,17 +275,147 @@ function goToStep3() {
         return;
     }
     
+    // Check user permissions for mode selection
+    const currentUser = getCurrentUser();
+    const isVerified = currentUser && currentUser.type === 'registered' && currentUser.status === 'verified';
+    
+    document.getElementById('modal-container').innerHTML = `
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4" onclick="if(event.target === this) closeModal()">
+            <div class="modal-backdrop absolute inset-0"></div>
+            <div class="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-scale-in" onclick="event.stopPropagation()">
+                <div class="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-5 rounded-t-3xl">
+                    <h2 class="text-xl font-bold text-white">🌍 Who Can Join?</h2>
+                    <p class="text-teal-100 text-sm mt-1">Step 3 of 4: Access</p>
+                </div>
+                <div class="p-6">
+                    <div class="text-center mb-4">
+                        <span class="text-sm text-gray-500">${wizardData.name} • ${wizardData.mode === 'individual' ? wizardData.players.length + ' players' : wizardData.teams.length + ' teams'}</span>
+                    </div>
+                    
+                    <div class="space-y-2 mb-4">
+                        <label class="flex items-center gap-3 p-3 border-2 border-teal-500 bg-teal-50 rounded-xl cursor-pointer tournament-mode-option" data-mode="anyone">
+                            <input type="radio" name="tournament-mode" value="anyone" checked class="w-4 h-4 text-teal-600" onchange="selectTournamentModeOption('anyone')">
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-800 text-sm">🌍 Anyone</div>
+                                <div class="text-xs text-gray-500">Guests and registered players</div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center gap-3 p-3 border-2 ${isVerified ? 'border-gray-200 hover:border-teal-300' : 'border-gray-100 opacity-50'} rounded-xl ${isVerified ? 'cursor-pointer' : 'cursor-not-allowed'} tournament-mode-option" data-mode="registered">
+                            <input type="radio" name="tournament-mode" value="registered" ${!isVerified ? 'disabled' : ''} class="w-4 h-4 text-teal-600" onchange="selectTournamentModeOption('registered')">
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-800 text-sm">👥 Registered Only</div>
+                                <div class="text-xs text-gray-500">Only registered players</div>
+                            </div>
+                            ${!isVerified ? '<span class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Verified only</span>' : ''}
+                        </label>
+                        
+                        <label class="flex items-center gap-3 p-3 border-2 ${isVerified ? 'border-gray-200 hover:border-teal-300' : 'border-gray-100 opacity-50'} rounded-xl ${isVerified ? 'cursor-pointer' : 'cursor-not-allowed'} tournament-mode-option" data-mode="level-based">
+                            <input type="radio" name="tournament-mode" value="level-based" ${!isVerified ? 'disabled' : ''} class="w-4 h-4 text-teal-600" onchange="selectTournamentModeOption('level-based')">
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-800 text-sm">🎯 Level-Based</div>
+                                <div class="text-xs text-gray-500">Verified players in level range</div>
+                            </div>
+                            ${!isVerified ? '<span class="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Verified only</span>' : ''}
+                        </label>
+                    </div>
+                    <input type="hidden" id="selected-access-mode" value="anyone" />
+                    
+                    <!-- Level Range (shown only for level-based mode) -->
+                    <div id="level-range-container" class="hidden mb-4 p-3 bg-purple-50 rounded-xl border border-purple-200">
+                        <label class="block text-xs font-semibold text-purple-800 mb-2">Level Range</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="level-min" step="0.1" min="0" max="10" value="0.0"
+                                class="flex-1 px-2 py-1.5 border border-purple-200 rounded-lg text-center text-sm font-semibold">
+                            <span class="text-purple-400 text-sm">to</span>
+                            <input type="number" id="level-max" step="0.1" min="0" max="10" value="10.0"
+                                class="flex-1 px-2 py-1.5 border border-purple-200 rounded-lg text-center text-sm font-semibold">
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="showAddPlayersModal()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors">← Back</button>
+                        <button onclick="goToStep4()" class="flex-1 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-semibold transition-colors">Next →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Select tournament access mode
+ */
+function selectTournamentModeOption(mode) {
+    document.getElementById('selected-access-mode').value = mode;
+    
+    // Update visual selection
+    document.querySelectorAll('.tournament-mode-option').forEach(opt => {
+        const optMode = opt.dataset.mode;
+        if (optMode === mode) {
+            opt.classList.remove('border-gray-200', 'border-gray-100');
+            opt.classList.add('border-teal-500', 'bg-teal-50');
+        } else {
+            opt.classList.remove('border-teal-500', 'bg-teal-50');
+            if (!opt.querySelector('input').disabled) {
+                opt.classList.add('border-gray-200');
+            } else {
+                opt.classList.add('border-gray-100');
+            }
+        }
+    });
+    
+    // Show/hide level range
+    const levelContainer = document.getElementById('level-range-container');
+    if (mode === 'level-based') {
+        levelContainer.classList.remove('hidden');
+    } else {
+        levelContainer.classList.add('hidden');
+    }
+}
+
+/**
+ * Get current user from localStorage
+ */
+function getCurrentUser() {
+    try {
+        const data = localStorage.getItem('uber_padel_user');
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Step 4: Passcode
+ */
+function goToStep4() {
+    const accessMode = document.getElementById('selected-access-mode')?.value || 'anyone';
+    wizardData.accessMode = accessMode;
+    
+    if (accessMode === 'level-based') {
+        wizardData.levelMin = parseFloat(document.getElementById('level-min')?.value || '0');
+        wizardData.levelMax = parseFloat(document.getElementById('level-max')?.value || '10');
+        
+        if (wizardData.levelMin >= wizardData.levelMax) {
+            showToast('❌ Max level must be greater than min level');
+            return;
+        }
+    }
+    
+    const modeLabels = { 'anyone': '🌍 Open', 'registered': '👥 Registered', 'level-based': '🎯 Level' };
+    
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4" onclick="if(event.target === this) closeModal()">
             <div class="modal-backdrop absolute inset-0"></div>
             <div class="relative bg-white rounded-3xl shadow-2xl max-w-md w-full animate-scale-in" onclick="event.stopPropagation()">
                 <div class="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-5 rounded-t-3xl">
                     <h2 class="text-xl font-bold text-white">🔐 Organiser Passcode</h2>
-                    <p class="text-teal-100 text-sm mt-1">Step 3 of 3: Security</p>
+                    <p class="text-teal-100 text-sm mt-1">Step 4 of 4: Security</p>
                 </div>
                 <div class="p-6">
                     <div class="text-center mb-4">
-                        <span class="text-sm text-gray-500">${wizardData.name} • ${wizardData.mode === 'individual' ? wizardData.players.length + ' players' : wizardData.teams.length + ' teams'}</span>
+                        <span class="text-sm text-gray-500">${wizardData.name} • ${wizardData.mode === 'individual' ? wizardData.players.length + 'p' : wizardData.teams.length + 't'} • ${modeLabels[accessMode]}</span>
                     </div>
                     
                     <div class="mb-6">
@@ -298,7 +428,7 @@ function goToStep3() {
                     </div>
                     
                     <div class="flex gap-3">
-                        <button onclick="showAddPlayersModal()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors">← Back</button>
+                        <button onclick="goToStep3()" class="flex-1 py-3 rounded-xl border-2 border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors">← Back</button>
                         <button onclick="handleCreateTournament()" class="flex-1 py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors">Create ✓</button>
                     </div>
                 </div>
@@ -324,6 +454,22 @@ async function handleCreateTournament() {
     const tournamentId = Router.generateTournamentId();
     const organiserKey = Router.generateOrganiserKey();
     const hashedPasscode = btoa(passcode); // Simple hash for demo
+    
+    // Get current user for creator info
+    const currentUser = getCurrentUser();
+    
+    // Prepare mode settings
+    const accessMode = wizardData.accessMode || 'anyone';
+    const modeSettings = {
+        mode: accessMode,
+        allowGuests: accessMode === 'anyone',
+        requireRegistered: accessMode === 'registered' || accessMode === 'level-based',
+        requireVerified: accessMode === 'level-based',
+        levelCriteria: accessMode === 'level-based' ? { 
+            min: wizardData.levelMin, 
+            max: wizardData.levelMax 
+        } : null
+    };
     
     // Initialize state
     state = new MexicanoState(tournamentId);
@@ -351,11 +497,21 @@ async function handleCreateTournament() {
             updatedAt: new Date().toISOString(),
             status: 'active',
             organiserKey: organiserKey,
-            passcodeHash: hashedPasscode
+            passcodeHash: hashedPasscode,
+            // Mode settings
+            ...modeSettings,
+            // Creator info
+            createdBy: currentUser ? {
+                id: currentUser.id,
+                name: currentUser.name,
+                type: currentUser.type
+            } : null
         },
         currentRound: 1,
         playerCount: wizardData.mode === 'individual' ? wizardData.players.length : wizardData.teams.length * 2,
-        rounds: state.rounds
+        rounds: state.rounds,
+        // For registered modes
+        registeredPlayers: {}
     };
     
     if (wizardData.mode === 'individual') {
@@ -379,7 +535,7 @@ async function handleCreateTournament() {
         });
         
         // Show success modal with links
-        showSuccessModal(tournamentId, organiserKey);
+        showSuccessModal(tournamentId, organiserKey, accessMode);
     } catch (error) {
         console.error('Error creating tournament:', error);
         showToast('❌ Failed to create session');
@@ -389,9 +545,16 @@ async function handleCreateTournament() {
 /**
  * Show success modal with shareable links
  */
-function showSuccessModal(tournamentId, organiserKey) {
+function showSuccessModal(tournamentId, organiserKey, accessMode = 'anyone') {
     const playerLink = Router.getPlayerLink(tournamentId);
     const organiserLink = Router.getOrganiserLink(tournamentId, organiserKey);
+    
+    const modeLabels = {
+        'anyone': '🌍 Open to Anyone',
+        'registered': '👥 Registered Only',
+        'level-based': '🎯 Level-Based'
+    };
+    const modeLabel = modeLabels[accessMode] || modeLabels['anyone'];
     
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -404,6 +567,7 @@ function showSuccessModal(tournamentId, organiserKey) {
                     <div class="bg-teal-50 rounded-xl p-4 text-center">
                         <div class="text-sm font-semibold text-teal-800 mb-2">📋 Session Code</div>
                         <div class="font-mono text-3xl font-bold text-teal-600 tracking-wider">${tournamentId.toUpperCase()}</div>
+                        <div class="text-sm text-teal-600 mt-1">${modeLabel}</div>
                     </div>
                     
                     <div class="bg-gray-50 rounded-xl p-4">

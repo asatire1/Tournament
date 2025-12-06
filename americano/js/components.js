@@ -92,6 +92,11 @@ function renderTournament() {
                         </div>
                         <div class="flex items-center gap-2">
                             ${canEdit ? '<span class="text-xs bg-amber-500/20 text-amber-200 px-2 py-1 rounded-full">Organiser</span>' : ''}
+                            ${canEdit && state.registeredPlayers && Object.keys(state.registeredPlayers).length > 0 ? `
+                                <button onclick="showRegisteredPlayersModal()" class="text-xs bg-green-500/20 text-green-200 px-2 py-1 rounded-full hover:bg-green-500/30 transition-colors">
+                                    📋 ${Object.keys(state.registeredPlayers).length} Registrations
+                                </button>
+                            ` : ''}
                             <button onclick="showShareModal()" class="p-2 hover:bg-white/10 rounded-xl transition-colors" title="Share">
                                 <span class="text-xl">📤</span>
                             </button>
@@ -342,18 +347,17 @@ function renderMatchCard(match, courtIndex) {
     const team2Wins = isComplete && score.team2 > score.team1;
     
     const scoreDisplay = canEdit ? `
-        <input type="number" min="0" 
+        <input type="number" min="0" max="${state.fixedPoints ? state.totalPoints : 999}"
             value="${score.team1 !== null ? score.team1 : ''}" 
             placeholder="—" 
             class="score-input-compact ${team1Wins ? 'text-green-600' : ''}" 
-            onchange="state.updateScoreByFixture(${fixtureIndex}, 'team1', this.value); render();" />
+            onchange="state.updateScoreByFixture(${fixtureIndex}, 'team1', this.value); renderTournament();" />
         <span class="text-gray-400 text-2xl font-semibold">:</span>
-        <input type="number" min="0" 
+        <input type="number" min="0" max="${state.fixedPoints ? state.totalPoints : 999}"
             value="${score.team2 !== null ? score.team2 : ''}" 
             placeholder="—" 
             class="score-input-compact ${team2Wins ? 'text-green-600' : ''}" 
-            ${state.fixedPoints ? 'readonly' : ''} 
-            onchange="state.updateScoreByFixture(${fixtureIndex}, 'team2', this.value); render();" />
+            onchange="state.updateScoreByFixture(${fixtureIndex}, 'team2', this.value); renderTournament();" />
     ` : `
         <span class="text-3xl font-bold ${team1Wins ? 'text-green-600' : 'text-gray-800'}">${score.team1 !== null ? score.team1 : '—'}</span>
         <span class="text-gray-400 text-2xl font-semibold">:</span>
@@ -395,7 +399,7 @@ function renderMatchCard(match, courtIndex) {
                         `).join('')}
                     </div>
                     ${isComplete && canEdit ? `
-                        <button onclick="state.clearScoreByFixture(${fixtureIndex}); render();" 
+                        <button onclick="state.clearScoreByFixture(${fixtureIndex}); renderTournament();" 
                             class="clear-score-btn-small" title="Clear score">×</button>
                     ` : ''}
                 </div>

@@ -594,6 +594,15 @@ function render() {
                                 <span>✏️</span>
                                 <span class="font-semibold text-blue-700">Organiser</span>
                             </div>
+                            <button onclick="showTournamentStatusModal()" class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 backdrop-blur rounded-full px-3 py-1.5 border border-indigo-200 transition-colors cursor-pointer">
+                                ${getTournamentStatusBadge()}
+                            </button>
+                            ${(state.registeredPlayers && Object.keys(state.registeredPlayers).length > 0) ? `
+                                <button onclick="showRegisteredPlayersModal()" class="flex items-center gap-1.5 bg-green-50 hover:bg-green-100 backdrop-blur rounded-full px-3 py-1.5 border border-green-200 transition-colors cursor-pointer">
+                                    <span>📋</span>
+                                    <span class="font-semibold text-green-700">Registrations (${Object.keys(state.registeredPlayers).length})</span>
+                                </button>
+                            ` : ''}
                         ` : `
                             <div class="flex items-center gap-1.5 bg-gray-100 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
                                 <span>👀</span>
