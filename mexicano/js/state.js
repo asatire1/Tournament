@@ -299,13 +299,17 @@ class MexicanoState {
         
         // Meta
         this.tournamentName = data.meta?.name || '';
-        this.mode = data.meta?.mode || 'individual';
+        // Ensure mode is valid (not accessMode value like 'anyone')
+        const rawMode = data.meta?.mode;
+        this.mode = (rawMode === 'individual' || rawMode === 'team') ? rawMode : 'individual';
+        console.log('📦 Applied mode:', this.mode, '(raw:', rawMode, ')');
         this.pointsPerMatch = data.meta?.pointsPerMatch || CONFIG.DEFAULT_POINTS_PER_MATCH;
         this.status = data.meta?.status || 'active';
         
         // Players/Teams (just names and IDs)
         this.players = this.normalizeArray(data.players);
         this.teams = this.normalizeArray(data.teams);
+        console.log('📦 Loaded', this.players.length, 'players,', this.teams.length, 'teams');
         
         // Rounds (source of truth for all scores)
         this.rounds = this.normalizeRoundsData(data.rounds);

@@ -559,10 +559,10 @@ async function handleCreateTournament() {
         // Get current user for creator info
         const currentUser = getCurrentUser();
         
-        // Prepare mode settings
+        // Prepare mode settings (access control, not tournament mode)
         const accessMode = wizardData.accessMode || 'anyone';
         const modeSettings = {
-            mode: accessMode,
+            accessMode: accessMode,  // FIXED: was 'mode' which overwrote tournament mode
             allowGuests: accessMode === 'anyone',
             requireRegistered: accessMode === 'registered' || accessMode === 'level-based',
             requireVerified: accessMode === 'level-based',
