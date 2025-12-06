@@ -115,8 +115,8 @@ class MexicanoState {
             this.players = data.players || [];
             this.teams = data.teams || [];
             
-            // Rounds
-            this.rounds = data.rounds || [];
+            // Rounds - normalize to ensure arrays are properly converted
+            this.rounds = this.normalizeRoundsData(data.rounds || []);
             this.currentRound = data.currentRound || 1;
             this.viewingRound = this.currentRound;
             
@@ -146,8 +146,8 @@ class MexicanoState {
         
         if (!data) return;
         
-        // Update dynamic state only
-        this.rounds = data.rounds || [];
+        // Update dynamic state only - normalize rounds data
+        this.rounds = this.normalizeRoundsData(data.rounds || []);
         this.currentRound = data.currentRound || 1;
         this.players = data.players || [];
         this.teams = data.teams || [];
@@ -408,6 +408,50 @@ class MexicanoState {
             this.saveDebounceTimer = null;
         }
         return await this.flushSave();
+    }
+    
+    /**
+     * Normalize rounds data from Firebase
+     * Firebase sometimes converts arrays to objects, this ensures proper structure
+     */
+    normalizeRoundsData(rounds) {
+        if (!rounds) return [];
+        
+        // Convert Firebase object-with-numeric-keys to array if needed
+        const roundsArray = Array.isArray(rounds) ? rounds : Object.values(rounds);
+        
+        return roundsArray.map(round => {
+            if (!round) return null;
+            
+            // Normalize matches array
+            const matches = Array.isArray(round.matches) 
+                ? round.matches 
+                : (round.matches ? Object.values(round.matches) : []);
+            
+            // Normalize sitting out array
+            const sittingOut = Array.isArray(round.sittingOut) 
+                ? round.sittingOut 
+                : (round.sittingOut ? Object.values(round.sittingOut) : []);
+            
+            return {
+                ...round,
+                matches: matches.map(match => {
+                    if (!match) return null;
+                    
+                    // Ensure team arrays are properly converted
+                    return {
+                        ...match,
+                        team1: Array.isArray(match.team1) ? match.team1 : (match.team1 ? Object.values(match.team1) : []),
+                        team2: Array.isArray(match.team2) ? match.team2 : (match.team2 ? Object.values(match.team2) : []),
+                        team1Names: Array.isArray(match.team1Names) ? match.team1Names : (match.team1Names ? Object.values(match.team1Names) : []),
+                        team2Names: Array.isArray(match.team2Names) ? match.team2Names : (match.team2Names ? Object.values(match.team2Names) : []),
+                        team1Indices: Array.isArray(match.team1Indices) ? match.team1Indices : (match.team1Indices ? Object.values(match.team1Indices) : []),
+                        team2Indices: Array.isArray(match.team2Indices) ? match.team2Indices : (match.team2Indices ? Object.values(match.team2Indices) : [])
+                    };
+                }).filter(m => m !== null),
+                sittingOut
+            };
+        }).filter(r => r !== null);
     }
     
     /**

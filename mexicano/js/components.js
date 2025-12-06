@@ -137,15 +137,24 @@ function renderMatchesTab() {
  * Render individual match card
  */
 function renderMatchCard(match, index, canEditScores) {
-    if (!state) return '';
+    if (!state || !match) return '';
     
     const done = match.completed;
     const colorFn = state.mode === 'individual' ? getPlayerColor : getTeamColor;
     
-    const t1Names = state.mode === 'individual' ? match.team1Names : match.team1Players;
-    const t2Names = state.mode === 'individual' ? match.team2Names : match.team2Players;
-    const t1Idx = state.mode === 'individual' ? match.team1Indices : [match.team1Index, match.team1Index];
-    const t2Idx = state.mode === 'individual' ? match.team2Indices : [match.team2Index, match.team2Index];
+    // Defensive checks for match data
+    const t1Names = state.mode === 'individual' 
+        ? (match.team1Names || ['Player 1', 'Player 2']) 
+        : (match.team1Players || ['Team 1', 'Team 1']);
+    const t2Names = state.mode === 'individual' 
+        ? (match.team2Names || ['Player 3', 'Player 4']) 
+        : (match.team2Players || ['Team 2', 'Team 2']);
+    const t1Idx = state.mode === 'individual' 
+        ? (match.team1Indices || [0, 1]) 
+        : [match.team1Index || 0, match.team1Index || 0];
+    const t2Idx = state.mode === 'individual' 
+        ? (match.team2Indices || [2, 3]) 
+        : [match.team2Index || 1, match.team2Index || 1];
     
     const canEdit = state.canEdit();
     
