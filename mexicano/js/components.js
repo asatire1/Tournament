@@ -139,22 +139,45 @@ function renderMatchesTab() {
 function renderMatchCard(match, index, canEditScores) {
     if (!state || !match) return '';
     
+    console.log('🎯 Rendering match:', {
+        id: match.id,
+        mode: state.mode,
+        team1Names: match.team1Names,
+        team2Names: match.team2Names,
+        team1: match.team1,
+        team2: match.team2
+    });
+    
     const done = match.completed;
     const colorFn = state.mode === 'individual' ? getPlayerColor : getTeamColor;
     
-    // Defensive checks for match data
+    // Normalize arrays from Firebase (may be objects with numeric keys)
+    const normalizeArr = (arr) => {
+        if (!arr) return null;
+        if (Array.isArray(arr)) return arr;
+        return Object.values(arr);
+    };
+    
+    // Get player names with proper normalization
+    const t1NamesRaw = normalizeArr(match.team1Names);
+    const t2NamesRaw = normalizeArr(match.team2Names);
+    const t1IdxRaw = normalizeArr(match.team1Indices);
+    const t2IdxRaw = normalizeArr(match.team2Indices);
+    
     const t1Names = state.mode === 'individual' 
-        ? (match.team1Names || ['Player 1', 'Player 2']) 
+        ? (t1NamesRaw || ['Player 1', 'Player 2']) 
         : (match.team1Players || ['Team 1', 'Team 1']);
     const t2Names = state.mode === 'individual' 
-        ? (match.team2Names || ['Player 3', 'Player 4']) 
+        ? (t2NamesRaw || ['Player 3', 'Player 4']) 
         : (match.team2Players || ['Team 2', 'Team 2']);
     const t1Idx = state.mode === 'individual' 
-        ? (match.team1Indices || [0, 1]) 
+        ? (t1IdxRaw || [0, 1]) 
         : [match.team1Index || 0, match.team1Index || 0];
     const t2Idx = state.mode === 'individual' 
-        ? (match.team2Indices || [2, 3]) 
+        ? (t2IdxRaw || [2, 3]) 
         : [match.team2Index || 1, match.team2Index || 1];
+    
+    console.log('📋 Match names:', { t1Names, t2Names, t1Idx, t2Idx });
     
     const canEdit = state.canEdit();
     

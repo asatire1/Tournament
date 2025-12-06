@@ -144,6 +144,8 @@ class MexicanoState {
         // Get current standings
         const standings = this.getStandings();
         console.log('📊 Standings for round', roundNumber, ':', standings.map(s => `${s.name}:${s.totalPoints}`));
+        console.log('📊 Players array:', this.players);
+        console.log('📊 Standings count:', standings.length);
         
         if (standings.length < 4) {
             console.error('❌ Not enough players:', standings.length);
@@ -155,8 +157,11 @@ class MexicanoState {
             ? this.shuffleArray([...standings])
             : [...standings];
         
+        console.log('📊 Sorted players:', sorted.map(s => s.name));
+        
         const matches = [];
         const courts = Math.floor(sorted.length / 4);
+        console.log('📊 Courts:', courts, 'for', sorted.length, 'players');
         
         for (let c = 0; c < courts; c++) {
             const base = c * 4;
@@ -166,12 +171,17 @@ class MexicanoState {
             const p3 = sorted[base + 2];
             const p4 = sorted[base + 3];
             
-            if (!p1 || !p2 || !p3 || !p4) continue;
+            console.log(`📊 Court ${c + 1}: ${p1?.name} & ${p3?.name} vs ${p2?.name} & ${p4?.name}`);
+            
+            if (!p1 || !p2 || !p3 || !p4) {
+                console.error('❌ Missing player at court', c + 1);
+                continue;
+            }
             
             // Find original player objects for indices
             const getIndex = (id) => this.players.findIndex(p => p.id === id);
             
-            matches.push({
+            const match = {
                 id: this.generateId(),
                 court: c + 1,
                 team1: [p1.id, p3.id],
@@ -183,7 +193,10 @@ class MexicanoState {
                 score1: null,
                 score2: null,
                 completed: false
-            });
+            };
+            
+            console.log('📊 Match generated:', match);
+            matches.push(match);
         }
         
         // Players sitting out
