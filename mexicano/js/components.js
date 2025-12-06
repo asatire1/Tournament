@@ -187,7 +187,7 @@ function renderMatchCard(match, index, canEditScores) {
                                 onfocus="onScoreFocus('${match.id}')"
                                 onblur="onScoreBlur('${match.id}', 1, this.value)"
                                 oninput="onScoreInput('${match.id}', 1, this.value)"
-                                min="0" max="${state.pointsPerMatch}" placeholder="-" />
+                                min="0" max="${state.pointsPerMatch || 24}" placeholder="-" />
                             <span class="text-gray-400 font-bold text-xl">:</span>
                             <input type="number" class="score-input-compact" 
                                 value="${match.score2 !== null ? match.score2 : ''}"
@@ -195,7 +195,7 @@ function renderMatchCard(match, index, canEditScores) {
                                 onfocus="onScoreFocus('${match.id}')"
                                 onblur="onScoreBlur('${match.id}', 2, this.value)"
                                 oninput="onScoreInput('${match.id}', 2, this.value)"
-                                min="0" max="${state.pointsPerMatch}" placeholder="-" />
+                                min="0" max="${state.pointsPerMatch || 24}" placeholder="-" />
                         ` : `
                             <span class="score-input-compact">${match.score1 !== null ? match.score1 : '-'}</span>
                             <span class="text-gray-400 font-bold text-xl">:</span>

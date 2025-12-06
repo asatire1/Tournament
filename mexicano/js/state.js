@@ -420,6 +420,8 @@ class MexicanoState {
             clearTimeout(this.saveDebounceTimer);
             this.saveDebounceTimer = null;
         }
+        // Force pendingSave to true to ensure we save
+        this.pendingSave = true;
         return await this.flushSave();
     }
     
@@ -604,19 +606,31 @@ class MexicanoState {
      * Update points after a match is completed
      */
     updatePoints(match, score1, score2) {
+        console.log('📊 Updating points:', { score1, score2, team1: match.team1, team2: match.team2 });
+        
+        // Normalize team arrays in case they came from Firebase as objects
+        const team1Ids = Array.isArray(match.team1) ? match.team1 : Object.values(match.team1 || {});
+        const team2Ids = Array.isArray(match.team2) ? match.team2 : Object.values(match.team2 || {});
+        
         if (this.mode === 'individual') {
-            match.team1.forEach(id => {
+            team1Ids.forEach(id => {
                 const player = this.players.find(p => p.id === id);
                 if (player) {
-                    player.totalPoints += score1;
-                    player.matchesPlayed++;
+                    player.totalPoints = (player.totalPoints || 0) + score1;
+                    player.matchesPlayed = (player.matchesPlayed || 0) + 1;
+                    console.log(`  ✅ ${player.name}: +${score1} pts = ${player.totalPoints} total`);
+                } else {
+                    console.error(`  ❌ Player not found: ${id}`);
                 }
             });
-            match.team2.forEach(id => {
+            team2Ids.forEach(id => {
                 const player = this.players.find(p => p.id === id);
                 if (player) {
-                    player.totalPoints += score2;
-                    player.matchesPlayed++;
+                    player.totalPoints = (player.totalPoints || 0) + score2;
+                    player.matchesPlayed = (player.matchesPlayed || 0) + 1;
+                    console.log(`  ✅ ${player.name}: +${score2} pts = ${player.totalPoints} total`);
+                } else {
+                    console.error(`  ❌ Player not found: ${id}`);
                 }
             });
         } else {
@@ -624,12 +638,12 @@ class MexicanoState {
             const t2 = this.teams.find(t => t.id === match.team2);
             
             if (t1) {
-                t1.totalPoints += score1;
-                t1.matchesPlayed++;
+                t1.totalPoints = (t1.totalPoints || 0) + score1;
+                t1.matchesPlayed = (t1.matchesPlayed || 0) + 1;
             }
             if (t2) {
-                t2.totalPoints += score2;
-                t2.matchesPlayed++;
+                t2.totalPoints = (t2.totalPoints || 0) + score2;
+                t2.matchesPlayed = (t2.matchesPlayed || 0) + 1;
             }
         }
     }
