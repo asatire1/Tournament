@@ -656,6 +656,9 @@
             btn.disabled = true;
             btn.textContent = 'Creating account...';
             
+            // Prevent auth listener from interfering
+            isRegistering = true;
+            
             try {
                 // Create Firebase Auth user
                 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
@@ -713,10 +716,16 @@
                 document.getElementById('registration-success').classList.remove('hidden');
                 showToast('Account created successfully!', 'success');
                 
+                // Reset flag
+                isRegistering = false;
+                
             } catch (error) {
                 console.error('Registration error:', error);
                 btn.disabled = false;
                 btn.textContent = 'Create Account';
+                
+                // Reset flag
+                isRegistering = false;
                 
                 if (error.code === 'auth/email-already-in-use') {
                     showToast('An account with this email already exists. Try signing in.', 'error');
@@ -752,6 +761,9 @@
         
         // ===== AUTH STATE CHECK =====
         
+        // Flag to prevent auth listener from interfering during registration
+        let isRegistering = false;
+        
         async function checkAuthState() {
             // Check for guest user first
             const storedUser = getStoredUser();
@@ -766,6 +778,12 @@
             
             // Check Firebase auth state
             auth.onAuthStateChanged(async (firebaseUser) => {
+                // Skip if we're in the middle of registration
+                if (isRegistering) {
+                    console.log('⏳ Skipping auth state change - registration in progress');
+                    return;
+                }
+                
                 if (firebaseUser) {
                     // User is signed in with Google
                     await handleFirebaseUser(firebaseUser);
@@ -778,11 +796,15 @@
         
         async function handleFirebaseUser(firebaseUser) {
             try {
+                console.log('🔍 Checking user in database:', firebaseUser.uid);
+                
                 // First try to find by googleUid (Google sign-in users)
                 let snapshot = await database.ref(`${USERS_DB_PATH}`)
                     .orderByChild('googleUid')
                     .equalTo(firebaseUser.uid)
                     .once('value');
+                
+                console.log('📦 googleUid query result:', snapshot.exists());
                 
                 // If not found, try authUid (email/password users)
                 if (!snapshot.exists()) {
@@ -790,6 +812,7 @@
                         .orderByChild('authUid')
                         .equalTo(firebaseUser.uid)
                         .once('value');
+                    console.log('📦 authUid query result:', snapshot.exists());
                 }
                 
                 if (snapshot.exists()) {
@@ -798,6 +821,8 @@
                     snapshot.forEach(child => {
                         userData = { id: child.key, ...child.val() };
                     });
+                    
+                    console.log('✅ User found:', userData.name);
                     
                     setStoredUser({
                         type: 'registered',
@@ -814,6 +839,7 @@
                 } else {
                     // Check the sign-in provider
                     const providerId = firebaseUser.providerData && firebaseUser.providerData[0]?.providerId;
+                    console.log('👤 New user, provider:', providerId);
                     
                     if (providerId === 'google.com') {
                         // New Google user - needs to complete profile
@@ -829,7 +855,16 @@
                 }
             } catch (error) {
                 console.error('Error checking user:', error);
-                showToast('Error checking account. Please try again.', 'error');
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                
+                // Check if it's an index error
+                if (error.message && error.message.includes('Index')) {
+                    showToast('Database not configured. Please update Firebase rules.', 'error');
+                    console.error('⚠️ ADMIN: Update Firebase Database Rules with indexes for googleUid and authUid');
+                } else {
+                    showToast('Error checking account: ' + (error.message || 'Unknown error'), 'error');
+                }
                 showLoginOptions();
             }
         }
