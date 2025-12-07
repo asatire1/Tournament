@@ -6,9 +6,9 @@
 /**
  * Main render function - decides what to show based on route
  */
-function render() {
+async function render() {
     if (!state) {
-        renderLandingPage();
+        await renderLandingPage();
         return;
     }
     
@@ -29,7 +29,7 @@ async function onRouteChange(route, tournamentId, organiserKey) {
             state.stopListening();
             state = null;
         }
-        renderLandingPage();
+        await renderLandingPage();
     } else if (route === Router.routes.TOURNAMENT) {
         await loadTournament(tournamentId, organiserKey);
     }

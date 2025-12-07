@@ -434,6 +434,16 @@ async function createTournament(name, passcode, playerCount, courtCount, modeSet
     // Get current user for creator info
     const currentUser = getCurrentUser();
     
+    // Get organizer UID for cross-device "My Tournaments"
+    let organizerUid = null;
+    if (typeof OrganizerAuth !== 'undefined') {
+        try {
+            organizerUid = await OrganizerAuth.ensureUid();
+        } catch (e) {
+            console.warn('Could not get organizer UID:', e);
+        }
+    }
+    
     // Generate default player names
     const playerNames = {};
     for (let i = 0; i < playerCount; i++) {
@@ -471,6 +481,8 @@ async function createTournament(name, passcode, playerCount, courtCount, modeSet
             passcodeHash: hashedPasscode,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            // Organizer UID for cross-device access
+            organizerUid: organizerUid,
             // Mode settings
             ...(modeSettings || defaultModeSettings),
             // Creator info
@@ -494,6 +506,11 @@ async function createTournament(name, passcode, playerCount, courtCount, modeSet
     
     await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}`).set(data);
     MyTournaments.add(tournamentId, name);
+    
+    // Invalidate cloud cache so new tournament shows up
+    if (typeof MyTournamentsCloud !== 'undefined') {
+        MyTournamentsCloud.invalidateCache();
+    }
     
     return { tournamentId, organiserKey };
 }

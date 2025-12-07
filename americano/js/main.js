@@ -22,7 +22,7 @@ async function initializeApp() {
  */
 async function handleRouteChange(route, tournamentId, organiserKey) {
     if (route === Router.routes.HOME) {
-        renderLandingPage();
+        await renderLandingPage();
     } else if (route === Router.routes.TOURNAMENT) {
         await initializeTournament(tournamentId, organiserKey);
     }

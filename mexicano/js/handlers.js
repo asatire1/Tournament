@@ -559,6 +559,16 @@ async function handleCreateTournament() {
         // Get current user for creator info
         const currentUser = getCurrentUser();
         
+        // Get organizer UID for cross-device "My Tournaments"
+        let organizerUid = null;
+        if (typeof OrganizerAuth !== 'undefined') {
+            try {
+                organizerUid = await OrganizerAuth.ensureUid();
+            } catch (e) {
+                console.warn('Could not get organizer UID:', e);
+            }
+        }
+        
         // Prepare mode settings (access control, not tournament mode)
         const accessMode = wizardData.accessMode || 'anyone';
         const modeSettings = {
@@ -615,6 +625,8 @@ async function handleCreateTournament() {
                 status: 'active',
                 organiserKey: organiserKey,
                 passcodeHash: hashedPasscode,
+                // Organizer UID for cross-device access
+                organizerUid: organizerUid,
                 // Mode settings
                 ...modeSettings,
                 // Creator info
@@ -652,6 +664,11 @@ async function handleCreateTournament() {
             name: wizardData.name,
             createdAt: data.meta.createdAt
         });
+        
+        // Invalidate cloud cache so new tournament shows up
+        if (typeof MyTournamentsCloud !== 'undefined') {
+            MyTournamentsCloud.invalidateCache();
+        }
         
         console.log('✅ Showing success modal');
         // Show success modal with links

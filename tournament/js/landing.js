@@ -40,20 +40,37 @@ const MyTournaments = {
 };
 
 // Remove tournament from My Tournaments list (just removes from local storage, not Firebase)
-function removeMyTournament(tournamentId) {
+async function removeMyTournament(tournamentId) {
     if (confirm('Remove this tournament from your list?\n\nNote: This only removes it from your local list. The tournament will still exist and can be accessed with the code.')) {
         MyTournaments.remove(tournamentId);
         // Re-render landing page
         const app = document.getElementById('app');
-        app.innerHTML = renderLandingPage();
+        app.innerHTML = await renderLandingPage();
         setTimeout(() => loadRecentTournaments(), 100);
         showToast('✅ Removed from your list');
     }
 }
 
 // Render the landing page
-function renderLandingPage() {
-    const myTournaments = MyTournaments.getAll();
+async function renderLandingPage() {
+    // Initialize organizer auth (for cross-device "My Tournaments")
+    if (typeof OrganizerAuth !== 'undefined') {
+        OrganizerAuth.init().catch(e => console.warn('OrganizerAuth init:', e));
+    }
+    
+    // Get tournaments from localStorage first (fast)
+    const localTournaments = MyTournaments.getAll();
+    
+    // Try to get cloud tournaments and merge
+    let myTournaments = localTournaments;
+    if (typeof MyTournamentsCloud !== 'undefined' && typeof OrganizerAuth !== 'undefined') {
+        try {
+            const cloudTournaments = await MyTournamentsCloud.getAll('tournaments');
+            myTournaments = MyTournamentsCloud.mergeWithLocal(cloudTournaments, localTournaments);
+        } catch (e) {
+            console.warn('Could not load cloud tournaments:', e);
+        }
+    }
     
     return `
         <div class="min-h-screen" style="font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;">
@@ -127,11 +144,14 @@ function renderLandingPage() {
                                             ${t.name ? t.name.charAt(0).toUpperCase() : '🏓'}
                                         </div>
                                         <div class="min-w-0">
-                                            <h3 class="font-semibold text-gray-800 truncate">${t.name || 'Unnamed Tournament'}</h3>
+                                            <h3 class="font-semibold text-gray-800 truncate flex items-center gap-2">
+                                                ${t.name || 'Unnamed Tournament'}
+                                                ${t.source === 'cloud' ? '<span class="text-green-500 text-xs" title="Synced across devices">☁️</span>' : ''}
+                                            </h3>
                                             <div class="flex items-center gap-2 text-sm text-gray-500">
                                                 <span class="font-mono font-medium text-blue-600">${t.id.toUpperCase()}</span>
                                                 <span class="text-gray-300">•</span>
-                                                <span>${formatDate(t.createdAt)}</span>
+                                                <span>${formatDate(t.updatedAt || t.createdAt)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -663,6 +683,16 @@ async function createTournament() {
     // Get current user for creator info
     const currentUser = getCurrentUser();
     
+    // Get organizer UID for cross-device "My Tournaments"
+    let organizerUid = null;
+    if (typeof OrganizerAuth !== 'undefined') {
+        try {
+            organizerUid = await OrganizerAuth.ensureUid();
+        } catch (e) {
+            console.warn('Could not get organizer UID:', e);
+        }
+    }
+    
     // Generate tournament ID (passcode is used instead of random organiserKey)
     const tournamentId = Router.generateTournamentId();
     
@@ -687,10 +717,15 @@ async function createTournament() {
         }
         
         // Create tournament in Firebase (passcode is stored as organiserKey)
-        await createTournamentInFirebase(tournamentId, passcode, name, playerCount, modeSettings, currentUser);
+        await createTournamentInFirebase(tournamentId, passcode, name, playerCount, modeSettings, currentUser, organizerUid);
         
         // Save to my tournaments (with passcode)
         MyTournaments.add(tournamentId, passcode, name);
+        
+        // Invalidate cloud cache so new tournament shows up
+        if (typeof MyTournamentsCloud !== 'undefined') {
+            MyTournamentsCloud.invalidateCache();
+        }
         
         // Show success modal
         showTournamentCreatedModal(tournamentId, passcode, name);
@@ -717,7 +752,7 @@ function joinTournament() {
 }
 
 // Create tournament data in Firebase
-async function createTournamentInFirebase(tournamentId, organiserKey, name, playerCount = 24, modeSettings = null, creatorUser = null) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, playerCount = 24, modeSettings = null, creatorUser = null, organizerUid = null) {
     // Get the correct fixtures file path based on player count
     const fixturesPath = getFixturesPath(playerCount);
     const playerConfig = CONFIG.PLAYER_CONFIGS[playerCount];
@@ -770,6 +805,8 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
             matchesPerRound: playerConfig.matchesPerRound,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            // Organizer UID for cross-device access
+            organizerUid: organizerUid,
             // New mode settings
             ...(modeSettings || defaultModeSettings),
             // Creator info

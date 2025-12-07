@@ -59,7 +59,7 @@ async function handleRouteChange(route, tournamentId, organiserKey) {
     
     if (route === Router.routes.HOME) {
         // Show landing page
-        renderLandingPageView();
+        await renderLandingPageView();
     } else if (route === Router.routes.TOURNAMENT) {
         // Show tournament view
         await initializeTournament(tournamentId, organiserKey);
@@ -67,7 +67,7 @@ async function handleRouteChange(route, tournamentId, organiserKey) {
 }
 
 // Render landing page
-function renderLandingPageView() {
+async function renderLandingPageView() {
     // Clean up any existing state
     if (state) {
         state.stopListening();
@@ -75,7 +75,7 @@ function renderLandingPageView() {
     }
     
     const app = document.getElementById('app');
-    app.innerHTML = renderLandingPage();
+    app.innerHTML = await renderLandingPage();
     
     // Load recent tournaments after render
     setTimeout(() => loadRecentTournaments(), 100);

@@ -6,14 +6,31 @@
 /**
  * Render the landing page
  */
-function renderLandingPage() {
+async function renderLandingPage() {
     // Clean up any existing state
     if (state) {
         state.stopListening();
         state = null;
     }
     
-    const myTournaments = MyTournaments.getAll();
+    // Initialize organizer auth (for cross-device "My Sessions")
+    if (typeof OrganizerAuth !== 'undefined') {
+        OrganizerAuth.init().catch(e => console.warn('OrganizerAuth init:', e));
+    }
+    
+    // Get tournaments from localStorage first (fast)
+    const localTournaments = MyTournaments.getAll();
+    
+    // Try to get cloud tournaments and merge
+    let myTournaments = localTournaments;
+    if (typeof MyTournamentsCloud !== 'undefined' && typeof OrganizerAuth !== 'undefined') {
+        try {
+            const cloudTournaments = await MyTournamentsCloud.getAll(CONFIG.FIREBASE_ROOT);
+            myTournaments = MyTournamentsCloud.mergeWithLocal(cloudTournaments, localTournaments);
+        } catch (e) {
+            console.warn('Could not load cloud tournaments:', e);
+        }
+    }
     
     document.getElementById('app').innerHTML = `
         <div class="min-h-screen">
@@ -85,11 +102,14 @@ function renderLandingPage() {
                                             ${t.name ? t.name.charAt(0).toUpperCase() : '🔄'}
                                         </div>
                                         <div class="min-w-0">
-                                            <h3 class="font-semibold text-gray-800 truncate">${t.name || 'Unnamed Session'}</h3>
+                                            <h3 class="font-semibold text-gray-800 truncate flex items-center gap-2">
+                                                ${t.name || 'Unnamed Session'}
+                                                ${t.source === 'cloud' ? '<span class="text-green-500 text-xs" title="Synced across devices">☁️</span>' : ''}
+                                            </h3>
                                             <div class="flex items-center gap-2 text-sm text-gray-500">
                                                 <span class="font-mono font-medium text-blue-600">${t.id.toUpperCase()}</span>
                                                 <span class="text-gray-300">•</span>
-                                                <span>${formatTimeAgo(t.createdAt)}</span>
+                                                <span>${formatTimeAgo(t.updatedAt || t.createdAt)}</span>
                                             </div>
                                         </div>
                                     </div>
