@@ -80,8 +80,9 @@ function renderTournament() {
                 <div class="max-w-5xl mx-auto px-4 py-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2 sm:gap-3">
-                            <a href="./" class="hover:scale-110 transition-transform flex-shrink-0">
-                                <img src="../uberpadel-icon.svg" alt="UberPadel" class="h-10 w-10 sm:h-16 sm:w-16">
+                            <a href="./" class="hover:scale-110 transition-transform flex-shrink-0" style="font-size: 56px; line-height: 1;">
+                                <span class="sm:hidden">🔄</span>
+                                <span class="hidden sm:inline" style="font-size: 96px;">🔄</span>
                             </a>
                             <div>
                                 <h1 class="text-lg font-bold truncate">${state.tournamentName || 'Americano Session'}</h1>
