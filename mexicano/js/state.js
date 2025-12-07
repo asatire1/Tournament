@@ -589,7 +589,10 @@ class MexicanoState {
                         team1Names: this.normalizeArray(m.team1Names),
                         team2Names: this.normalizeArray(m.team2Names),
                         team1Indices: this.normalizeArray(m.team1Indices),
-                        team2Indices: this.normalizeArray(m.team2Indices)
+                        team2Indices: this.normalizeArray(m.team2Indices),
+                        // Ensure scores are null not undefined
+                        score1: m.score1 != null ? m.score1 : null,
+                        score2: m.score2 != null ? m.score2 : null
                     };
                 }).filter(Boolean),
                 sittingOut: this.normalizeArray(round.sittingOut)
