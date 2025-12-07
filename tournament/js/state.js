@@ -56,7 +56,7 @@ class TournamentState {
         this.semiMaxScore = CONFIG.SEMI_MAX_SCORE;
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
         this.savedVersions = [];
-        this.showFairnessTabs = true;
+        this.showFairnessTabs = false;
         
         // Registered players (Phase 4 - Browse & Join)
         this.registeredPlayers = {};
@@ -161,7 +161,7 @@ class TournamentState {
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
         
         this.savedVersions = [];
-        this.showFairnessTabs = true;
+        this.showFairnessTabs = false;
     }
 
     // ===== FIREBASE OPERATIONS =====
@@ -197,7 +197,7 @@ class TournamentState {
         this.semiMaxScore = data.semiMaxScore || CONFIG.SEMI_MAX_SCORE;
         this.finalMaxScore = data.finalMaxScore || CONFIG.FINAL_MAX_SCORE;
         this.savedVersions = data.savedVersions || [];
-        this.showFairnessTabs = data.showFairnessTabs !== undefined ? data.showFairnessTabs : true;
+        this.showFairnessTabs = data.showFairnessTabs !== undefined ? data.showFairnessTabs : false;
         
         // Registered players (Phase 4)
         this.registeredPlayers = data.registeredPlayers || {};

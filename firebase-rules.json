@@ -3,6 +3,7 @@
     // Users - for auth system
     "users": {
       ".read": true,
+      ".indexOn": ["googleUid", "authUid"],
       "$userId": {
         ".write": true,
         ".validate": "newData.hasChildren(['name', 'type'])",
@@ -21,6 +22,12 @@
         },
         "googleUid": {
           ".validate": "newData.isString()"
+        },
+        "authUid": {
+          ".validate": "newData.isString()"
+        },
+        "authProvider": {
+          ".validate": "newData.isString() && (newData.val() == 'google' || newData.val() == 'email')"
         },
         "playtomicUsername": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"

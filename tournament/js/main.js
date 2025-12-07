@@ -593,9 +593,9 @@ function render() {
                     
                     <!-- Main header content -->
                     <div class="flex items-start gap-4 mb-4">
-                        <a href="./" class="hover:scale-110 transition-transform flex-shrink-0" style="font-size: 56px; line-height: 1;">
+                        <a href="./" class="hover:scale-110 transition-transform flex-shrink-0" style="font-size: 45px; line-height: 1;">
                             <span class="sm:hidden">🏓</span>
-                            <span class="hidden sm:inline" style="font-size: 96px;">🏓</span>
+                            <span class="hidden sm:inline" style="font-size: 77px;">🏓</span>
                         </a>
                         <div class="flex-1 min-w-0">
                             <h1 class="text-2xl md:text-3xl font-bold mb-1 truncate" style="letter-spacing: -0.5px;">${state.tournamentName || 'Padel Tournament'}</h1>
