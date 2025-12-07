@@ -13,7 +13,7 @@ Router.onRouteChange = async function(route, tournamentId, organiserKey) {
     
     if (route === Router.routes.HOME) {
         // Landing page
-        renderLandingPage();
+        await renderLandingPage();
     } else if (route === Router.routes.TOURNAMENT && tournamentId) {
         // Tournament page
         await loadTournament(tournamentId, organiserKey);

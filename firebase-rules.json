@@ -36,6 +36,7 @@
     
     // Tournament data - existing rules (Mix format)
     "tournaments": {
+      ".indexOn": ["meta/organizerUid"],
       "$tournamentId": {
         ".read": true,
         ".write": true
@@ -44,6 +45,7 @@
     
     // Americano tournaments
     "americano-tournaments": {
+      ".indexOn": ["meta/organizerUid"],
       "$tournamentId": {
         ".read": true,
         ".write": true
@@ -52,6 +54,7 @@
     
     // Mexicano tournaments
     "mexicano-tournaments": {
+      ".indexOn": ["meta/organizerUid"],
       "$tournamentId": {
         ".read": true,
         ".write": true
@@ -60,6 +63,7 @@
     
     // Team League tournaments
     "team-tournaments": {
+      ".indexOn": ["meta/organizerUid"],
       "$tournamentId": {
         ".read": true,
         ".write": true

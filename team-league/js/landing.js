@@ -88,8 +88,25 @@ const WizardState = {
 
 // ===== LANDING PAGE RENDER =====
 
-function renderLandingPage() {
-    const myTournaments = MyTournaments.getAll();
+async function renderLandingPage() {
+    // Initialize organizer auth (for cross-device "My Tournaments")
+    if (typeof OrganizerAuth !== 'undefined') {
+        OrganizerAuth.init().catch(e => console.warn('OrganizerAuth init:', e));
+    }
+    
+    // Get tournaments from localStorage first (fast)
+    const localTournaments = MyTournaments.getAll();
+    
+    // Try to get cloud tournaments and merge
+    let myTournaments = localTournaments;
+    if (typeof MyTournamentsCloud !== 'undefined' && typeof OrganizerAuth !== 'undefined') {
+        try {
+            const cloudTournaments = await MyTournamentsCloud.getAll('team-tournaments');
+            myTournaments = MyTournamentsCloud.mergeWithLocal(cloudTournaments, localTournaments);
+        } catch (e) {
+            console.warn('Could not load cloud tournaments:', e);
+        }
+    }
     
     document.getElementById('app').innerHTML = `
         <div class="min-h-screen">
@@ -163,11 +180,14 @@ function renderLandingPage() {
                                             ${t.name ? t.name.charAt(0).toUpperCase() : '👥'}
                                         </div>
                                         <div class="min-w-0">
-                                            <h3 class="font-semibold text-gray-800 truncate">${t.name || 'Unnamed Tournament'}</h3>
+                                            <h3 class="font-semibold text-gray-800 truncate flex items-center gap-2">
+                                                ${t.name || 'Unnamed Tournament'}
+                                                ${t.source === 'cloud' ? '<span class="text-green-500 text-xs" title="Synced across devices">☁️</span>' : ''}
+                                            </h3>
                                             <div class="flex items-center gap-2 text-sm text-gray-500">
                                                 <span class="font-mono font-medium text-purple-600">${t.id.toUpperCase()}</span>
                                                 <span class="text-gray-300">•</span>
-                                                <span>${formatTimeAgo(t.createdAt)}</span>
+                                                <span>${formatTimeAgo(t.updatedAt || t.createdAt)}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -790,6 +810,16 @@ function setGroupMode(mode) {
 async function createTournamentFromWizard() {
     const tournamentId = Router.generateTournamentId();
     
+    // Get organizer UID for cross-device "My Tournaments"
+    let organizerUid = null;
+    if (typeof OrganizerAuth !== 'undefined') {
+        try {
+            organizerUid = await OrganizerAuth.ensureUid();
+        } catch (e) {
+            console.warn('Could not get organizer UID:', e);
+        }
+    }
+    
     // Validate level range if level-based
     if (WizardState.accessMode === 'level-based') {
         const levelMin = WizardState.levelMin || 0;
@@ -822,7 +852,8 @@ async function createTournamentFromWizard() {
             WizardState.groupMode,
             WizardState.includeThirdPlace,
             WizardState.knockoutFormat,
-            modeSettings
+            modeSettings,
+            organizerUid
         );
         
         WizardState.tournamentId = tournamentId;
@@ -830,6 +861,11 @@ async function createTournamentFromWizard() {
         WizardState.initTeams();
         
         MyTournaments.add(tournamentId, WizardState.tournamentName);
+        
+        // Invalidate cloud cache so new tournament shows up
+        if (typeof MyTournamentsCloud !== 'undefined') {
+            MyTournamentsCloud.invalidateCache();
+        }
         
         showTeamEntryWizard();
         
@@ -1232,17 +1268,17 @@ async function handleJoinTournament() {
     }
 }
 
-function removeFromMyTournaments(tournamentId) {
+async function removeFromMyTournaments(tournamentId) {
     if (confirm('Remove from your list?')) {
         MyTournaments.remove(tournamentId);
-        renderLandingPage();
+        await renderLandingPage();
         showToast('✅ Removed');
     }
 }
 
 // ===== FIREBASE OPERATIONS =====
 
-async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final', modeSettings = null) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final', modeSettings = null, organizerUid = null) {
     // Get current user for creator info
     const currentUser = getCurrentUser();
     
@@ -1262,6 +1298,8 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, team
             formatType: 'team_league',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            // Organizer UID for cross-device access
+            organizerUid: organizerUid,
             // Mode settings
             ...(modeSettings || defaultModeSettings),
             // Creator info
