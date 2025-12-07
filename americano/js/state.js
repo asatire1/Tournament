@@ -152,8 +152,8 @@ class AmericanoState {
             Object.entries(data.scores).forEach(([key, value]) => {
                 const newKey = this._migrateScoreKey(key, data.courtCount || CONFIG.DEFAULT_COURTS);
                 this.scores[newKey] = {
-                    team1: value?.team1 === -1 ? null : value?.team1,
-                    team2: value?.team2 === -1 ? null : value?.team2
+                    team1: (value?.team1 != null && value?.team1 !== -1) ? value.team1 : null,
+                    team2: (value?.team2 != null && value?.team2 !== -1) ? value.team2 : null
                 };
             });
         } else {
@@ -177,8 +177,8 @@ class AmericanoState {
             Object.entries(scoresData).forEach(([key, value]) => {
                 const newKey = this._migrateScoreKey(key, this.courtCount);
                 newScores[newKey] = {
-                    team1: value?.team1 === -1 ? null : value?.team1,
-                    team2: value?.team2 === -1 ? null : value?.team2
+                    team1: (value?.team1 != null && value?.team1 !== -1) ? value.team1 : null,
+                    team2: (value?.team2 != null && value?.team2 !== -1) ? value.team2 : null
                 };
             });
         }
@@ -556,7 +556,15 @@ class AmericanoState {
      */
     getScoreByFixture(fixtureIndex) {
         const key = `f_${fixtureIndex}`;
-        return this.scores[key] || { team1: null, team2: null };
+        const score = this.scores[key];
+        if (!score) {
+            return { team1: null, team2: null };
+        }
+        // Ensure undefined values become null
+        return {
+            team1: score.team1 != null ? score.team1 : null,
+            team2: score.team2 != null ? score.team2 : null
+        };
     }
     
     // Legacy methods for backward compatibility
