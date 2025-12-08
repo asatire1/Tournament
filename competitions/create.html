@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>Create Competition | Uber Padel</title>
+    <meta name="description" content="Create and organize your own padel competition on Uber Padel.">
+    <meta name="robots" content="noindex, follow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="../uberpadel-icon.svg">
+    <link rel="apple-touch-icon" href="../uberpadel-icon-512.png">
+    
+    <!-- Theme -->
+    <meta name="theme-color" content="#2563EB">
+    
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        body { font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif; }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        
+        .format-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .format-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .format-card.selected {
+            border-color: #3b82f6;
+            background: linear-gradient(to bottom right, #eff6ff, #dbeafe);
+        }
+        .format-card.selected .format-check {
+            display: flex;
+        }
+        
+        .input-field {
+            transition: all 0.2s ease;
+        }
+        .input-field:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        .step-indicator {
+            transition: all 0.3s ease;
+        }
+        .step-indicator.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .step-indicator.completed {
+            background: #10b981;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="../index.html" class="flex items-center gap-3">
+                    <img src="../uberpadel-icon.svg" alt="Uber Padel" class="w-10 h-10">
+                    <span class="font-bold text-xl text-gray-800">Uber Padel</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="browse.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Browse</a>
+                    <a href="create.html" class="text-blue-600 font-semibold">Create</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="max-w-3xl mx-auto px-4 py-8">
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center py-20">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-500">Loading...</p>
+        </div>
+        
+        <!-- Auth Required -->
+        <div id="auth-required" class="hidden">
+            <div class="bg-white rounded-3xl shadow-xl p-8 text-center animate-fade-in-up">
+                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-4xl">🔐</span>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Sign In to Create</h1>
+                <p class="text-gray-600 mb-6">You need to be signed in to create a competition.</p>
+                <a href="../account/login.html?redirect=/competitions/create.html" 
+                   class="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                    Sign In
+                </a>
+            </div>
+        </div>
+        
+        <!-- Step Indicators -->
+        <div id="step-indicators" class="hidden mb-8">
+            <div class="flex items-center justify-center gap-4">
+                <div class="step-indicator active w-10 h-10 rounded-full flex items-center justify-center font-bold" data-step="1">1</div>
+                <div class="w-12 h-1 bg-gray-200 rounded"></div>
+                <div class="step-indicator w-10 h-10 rounded-full flex items-center justify-center font-bold bg-gray-200 text-gray-500" data-step="2">2</div>
+                <div class="w-12 h-1 bg-gray-200 rounded"></div>
+                <div class="step-indicator w-10 h-10 rounded-full flex items-center justify-center font-bold bg-gray-200 text-gray-500" data-step="3">3</div>
+            </div>
+            <div class="flex justify-center mt-2 text-sm text-gray-500">
+                <span class="w-20 text-center">Format</span>
+                <span class="w-20 text-center">Details</span>
+                <span class="w-20 text-center">Settings</span>
+            </div>
+        </div>
+        
+        <!-- Step 1: Choose Format -->
+        <div id="step-1" class="hidden animate-fade-in-up">
+            <div class="bg-white rounded-3xl shadow-xl p-8">
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Choose Format</h1>
+                <p class="text-gray-600 mb-6">Select the tournament format for your competition</p>
+                
+                <div class="grid md:grid-cols-2 gap-4 mb-8">
+                    <!-- Americano -->
+                    <div class="format-card border-2 border-gray-200 rounded-2xl p-6 relative" onclick="selectFormat('americano')">
+                        <div class="format-check hidden absolute top-4 right-4 w-6 h-6 bg-blue-600 rounded-full items-center justify-center text-white text-sm">✓</div>
+                        <div class="text-4xl mb-3">🔄</div>
+                        <h3 class="font-bold text-lg text-gray-800 mb-1">Americano</h3>
+                        <p class="text-sm text-gray-600">Rotating partners - play with everyone, compete against everyone</p>
+                        <div class="mt-3 text-xs text-gray-500">8-24 players</div>
+                    </div>
+                    
+                    <!-- Mexicano -->
+                    <div class="format-card border-2 border-gray-200 rounded-2xl p-6 relative" onclick="selectFormat('mexicano')">
+                        <div class="format-check hidden absolute top-4 right-4 w-6 h-6 bg-blue-600 rounded-full items-center justify-center text-white text-sm">✓</div>
+                        <div class="text-4xl mb-3">🌶️</div>
+                        <h3 class="font-bold text-lg text-gray-800 mb-1">Mexicano</h3>
+                        <p class="text-sm text-gray-600">Dynamic pairings based on current standings each round</p>
+                        <div class="mt-3 text-xs text-gray-500">8-24 players</div>
+                    </div>
+                    
+                    <!-- Mix Tournament -->
+                    <div class="format-card border-2 border-gray-200 rounded-2xl p-6 relative" onclick="selectFormat('mix')">
+                        <div class="format-check hidden absolute top-4 right-4 w-6 h-6 bg-blue-600 rounded-full items-center justify-center text-white text-sm">✓</div>
+                        <div class="text-4xl mb-3">🏆</div>
+                        <h3 class="font-bold text-lg text-gray-800 mb-1">Mix Tournament</h3>
+                        <p class="text-sm text-gray-600">Group stage followed by knockout bracket</p>
+                        <div class="mt-3 text-xs text-gray-500">8-32 players</div>
+                    </div>
+                    
+                    <!-- Team League -->
+                    <div class="format-card border-2 border-gray-200 rounded-2xl p-6 relative" onclick="selectFormat('team-league')">
+                        <div class="format-check hidden absolute top-4 right-4 w-6 h-6 bg-blue-600 rounded-full items-center justify-center text-white text-sm">✓</div>
+                        <div class="text-4xl mb-3">👥</div>
+                        <h3 class="font-bold text-lg text-gray-800 mb-1">Team League</h3>
+                        <p class="text-sm text-gray-600">Fixed teams compete in round-robin league format</p>
+                        <div class="mt-3 text-xs text-gray-500">3-16 teams</div>
+                    </div>
+                </div>
+                
+                <button id="step1-next" onclick="goToStep(2)" disabled
+                    class="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors">
+                    Continue
+                </button>
+            </div>
+        </div>
+        
+        <!-- Step 2: Event Details -->
+        <div id="step-2" class="hidden animate-fade-in-up">
+            <div class="bg-white rounded-3xl shadow-xl p-8">
+                <button onclick="goToStep(1)" class="text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-2">
+                    <span>←</span> Back
+                </button>
+                
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Event Details</h1>
+                <p class="text-gray-600 mb-6">Tell us about your competition</p>
+                
+                <form id="details-form" class="space-y-5">
+                    <!-- Name -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Competition Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="comp-name" required maxlength="60"
+                            class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                            placeholder="e.g., Sunday Padel Social" />
+                    </div>
+                    
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Description <span class="text-gray-400 font-normal">(optional)</span>
+                        </label>
+                        <textarea id="comp-description" rows="3" maxlength="500"
+                            class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none resize-none"
+                            placeholder="Share any additional details..."></textarea>
+                    </div>
+                    
+                    <!-- Date & Time -->
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="comp-date" required
+                                class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Time <span class="text-red-500">*</span>
+                            </label>
+                            <input type="time" id="comp-time" required
+                                class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                        </div>
+                    </div>
+                    
+                    <!-- Location -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Location <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="comp-location" required maxlength="100"
+                            class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                            placeholder="e.g., Stretford Padel Club" />
+                    </div>
+                    
+                    <button type="submit"
+                        class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                        Continue
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Step 3: Settings -->
+        <div id="step-3" class="hidden animate-fade-in-up">
+            <div class="bg-white rounded-3xl shadow-xl p-8">
+                <button onclick="goToStep(2)" class="text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-2">
+                    <span>←</span> Back
+                </button>
+                
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Competition Settings</h1>
+                <p class="text-gray-600 mb-6">Configure player limits and restrictions</p>
+                
+                <form id="settings-form" class="space-y-6">
+                    <!-- Player Capacity -->
+                    <div class="bg-gray-50 rounded-xl p-5">
+                        <h3 class="font-semibold text-gray-800 mb-4">Player Capacity</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Players</label>
+                                <input type="number" id="min-players" min="4" max="32"
+                                    class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Players</label>
+                                <input type="number" id="max-players" min="4" max="32"
+                                    class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Level Restrictions -->
+                    <div class="bg-gray-50 rounded-xl p-5">
+                        <h3 class="font-semibold text-gray-800 mb-4">Level Restrictions</h3>
+                        <div class="grid md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Level</label>
+                                <input type="number" id="min-level" min="0" max="10" step="0.01" value="0"
+                                    class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Level</label>
+                                <input type="number" id="max-level" min="0" max="10" step="0.01" value="10"
+                                    class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500">Set to 0-10 to allow all levels</p>
+                    </div>
+                    
+                    <!-- Access Restriction -->
+                    <div class="bg-gray-50 rounded-xl p-5">
+                        <h3 class="font-semibold text-gray-800 mb-4">Who Can Join?</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-start gap-3 cursor-pointer p-3 rounded-xl hover:bg-gray-100 transition-colors">
+                                <input type="radio" name="access" value="anyone" checked class="mt-1">
+                                <div>
+                                    <div class="font-medium text-gray-800">Anyone</div>
+                                    <div class="text-sm text-gray-500">Guests and registered users can join</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-3 cursor-pointer p-3 rounded-xl hover:bg-gray-100 transition-colors">
+                                <input type="radio" name="access" value="registered" class="mt-1">
+                                <div>
+                                    <div class="font-medium text-gray-800">Registered Only</div>
+                                    <div class="text-sm text-gray-500">Only users with an account can join</div>
+                                </div>
+                            </label>
+                            <label class="flex items-start gap-3 cursor-pointer p-3 rounded-xl hover:bg-gray-100 transition-colors">
+                                <input type="radio" name="access" value="verified" class="mt-1">
+                                <div>
+                                    <div class="font-medium text-gray-800">Verified Only</div>
+                                    <div class="text-sm text-gray-500">Only verified users with confirmed levels</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Courts (format-specific) -->
+                    <div id="courts-section" class="bg-gray-50 rounded-xl p-5">
+                        <h3 class="font-semibold text-gray-800 mb-4">Number of Courts</h3>
+                        <input type="number" id="courts" min="1" max="10" value="2"
+                            class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                    </div>
+                    
+                    <button type="submit" id="create-btn"
+                        class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors">
+                        Create Competition
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Success -->
+        <div id="success-state" class="hidden animate-fade-in-up">
+            <div class="bg-white rounded-3xl shadow-xl p-8 text-center">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <span class="text-4xl">🎉</span>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">Competition Created!</h1>
+                <p class="text-gray-600 mb-6">Your competition is ready. Save your organizer key!</p>
+                
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                    <div class="text-sm text-amber-800 mb-2">🔑 Organizer Key (save this!):</div>
+                    <div id="organiser-key" class="text-2xl font-mono font-bold text-amber-900">------</div>
+                </div>
+                
+                <div class="flex flex-col gap-3">
+                    <a id="view-competition-link" href="#" 
+                       class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                        View Competition
+                    </a>
+                    <a href="browse.html" 
+                       class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
+                        Browse All
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+    
+    <!-- Services -->
+    <script src="../account/auth-service.js"></script>
+    
+    <!-- Competition Service (Phase 5) -->
+    <script src="competition-service.js"></script>
+    
+    <script>
+        // ===== STATE =====
+        let currentUser = null;
+        let currentStep = 1;
+        let selectedFormat = null;
+        let formData = {};
+        
+        // ===== INITIALIZATION =====
+        
+        async function init() {
+            await AuthService.init();
+            CompetitionService.init();
+            
+            currentUser = AuthService.getCurrentUser();
+            
+            document.getElementById('loading-state').classList.add('hidden');
+            
+            if (!currentUser) {
+                document.getElementById('auth-required').classList.remove('hidden');
+                return;
+            }
+            
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('comp-date').min = today;
+            
+            showStep(1);
+        }
+        
+        // ===== STEP NAVIGATION =====
+        
+        function showStep(step) {
+            currentStep = step;
+            
+            // Hide all steps
+            document.getElementById('step-1').classList.add('hidden');
+            document.getElementById('step-2').classList.add('hidden');
+            document.getElementById('step-3').classList.add('hidden');
+            
+            // Show current step
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+            document.getElementById('step-indicators').classList.remove('hidden');
+            
+            // Update indicators
+            document.querySelectorAll('.step-indicator').forEach((el, i) => {
+                el.classList.remove('active', 'completed');
+                if (i + 1 < step) {
+                    el.classList.add('completed');
+                } else if (i + 1 === step) {
+                    el.classList.add('active');
+                }
+            });
+        }
+        
+        function goToStep(step) {
+            if (step === 2 && !selectedFormat) {
+                showToast('Please select a format', 'error');
+                return;
+            }
+            showStep(step);
+        }
+        
+        // ===== FORMAT SELECTION =====
+        
+        function selectFormat(format) {
+            selectedFormat = format;
+            
+            // Update UI
+            document.querySelectorAll('.format-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Enable next button
+            document.getElementById('step1-next').disabled = false;
+            
+            // Update defaults for step 3
+            updateFormatDefaults(format);
+        }
+        
+        function updateFormatDefaults(format) {
+            const defaults = {
+                'americano': { min: 8, max: 24, courts: 2 },
+                'mexicano': { min: 8, max: 24, courts: 2 },
+                'mix': { min: 8, max: 32, courts: 2 },
+                'team-league': { min: 6, max: 32, courts: 2 }
+            };
+            
+            const d = defaults[format] || defaults.americano;
+            document.getElementById('min-players').value = d.min;
+            document.getElementById('max-players').value = d.max;
+            document.getElementById('courts').value = d.courts;
+        }
+        
+        // ===== FORM HANDLERS =====
+        
+        document.getElementById('details-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            formData.name = document.getElementById('comp-name').value.trim();
+            formData.description = document.getElementById('comp-description').value.trim();
+            formData.eventDate = document.getElementById('comp-date').value;
+            formData.eventTime = document.getElementById('comp-time').value;
+            formData.location = document.getElementById('comp-location').value.trim();
+            
+            goToStep(3);
+        });
+        
+        document.getElementById('settings-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            formData.format = selectedFormat;
+            formData.minPlayers = parseInt(document.getElementById('min-players').value);
+            formData.maxPlayers = parseInt(document.getElementById('max-players').value);
+            formData.minLevel = parseFloat(document.getElementById('min-level').value);
+            formData.maxLevel = parseFloat(document.getElementById('max-level').value);
+            formData.accessRestriction = document.querySelector('input[name="access"]:checked').value;
+            formData.courts = parseInt(document.getElementById('courts').value);
+            formData.organizerId = currentUser.id;
+            formData.organizerName = currentUser.name;
+            
+            await createCompetition();
+        });
+        
+        // ===== CREATE COMPETITION =====
+        
+        async function createCompetition() {
+            const btn = document.getElementById('create-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            
+            try {
+                const { competition, organiserKey } = await CompetitionService.create(formData);
+                
+                // Show success
+                document.getElementById('step-indicators').classList.add('hidden');
+                document.getElementById('step-3').classList.add('hidden');
+                document.getElementById('success-state').classList.remove('hidden');
+                
+                document.getElementById('organiser-key').textContent = organiserKey;
+                document.getElementById('view-competition-link').href = `view.html?id=${competition.meta.id}`;
+                
+            } catch (error) {
+                console.error('Create error:', error);
+                showToast('Failed to create competition', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Create Competition';
+            }
+        }
+        
+        // ===== UTILITY =====
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-green-600' : 'bg-gray-800';
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg animate-fade-in-up`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Start
+        init();
+    </script>
+</body>
+</html>

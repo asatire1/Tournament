@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competition Details - UberPadel</title>
+    <meta name="description" content="View competition details and register to play.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --secondary: #0ea5e9;
+            --secondary-dark: #0284c7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #ffffff;
+            --bg-light: #f9fafb;
+            --border: #e5e7eb;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background: var(--bg-light);
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+            color: white;
+            padding: 1rem;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: white;
+        }
+        .logo-icon { width: 36px; height: 36px; }
+        .logo-text { font-size: 1.25rem; font-weight: 700; }
+        .header-actions { display: flex; gap: 0.5rem; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-white { background: white; color: var(--secondary); }
+        .btn-ghost { background: rgba(255,255,255,0.1); color: white; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+        .btn-lg { padding: 0.875rem 2rem; font-size: 1rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Main */
+        .main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { color: var(--secondary); }
+        
+        /* Hero Section */
+        .hero {
+            background: var(--bg);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+        .hero-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .format-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+        .format-emoji { font-size: 1.25rem; }
+        .status-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-registration { background: #dcfce7; color: #166534; }
+        .status-live { background: #fef3c7; color: #92400e; }
+        .status-completed { background: #f3f4f6; color: #6b7280; }
+        
+        .hero-body { padding: 0 1.5rem 1.5rem; }
+        .competition-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem; }
+        .competition-meta { display: flex; flex-wrap: wrap; gap: 1.5rem; color: var(--text-light); }
+        .meta-item { display: flex; align-items: center; gap: 0.5rem; }
+        .meta-icon { font-size: 1.1rem; }
+        
+        /* Info Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (min-width: 640px) {
+            .info-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        .info-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        .info-card-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            margin-bottom: 0.75rem;
+        }
+        .info-card-content { font-size: 1.125rem; font-weight: 600; }
+        .info-card-sub { font-size: 0.875rem; color: var(--text-light); margin-top: 0.25rem; }
+        
+        /* Players Section */
+        .players-section {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .section-title { font-size: 1rem; font-weight: 600; }
+        
+        .players-progress {
+            margin-bottom: 1rem;
+        }
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-light);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+        
+        .players-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.5rem;
+        }
+        .player-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-light);
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+        .player-avatar {
+            width: 28px;
+            height: 28px;
+            background: var(--secondary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .player-name { flex: 1; }
+        .player-level {
+            font-size: 0.7rem;
+            padding: 0.125rem 0.375rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-light);
+        }
+        
+        /* Description */
+        .description-section {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .description-text {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        
+        /* Actions */
+        .actions-section {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .actions-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .actions-subtitle { color: var(--text-light); margin-bottom: 1.25rem; }
+        .action-buttons { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+        
+        /* Organizer */
+        .organizer-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        .organizer-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .organizer-details { flex: 1; }
+        .organizer-label { font-size: 0.75rem; color: var(--text-light); }
+        .organizer-name { font-weight: 600; }
+        
+        /* Loading/Error */
+        .loading-state, .error-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            z-index: 1000;
+            display: none;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg);
+            border-radius: 16px;
+            max-width: 400px;
+            width: 100%;
+            padding: 1.5rem;
+        }
+        .modal-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
+        .modal-text { color: var(--text-light); margin-bottom: 1.5rem; }
+        .modal-buttons { display: flex; gap: 0.75rem; }
+        .modal-buttons .btn { flex: 1; }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.375rem; }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+        .form-input:focus { outline: none; border-color: var(--secondary); }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--text);
+            color: white;
+            padding: 0.875rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 1001;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo-container">
+                <img src="/uberpadel-icon.svg" alt="UberPadel" class="logo-icon">
+                <span class="logo-text">UberPadel</span>
+            </a>
+            <div class="header-actions" id="header-actions">
+                <a href="/login.html" class="btn btn-ghost">Login</a>
+            </div>
+        </div>
+    </header>
+    
+    <main class="main">
+        <a href="/competitions/" class="back-link">← Back to Competitions</a>
+        
+        <div id="content">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading competition...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Registration Modal -->
+    <div class="modal-overlay" id="register-modal">
+        <div class="modal">
+            <h3 class="modal-title">Register for Competition</h3>
+            <form id="register-form">
+                <div class="form-group">
+                    <label class="form-label">Your Name</label>
+                    <input type="text" class="form-input" id="reg-name" required placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Skill Level (optional)</label>
+                    <input type="number" class="form-input" id="reg-level" placeholder="e.g., 3.5" step="0.5" min="1" max="5">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHnMaQMwH9R3yEVQPV1M_RPWz9gF3IBJI",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.appspot.com",
+            messagingSenderId: "802492722498",
+            appId: "1:802492722498:web:ea2c0cd65ea2c0f40df9ee"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        let currentUser = null;
+        let competition = null;
+        let userRegistration = null;
+        const competitionId = new URLSearchParams(window.location.search).get('id');
+        
+        const formats = {
+            'americano': { emoji: '🔄', name: 'Americano' },
+            'mexicano': { emoji: '🎯', name: 'Mexicano' },
+            'mix': { emoji: '🏓', name: 'Mix Tournament' },
+            'team-league': { emoji: '👥', name: 'Team League' }
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!competitionId) {
+                showError('No competition ID provided');
+                return;
+            }
+            loadCompetition();
+            checkAuth();
+            
+            document.getElementById('register-form').addEventListener('submit', handleRegistration);
+        });
+        
+        async function loadCompetition() {
+            try {
+                const snapshot = await database.ref(`competitions/${competitionId}`).once('value');
+                competition = snapshot.val();
+                
+                if (!competition) {
+                    // Try sample data
+                    competition = getSampleCompetition(competitionId);
+                }
+                
+                if (!competition) {
+                    showError('Competition not found');
+                    return;
+                }
+                
+                // Find user's registration
+                userRegistration = null;
+                if (currentUser && competition.registrations) {
+                    Object.entries(competition.registrations).forEach(([key, val]) => {
+                        if (val.userId === currentUser.uid) {
+                            userRegistration = { id: key, ...val };
+                        }
+                    });
+                }
+                
+                renderCompetition();
+            } catch (e) {
+                console.error(e);
+                competition = getSampleCompetition(competitionId);
+                if (competition) {
+                    renderCompetition();
+                } else {
+                    showError('Error loading competition');
+                }
+            }
+        }
+        
+        function getSampleCompetition(id) {
+            const samples = {
+                'demo-1': {
+                    name: 'Sunday Social Americano',
+                    format: 'americano',
+                    status: 'registration',
+                    description: 'Join us for a fun Sunday morning Americano session! All skill levels welcome. Rotating partners ensure everyone plays with everyone.',
+                    schedule: { date: getTomorrow(), time: '10:00' },
+                    location: { name: 'Padel Club Manchester', address: '123 Sports Lane, Manchester' },
+                    players: { min: 8, max: 16, current: 12 },
+                    registration: { type: 'open', levelMin: 2.0, levelMax: 4.0 },
+                    organizer: { name: 'John Smith' },
+                    registrations: [
+                        { name: 'Alice Johnson', level: 3.0 },
+                        { name: 'Bob Williams', level: 2.5 },
+                        { name: 'Charlie Brown', level: 3.5 },
+                        { name: 'Diana Ross', level: 2.0 }
+                    ]
+                },
+                'demo-2': {
+                    name: 'Mexicano Madness',
+                    format: 'mexicano',
+                    status: 'registration',
+                    description: 'Competitive Mexicano tournament with standings-based pairing.',
+                    schedule: { date: getNextWeek(), time: '14:00' },
+                    location: { name: 'Padel Point Leeds' },
+                    players: { min: 4, max: 12, current: 8 },
+                    registration: { type: 'open' },
+                    organizer: { name: 'Sarah Johnson' },
+                    registrations: []
+                },
+                'demo-3': {
+                    name: 'Team League Championship',
+                    format: 'team-league',
+                    status: 'live',
+                    schedule: { date: getToday(), time: '09:00' },
+                    location: { name: 'Urban Padel Birmingham' },
+                    players: { min: 8, max: 16, current: 16 },
+                    registration: { levelMin: 3.0, levelMax: 5.0 },
+                    organizer: { name: 'Mike Wilson' }
+                },
+                'demo-4': {
+                    name: 'Friday Mix Tournament',
+                    format: 'mix',
+                    status: 'completed',
+                    schedule: { date: getLastWeek(), time: '18:00' },
+                    location: { name: 'Padel UK London' },
+                    players: { min: 20, max: 24, current: 24 },
+                    organizer: { name: 'Emma Davis' }
+                }
+            };
+            return samples[id] || null;
+        }
+        
+        function getToday() { return new Date().toISOString().split('T')[0]; }
+        function getTomorrow() { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; }
+        function getNextWeek() { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; }
+        function getLastWeek() { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0]; }
+        
+        function renderCompetition() {
+            const c = competition;
+            const f = formats[c.format] || { emoji: '🎾', name: c.format };
+            const statusCls = { 'registration': 'status-registration', 'live': 'status-live', 'completed': 'status-completed' }[c.status] || '';
+            const statusTxt = { 'registration': 'Registration Open', 'live': 'Live Now', 'completed': 'Completed' }[c.status] || c.status;
+            const dateStr = formatDate(c.schedule?.date);
+            const playerPct = c.players?.max ? (c.players.current / c.players.max) * 100 : 0;
+            const spotsLeft = (c.players?.max || 0) - (c.players?.current || 0);
+            const levelStr = c.registration?.levelMin ? `${c.registration.levelMin} - ${c.registration.levelMax || '5.0'}` : 'Open';
+            
+            const registrations = c.registrations || [];
+            
+            document.getElementById('content').innerHTML = `
+                <div class="hero">
+                    <div class="hero-header">
+                        <span class="format-badge">
+                            <span class="format-emoji">${f.emoji}</span>
+                            ${f.name}
+                        </span>
+                        <span class="status-badge ${statusCls}">${statusTxt}</span>
+                    </div>
+                    <div class="hero-body">
+                        <h1 class="competition-title">${esc(c.name)}</h1>
+                        <div class="competition-meta">
+                            <div class="meta-item">
+                                <span class="meta-icon">📅</span>
+                                <span>${dateStr} at ${c.schedule?.time || 'TBD'}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">📍</span>
+                                <span>${esc(c.location?.name || 'TBD')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-card-title">Players</div>
+                        <div class="info-card-content">${c.players?.current || 0} / ${c.players?.max || '?'}</div>
+                        <div class="info-card-sub">${spotsLeft > 0 ? spotsLeft + ' spots remaining' : 'Full'}</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Level Range</div>
+                        <div class="info-card-content">${levelStr}</div>
+                        <div class="info-card-sub">${c.registration?.type === 'open' ? 'Open registration' : 'Level restricted'}</div>
+                    </div>
+                </div>
+                
+                ${c.description ? `
+                <div class="description-section">
+                    <div class="section-title" style="margin-bottom:0.75rem">About</div>
+                    <p class="description-text">${esc(c.description)}</p>
+                </div>
+                ` : ''}
+                
+                <div class="players-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Registered Players</h3>
+                    </div>
+                    <div class="players-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${playerPct}%"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>${c.players?.current || 0} registered</span>
+                            <span>${c.players?.max || '?'} max</span>
+                        </div>
+                    </div>
+                    ${registrations.length > 0 ? `
+                    <div class="players-list">
+                        ${registrations.map(p => `
+                            <div class="player-item">
+                                <div class="player-avatar">${(p.name || 'P')[0].toUpperCase()}</div>
+                                <span class="player-name">${esc(p.name)}</span>
+                                ${p.level ? `<span class="player-level">${p.level}</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : '<p style="color:var(--text-light);font-size:0.9rem">No players registered yet. Be the first!</p>'}
+                </div>
+                
+                ${c.status === 'registration' ? `
+                <div class="actions-section">
+                    ${userRegistration ? `
+                        <h3 class="actions-title">Your Registration</h3>
+                        <div style="background:var(--bg-light);border-radius:12px;padding:1rem;margin-bottom:1rem;text-align:center">
+                            ${userRegistration.status === 'confirmed' ? `
+                                <div style="font-size:2rem;margin-bottom:0.5rem">✅</div>
+                                <div style="font-weight:600;color:var(--success)">You're registered!</div>
+                                <div style="font-size:0.85rem;color:var(--text-light)">See you at the competition</div>
+                            ` : userRegistration.status === 'pending' ? `
+                                <div style="font-size:2rem;margin-bottom:0.5rem">⏳</div>
+                                <div style="font-weight:600;color:var(--warning)">Pending Approval</div>
+                                <div style="font-size:0.85rem;color:var(--text-light)">Waiting for organizer to approve</div>
+                            ` : userRegistration.status === 'waitlist' ? `
+                                <div style="font-size:2rem;margin-bottom:0.5rem">📋</div>
+                                <div style="font-weight:600;color:var(--secondary)">On Waitlist</div>
+                                <div style="font-size:0.85rem;color:var(--text-light)">You'll be notified if a spot opens</div>
+                            ` : `
+                                <div style="font-size:2rem;margin-bottom:0.5rem">ℹ️</div>
+                                <div style="font-weight:600">${userRegistration.status}</div>
+                            `}
+                        </div>
+                        <button class="btn btn-outline" onclick="cancelRegistration()" style="width:100%">Cancel Registration</button>
+                    ` : `
+                        <h3 class="actions-title">Join This Competition</h3>
+                        <p class="actions-subtitle">${spotsLeft > 0 ? `${spotsLeft} spots remaining` : 'Waitlist available'}${c.registration?.type === 'approval' ? ' • Approval required' : ''}</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-lg" onclick="openRegisterModal()">
+                                ${spotsLeft > 0 ? (c.registration?.type === 'approval' ? '📝 Request to Join' : '✓ Register Now') : '📋 Join Waitlist'}
+                            </button>
+                        </div>
+                    `}
+                    
+                    <div class="organizer-info">
+                        <div class="organizer-avatar">${(c.organizer?.name || 'O')[0].toUpperCase()}</div>
+                        <div class="organizer-details">
+                            <div class="organizer-label">Organized by</div>
+                            <div class="organizer-name">${esc(c.organizer?.name || 'Unknown')}</div>
+                        </div>
+                    </div>
+                </div>
+                ` : c.status === 'live' ? `
+                <div class="actions-section">
+                    <h3 class="actions-title">Competition In Progress</h3>
+                    <p class="actions-subtitle">This competition is currently live!</p>
+                    <div class="action-buttons">
+                        <a href="/quick-play/${c.format}/?comp=${competitionId}" class="btn btn-secondary btn-lg">
+                            📊 View Live Scores
+                        </a>
+                    </div>
+                </div>
+                ` : `
+                <div class="actions-section">
+                    <h3 class="actions-title">🏆 Competition Completed</h3>
+                    <p class="actions-subtitle">This competition has ended. View the final results!</p>
+                    <div class="action-buttons">
+                        <a href="/competitions/results.html?id=${competitionId}" class="btn btn-primary btn-lg">🏆 View Results</a>
+                        <a href="/competitions/" class="btn btn-outline btn-lg">Browse More</a>
+                    </div>
+                </div>
+                `}
+            `;
+        }
+        
+        function formatDate(d) {
+            if (!d) return 'TBD';
+            const date = new Date(d);
+            return date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+        
+        function esc(s) { return s ? s.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''; }
+        
+        function showError(msg) {
+            document.getElementById('content').innerHTML = `
+                <div class="error-state">
+                    <div style="font-size:3rem;margin-bottom:1rem">😕</div>
+                    <h2>${msg}</h2>
+                    <p style="color:var(--text-light);margin:1rem 0">The competition you're looking for doesn't exist or has been removed.</p>
+                    <a href="/competitions/" class="btn btn-primary">Browse Competitions</a>
+                </div>
+            `;
+        }
+        
+        function openRegisterModal() {
+            if (currentUser) {
+                document.getElementById('reg-name').value = currentUser.displayName || '';
+            }
+            document.getElementById('register-modal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('register-modal').classList.remove('active');
+        }
+        
+        async function handleRegistration(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('reg-name').value.trim();
+            const level = parseFloat(document.getElementById('reg-level').value) || null;
+            
+            if (!name) {
+                showToast('Please enter your name', 'error');
+                return;
+            }
+            
+            // Check level restrictions
+            if (competition.registration?.levelMin && level) {
+                if (level < competition.registration.levelMin || level > (competition.registration.levelMax || 5)) {
+                    showToast(`Level must be between ${competition.registration.levelMin} and ${competition.registration.levelMax || 5}`, 'error');
+                    return;
+                }
+            }
+            
+            try {
+                const currentCount = competition.players?.current || 0;
+                const maxPlayers = competition.players?.max || 16;
+                const regType = competition.registration?.type || 'open';
+                
+                // Determine registration status
+                let status = 'confirmed';
+                let message = 'Successfully registered!';
+                
+                if (currentCount >= maxPlayers) {
+                    // Competition full - add to waitlist
+                    status = 'waitlist';
+                    message = 'Added to waitlist!';
+                } else if (regType === 'approval') {
+                    // Approval required - set as pending
+                    status = 'pending';
+                    message = 'Registration submitted! Waiting for organizer approval.';
+                }
+                
+                // Add registration
+                const registration = {
+                    name,
+                    level,
+                    email: currentUser?.email || null,
+                    userId: currentUser?.uid || null,
+                    registeredAt: new Date().toISOString(),
+                    status
+                };
+                
+                await database.ref(`competitions/${competitionId}/registrations`).push(registration);
+                
+                // Update player count only for confirmed
+                if (status === 'confirmed') {
+                    await database.ref(`competitions/${competitionId}/players/current`).set(currentCount + 1);
+                }
+                
+                showToast(message, 'success');
+                closeModal();
+                
+                // Reload
+                setTimeout(() => loadCompetition(), 500);
+            } catch (e) {
+                console.error(e);
+                showToast('Registration failed. Please try again.', 'error');
+            }
+        }
+        
+        async function cancelRegistration() {
+            if (!userRegistration) return;
+            
+            if (!confirm('Are you sure you want to cancel your registration?')) return;
+            
+            try {
+                const wasConfirmed = userRegistration.status === 'confirmed';
+                
+                await database.ref(`competitions/${competitionId}/registrations/${userRegistration.id}`).remove();
+                
+                // Update count if was confirmed
+                if (wasConfirmed) {
+                    const currentCount = competition.players?.current || 0;
+                    await database.ref(`competitions/${competitionId}/players/current`).set(Math.max(0, currentCount - 1));
+                }
+                
+                showToast('Registration cancelled');
+                userRegistration = null;
+                setTimeout(() => loadCompetition(), 500);
+            } catch (e) {
+                console.error(e);
+                showToast('Failed to cancel. Please try again.', 'error');
+            }
+        }
+        
+        function showToast(msg, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        function checkAuth() {
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                const actions = document.getElementById('header-actions');
+                if (user) {
+                    const i = (user.displayName || user.email || 'U')[0].toUpperCase();
+                    actions.innerHTML = `<a href="/competitions/my-competitions.html" class="btn btn-ghost">My Comps</a>`;
+                }
+                // Reload to check user's registration
+                if (competition) {
+                    loadCompetition();
+                }
+            });
+        }
+    </script>
+</body>
+</html>

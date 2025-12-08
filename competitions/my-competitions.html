@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Competitions - UberPadel</title>
+    <meta name="description" content="Manage your padel competitions. View registrations, edit details, and go live.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --secondary: #0ea5e9;
+            --secondary-dark: #0284c7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #ffffff;
+            --bg-light: #f9fafb;
+            --bg-dark: #f3f4f6;
+            --border: #e5e7eb;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background: var(--bg-light);
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+            color: white;
+            padding: 1rem;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: white;
+        }
+        .logo-icon { width: 36px; height: 36px; }
+        .logo-text { font-size: 1.25rem; font-weight: 700; }
+        
+        .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-ghost { background: rgba(255,255,255,0.1); color: white; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.2); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: var(--secondary-dark); }
+        .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--text-light); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-sm { padding: 0.5rem 0.875rem; font-size: 0.8rem; }
+        
+        /* Main */
+        .main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+        
+        /* Page Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .page-title { font-size: 1.5rem; font-weight: 700; }
+        .page-subtitle { color: var(--text-light); font-size: 0.9rem; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-dark);
+            padding: 0.25rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 0.625rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-light);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active { background: white; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            background: var(--bg-dark);
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 0.375rem;
+            padding: 0 0.375rem;
+        }
+        .tab.active .tab-count { background: var(--secondary); color: white; }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        .empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+        .empty-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .empty-text { color: var(--text-light); margin-bottom: 1.5rem; }
+        
+        /* Competition Cards */
+        .comp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        @media (max-width: 400px) {
+            .comp-grid { grid-template-columns: 1fr; }
+        }
+        
+        .comp-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .comp-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        
+        .comp-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .comp-title-area { flex: 1; min-width: 0; }
+        .comp-format {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 0.25rem;
+        }
+        .comp-format-emoji { font-size: 1rem; }
+        .comp-name {
+            font-weight: 600;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .status-registration { background: #dbeafe; color: #1d4ed8; }
+        .status-live { background: #dcfce7; color: #15803d; }
+        .status-completed { background: #f3f4f6; color: #6b7280; }
+        .status-closed { background: #fef3c7; color: #92400e; }
+        .status-draft { background: #f3e8ff; color: #7c3aed; }
+        
+        .comp-body { padding: 1rem; }
+        
+        .comp-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+        .meta-icon { width: 16px; text-align: center; }
+        
+        .player-bar {
+            margin-bottom: 1rem;
+        }
+        .player-bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 0.375rem;
+        }
+        .player-count { font-weight: 600; color: var(--text); }
+        .player-max { color: var(--text-light); }
+        .player-bar-track {
+            height: 6px;
+            background: var(--bg-dark);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .player-bar-fill {
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        .player-bar-fill.full { background: var(--success); }
+        .player-bar-fill.low { background: var(--warning); }
+        
+        .comp-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .comp-actions .btn { flex: 1; min-width: 80px; }
+        
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--secondary); }
+        .stat-label { font-size: 0.8rem; color: var(--text-light); }
+        
+        /* Auth Required */
+        .auth-required {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+        .auth-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .auth-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .auth-text { color: var(--text-light); margin-bottom: 1.5rem; }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-light);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.2s;
+        }
+        .modal-overlay.show .modal { transform: scale(1); }
+        
+        .modal-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title { font-size: 1.125rem; font-weight: 600; }
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: var(--bg-light);
+            cursor: pointer;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-body { padding: 1.25rem; }
+        .modal-footer {
+            padding: 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+        
+        .confirm-text { margin-bottom: 1rem; }
+        .confirm-warning {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--danger);
+            font-size: 0.875rem;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--text);
+            color: white;
+            padding: 0.875rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 1001;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: var(--danger); }
+        .toast.success { background: var(--success); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo-container">
+                <img src="/uberpadel-icon.svg" alt="UberPadel" class="logo-icon">
+                <span class="logo-text">UberPadel</span>
+            </a>
+            <div class="header-actions">
+                <a href="/competitions/" class="btn btn-ghost">Browse</a>
+                <a href="/competitions/create.html" class="btn btn-primary">+ Create</a>
+            </div>
+        </div>
+    </header>
+    
+    <main class="main">
+        <!-- Auth Required State -->
+        <div id="auth-required" style="display: none;">
+            <div class="auth-required">
+                <div class="auth-icon">🔐</div>
+                <h2 class="auth-title">Login Required</h2>
+                <p class="auth-text">You need to be logged in to view your competitions.</p>
+                <a href="/login.html?redirect=/competitions/my-competitions.html" class="btn btn-primary">Login to Continue</a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div id="main-content" style="display: none;">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">My Competitions</h1>
+                    <p class="page-subtitle">Manage competitions you've created</p>
+                </div>
+                <a href="/competitions/create.html" class="btn btn-primary">+ Create Competition</a>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="quick-stats" id="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-total">0</div>
+                    <div class="stat-label">Total Competitions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-active">0</div>
+                    <div class="stat-label">Active Now</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-registrations">0</div>
+                    <div class="stat-label">Total Registrations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-upcoming">0</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" data-tab="all">All<span class="tab-count" id="count-all">0</span></button>
+                <button class="tab" data-tab="registration">Registration<span class="tab-count" id="count-registration">0</span></button>
+                <button class="tab" data-tab="live">Live<span class="tab-count" id="count-live">0</span></button>
+                <button class="tab" data-tab="completed">Completed<span class="tab-count" id="count-completed">0</span></button>
+            </div>
+            
+            <!-- Loading State -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Loading your competitions...</p>
+            </div>
+            
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon">📋</div>
+                <h3 class="empty-title">No competitions yet</h3>
+                <p class="empty-text">Create your first competition and start accepting registrations!</p>
+                <a href="/competitions/create.html" class="btn btn-primary">Create Competition</a>
+            </div>
+            
+            <!-- Competition Grid -->
+            <div class="comp-grid" id="comp-grid"></div>
+        </div>
+    </main>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Delete Competition</h3>
+                <button class="modal-close" onclick="closeDeleteModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-text">Are you sure you want to delete "<strong id="delete-comp-name"></strong>"?</p>
+                <div class="confirm-warning">
+                    ⚠️ This action cannot be undone. All registrations will be permanently deleted.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDelete()" id="confirm-delete-btn">Delete Competition</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Go Live Confirmation Modal -->
+    <div class="modal-overlay" id="golive-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Start Competition</h3>
+                <button class="modal-close" onclick="closeGoLiveModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-text">Start "<strong id="golive-comp-name"></strong>" now?</p>
+                <p style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 1rem;">
+                    This will close registration and open the tournament for play. You'll be redirected to the tournament page.
+                </p>
+                <div style="background: var(--bg-light); padding: 0.75rem; border-radius: 8px; font-size: 0.875rem;">
+                    <strong id="golive-player-count">0</strong> players registered
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeGoLiveModal()">Cancel</button>
+                <button class="btn btn-success" onclick="confirmGoLive()" id="confirm-golive-btn">🚀 Start Competition</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHnMaQMwH9R3yEVQPV1M_RPWz9gF3IBJI",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.appspot.com",
+            messagingSenderId: "802492722498",
+            appId: "1:802492722498:web:ea2c0cd65ea2c0f40df9ee"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        let currentUser = null;
+        let myCompetitions = [];
+        let currentTab = 'all';
+        let deleteCompId = null;
+        let goLiveCompId = null;
+        
+        const formats = {
+            'americano': { emoji: '🔄', name: 'Americano' },
+            'mexicano': { emoji: '🎯', name: 'Mexicano' },
+            'mix': { emoji: '🏓', name: 'Mix Tournament' },
+            'team-league': { emoji: '👥', name: 'Team League' }
+        };
+        
+        const formatUrls = {
+            'americano': '/quick-play/americano/',
+            'mexicano': '/quick-play/mexicano/',
+            'mix': '/quick-play/mix/',
+            'team-league': '/quick-play/team-league/'
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupTabs();
+            
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                if (user) {
+                    document.getElementById('auth-required').style.display = 'none';
+                    document.getElementById('main-content').style.display = 'block';
+                    loadMyCompetitions();
+                } else {
+                    document.getElementById('auth-required').style.display = 'block';
+                    document.getElementById('main-content').style.display = 'none';
+                }
+            });
+        });
+        
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentTab = tab.dataset.tab;
+                    renderCompetitions();
+                });
+            });
+        }
+        
+        async function loadMyCompetitions() {
+            try {
+                const snapshot = await database.ref('competitions')
+                    .orderByChild('organizer/userId')
+                    .equalTo(currentUser.uid)
+                    .once('value');
+                
+                myCompetitions = [];
+                snapshot.forEach(child => {
+                    myCompetitions.push({ id: child.key, ...child.val() });
+                });
+                
+                // Sort by date descending
+                myCompetitions.sort((a, b) => {
+                    const dateA = new Date(a.schedule?.date + 'T' + (a.schedule?.time || '00:00'));
+                    const dateB = new Date(b.schedule?.date + 'T' + (b.schedule?.time || '00:00'));
+                    return dateB - dateA;
+                });
+                
+                updateStats();
+                updateCounts();
+                renderCompetitions();
+                
+                document.getElementById('loading').style.display = 'none';
+            } catch (e) {
+                console.error('Error loading competitions:', e);
+                document.getElementById('loading').innerHTML = '<p>Error loading competitions. Please refresh.</p>';
+            }
+        }
+        
+        function updateStats() {
+            const total = myCompetitions.length;
+            const active = myCompetitions.filter(c => c.status === 'live').length;
+            const registrations = myCompetitions.reduce((sum, c) => sum + (c.players?.current || 0), 0);
+            const upcoming = myCompetitions.filter(c => c.status === 'registration').length;
+            
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-active').textContent = active;
+            document.getElementById('stat-registrations').textContent = registrations;
+            document.getElementById('stat-upcoming').textContent = upcoming;
+        }
+        
+        function updateCounts() {
+            const counts = {
+                all: myCompetitions.length,
+                registration: myCompetitions.filter(c => c.status === 'registration').length,
+                live: myCompetitions.filter(c => c.status === 'live').length,
+                completed: myCompetitions.filter(c => c.status === 'completed').length
+            };
+            
+            Object.keys(counts).forEach(key => {
+                document.getElementById(`count-${key}`).textContent = counts[key];
+            });
+        }
+        
+        function renderCompetitions() {
+            const grid = document.getElementById('comp-grid');
+            const empty = document.getElementById('empty-state');
+            
+            let filtered = myCompetitions;
+            if (currentTab !== 'all') {
+                filtered = myCompetitions.filter(c => c.status === currentTab);
+            }
+            
+            if (filtered.length === 0) {
+                grid.style.display = 'none';
+                empty.style.display = 'block';
+                
+                if (currentTab !== 'all') {
+                    empty.querySelector('.empty-title').textContent = `No ${currentTab} competitions`;
+                    empty.querySelector('.empty-text').textContent = 'Check other tabs or create a new competition.';
+                } else {
+                    empty.querySelector('.empty-title').textContent = 'No competitions yet';
+                    empty.querySelector('.empty-text').textContent = 'Create your first competition and start accepting registrations!';
+                }
+                return;
+            }
+            
+            grid.style.display = 'grid';
+            empty.style.display = 'none';
+            
+            grid.innerHTML = filtered.map(comp => renderCompCard(comp)).join('');
+        }
+        
+        function renderCompCard(comp) {
+            const formatInfo = formats[comp.format] || { emoji: '🎾', name: comp.format };
+            const statusClass = `status-${comp.status || 'registration'}`;
+            const statusText = {
+                'registration': 'Registration Open',
+                'live': 'Live',
+                'completed': 'Completed',
+                'closed': 'Registration Closed',
+                'draft': 'Draft'
+            }[comp.status] || comp.status;
+            
+            const date = comp.schedule?.date ? new Date(comp.schedule.date) : null;
+            const dateStr = date ? date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'TBD';
+            const timeStr = comp.schedule?.time || '';
+            
+            const current = comp.players?.current || 0;
+            const max = comp.players?.max || 16;
+            const percent = Math.min((current / max) * 100, 100);
+            const barClass = percent >= 100 ? 'full' : percent < 50 ? 'low' : '';
+            
+            let actions = '';
+            // Count pending registrations
+            let pendingCount = 0;
+            if (comp.registrations) {
+                Object.values(comp.registrations).forEach(r => {
+                    if (r.status === 'pending') pendingCount++;
+                });
+            }
+            
+            if (comp.status === 'registration') {
+                actions = `
+                    <a href="/competitions/detail.html?id=${comp.id}" class="btn btn-outline btn-sm">View</a>
+                    <a href="/competitions/registrations.html?id=${comp.id}" class="btn btn-outline btn-sm">${pendingCount > 0 ? `<span style="background:var(--warning);color:white;border-radius:10px;padding:0 6px;font-size:0.7rem;margin-right:4px">${pendingCount}</span>` : ''}Registrations</a>
+                    <button class="btn btn-success btn-sm" onclick="showGoLiveModal('${comp.id}')">Go Live</button>
+                `;
+            } else if (comp.status === 'live') {
+                actions = `
+                    <a href="/competitions/detail.html?id=${comp.id}" class="btn btn-outline btn-sm">View</a>
+                    <a href="/competitions/dashboard.html?id=${comp.id}" class="btn btn-primary btn-sm">Dashboard</a>
+                `;
+            } else {
+                actions = `
+                    <a href="/competitions/detail.html?id=${comp.id}" class="btn btn-outline btn-sm">View</a>
+                    <button class="btn btn-outline btn-sm" onclick="duplicateCompetition('${comp.id}')">Duplicate</button>
+                `;
+            }
+            
+            // Add delete for non-live competitions
+            if (comp.status !== 'live') {
+                actions += `<button class="btn btn-outline btn-sm" style="color: var(--danger);" onclick="showDeleteModal('${comp.id}')">Delete</button>`;
+            }
+            
+            return `
+                <div class="comp-card">
+                    <div class="comp-header">
+                        <div class="comp-title-area">
+                            <div class="comp-format">
+                                <span class="comp-format-emoji">${formatInfo.emoji}</span>
+                                <span>${formatInfo.name}</span>
+                            </div>
+                            <h3 class="comp-name">${escapeHtml(comp.name)}</h3>
+                        </div>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="comp-body">
+                        <div class="comp-meta">
+                            <div class="meta-item">
+                                <span class="meta-icon">📅</span>
+                                <span>${dateStr}${timeStr ? ' at ' + timeStr : ''}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">📍</span>
+                                <span>${escapeHtml(comp.location?.name || 'TBD')}</span>
+                            </div>
+                        </div>
+                        <div class="player-bar">
+                            <div class="player-bar-header">
+                                <span class="player-count">${current} registered</span>
+                                <span class="player-max">/ ${max} max</span>
+                            </div>
+                            <div class="player-bar-track">
+                                <div class="player-bar-fill ${barClass}" style="width: ${percent}%"></div>
+                            </div>
+                        </div>
+                        <div class="comp-actions">
+                            ${actions}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        
+        // Delete Modal
+        function showDeleteModal(compId) {
+            deleteCompId = compId;
+            const comp = myCompetitions.find(c => c.id === compId);
+            document.getElementById('delete-comp-name').textContent = comp?.name || '';
+            document.getElementById('delete-modal').classList.add('show');
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.remove('show');
+            deleteCompId = null;
+        }
+        
+        async function confirmDelete() {
+            if (!deleteCompId) return;
+            
+            const btn = document.getElementById('confirm-delete-btn');
+            btn.disabled = true;
+            btn.textContent = 'Deleting...';
+            
+            try {
+                await database.ref(`competitions/${deleteCompId}`).remove();
+                
+                myCompetitions = myCompetitions.filter(c => c.id !== deleteCompId);
+                updateStats();
+                updateCounts();
+                renderCompetitions();
+                
+                closeDeleteModal();
+                showToast('Competition deleted successfully', 'success');
+            } catch (e) {
+                console.error('Error deleting:', e);
+                showToast('Failed to delete competition', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Delete Competition';
+            }
+        }
+        
+        // Go Live Modal
+        function showGoLiveModal(compId) {
+            goLiveCompId = compId;
+            const comp = myCompetitions.find(c => c.id === compId);
+            document.getElementById('golive-comp-name').textContent = comp?.name || '';
+            document.getElementById('golive-player-count').textContent = comp?.players?.current || 0;
+            document.getElementById('golive-modal').classList.add('show');
+        }
+        
+        function closeGoLiveModal() {
+            document.getElementById('golive-modal').classList.remove('show');
+            goLiveCompId = null;
+        }
+        
+        async function confirmGoLive() {
+            if (!goLiveCompId) return;
+            
+            const btn = document.getElementById('confirm-golive-btn');
+            btn.disabled = true;
+            btn.textContent = 'Starting...';
+            
+            try {
+                // Update status to live
+                await database.ref(`competitions/${goLiveCompId}/status`).set('live');
+                await database.ref(`competitions/${goLiveCompId}/startedAt`).set(new Date().toISOString());
+                
+                // Redirect to dashboard
+                window.location.href = `/competitions/dashboard.html?id=${goLiveCompId}`;
+            } catch (e) {
+                console.error('Error starting competition:', e);
+                showToast('Failed to start competition', 'error');
+                btn.disabled = false;
+                btn.textContent = '🚀 Start Competition';
+            }
+        }
+        
+        // Duplicate Competition
+        async function duplicateCompetition(compId) {
+            const comp = myCompetitions.find(c => c.id === compId);
+            if (!comp) return;
+            
+            try {
+                const newComp = {
+                    ...comp,
+                    name: comp.name + ' (Copy)',
+                    status: 'registration',
+                    players: { ...comp.players, current: 0 },
+                    registrations: null,
+                    createdAt: new Date().toISOString()
+                };
+                delete newComp.id;
+                
+                const ref = await database.ref('competitions').push(newComp);
+                
+                showToast('Competition duplicated!', 'success');
+                
+                // Redirect to edit page
+                window.location.href = `/competitions/edit.html?id=${ref.key}`;
+            } catch (e) {
+                console.error('Error duplicating:', e);
+                showToast('Failed to duplicate competition', 'error');
+            }
+        }
+        
+        function showToast(msg, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

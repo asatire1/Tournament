@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competition Results - UberPadel</title>
+    <meta name="description" content="View final results and standings from this padel competition.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --secondary: #0ea5e9;
+            --secondary-dark: #0284c7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gold: #fbbf24;
+            --silver: #9ca3af;
+            --bronze: #cd7f32;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #ffffff;
+            --bg-light: #f9fafb;
+            --bg-dark: #f3f4f6;
+            --border: #e5e7eb;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background: var(--bg-light);
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            padding: 1rem;
+        }
+        .header-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: white;
+        }
+        .logo-icon { width: 36px; height: 36px; }
+        .logo-text { font-size: 1.25rem; font-weight: 700; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-ghost { background: rgba(255,255,255,0.1); color: white; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.2); }
+        .btn-white { background: white; color: #6366f1; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--text-light); }
+        
+        /* Main */
+        .main { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { color: var(--secondary); }
+        
+        /* Hero */
+        .results-hero {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-light);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        .hero-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .hero-meta {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+        .completed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 0.375rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+        
+        /* Podium */
+        .podium-section {
+            margin-bottom: 1.5rem;
+        }
+        .podium {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 0.5rem;
+            padding: 1rem 0;
+        }
+        .podium-place {
+            text-align: center;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            min-width: 100px;
+        }
+        .podium-place.first {
+            order: 2;
+            min-width: 120px;
+            padding-bottom: 2rem;
+            border-color: var(--gold);
+            background: linear-gradient(180deg, #fffbeb 0%, white 100%);
+        }
+        .podium-place.second {
+            order: 1;
+            padding-bottom: 1.5rem;
+            border-color: var(--silver);
+        }
+        .podium-place.third {
+            order: 3;
+            padding-bottom: 1rem;
+            border-color: var(--bronze);
+        }
+        .podium-medal {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .podium-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        .podium-points {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        .podium-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.25rem;
+            margin: 0 auto 0.5rem;
+        }
+        .podium-place.first .podium-avatar {
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+            border: 3px solid var(--gold);
+        }
+        
+        /* Card */
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title { font-weight: 600; }
+        
+        /* Standings Table */
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .standings-table th,
+        .standings-table td {
+            padding: 0.875rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .standings-table th {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            background: var(--bg-light);
+        }
+        .standings-table tr:last-child td { border-bottom: none; }
+        .standings-table tbody tr:hover { background: var(--bg-light); }
+        
+        .rank-cell {
+            font-weight: 700;
+            width: 50px;
+        }
+        .rank-1 { color: var(--gold); }
+        .rank-2 { color: var(--silver); }
+        .rank-3 { color: var(--bronze); }
+        
+        .player-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .player-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-dark);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+        .player-name { font-weight: 500; }
+        
+        .points-cell {
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        
+        /* Share Section */
+        .share-section {
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .share-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .share-text {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+        .share-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        .error-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+        .error-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .error-text { color: var(--text-light); margin-bottom: 1.5rem; }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--text);
+            color: white;
+            padding: 0.875rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 1001;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--success); }
+        
+        @media (max-width: 600px) {
+            .podium-place { min-width: 80px; padding: 0.75rem; }
+            .podium-place.first { min-width: 90px; }
+            .podium-avatar { width: 40px; height: 40px; font-size: 1rem; }
+            .podium-place.first .podium-avatar { width: 48px; height: 48px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo-container">
+                <img src="/uberpadel-icon.svg" alt="UberPadel" class="logo-icon">
+                <span class="logo-text">UberPadel</span>
+            </a>
+            <a href="/competitions/" class="btn btn-ghost">Browse Competitions</a>
+        </div>
+    </header>
+    
+    <main class="main">
+        <a href="/competitions/" class="back-link">← Back to Competitions</a>
+        
+        <!-- Loading -->
+        <div id="loading">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading results...</p>
+            </div>
+        </div>
+        
+        <!-- Error State -->
+        <div id="error-state" class="card" style="display: none;">
+            <div class="error-state">
+                <div class="error-icon">😕</div>
+                <h2 class="error-title">Results Not Found</h2>
+                <p class="error-text">This competition doesn't exist or results aren't available yet.</p>
+                <a href="/competitions/" class="btn btn-primary">Browse Competitions</a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div id="main-content" style="display: none;">
+            <!-- Hero -->
+            <div class="results-hero">
+                <div class="hero-badge">
+                    <span id="format-emoji">🎾</span>
+                    <span id="format-name">Tournament</span>
+                </div>
+                <h1 class="hero-title" id="comp-name">Competition Name</h1>
+                <p class="hero-meta" id="comp-meta">Date • Location</p>
+                <div class="completed-badge">
+                    ✓ Completed
+                </div>
+            </div>
+            
+            <!-- Podium -->
+            <div class="podium-section" id="podium-section">
+                <div class="podium" id="podium">
+                    <!-- Podium will be rendered here -->
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="card">
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-players">0</div>
+                        <div class="stat-label">Players</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-matches">0</div>
+                        <div class="stat-label">Matches</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-rounds">0</div>
+                        <div class="stat-label">Rounds</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="stat-points">0</div>
+                        <div class="stat-label">Total Points</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Full Standings -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Final Standings</span>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="standings-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Played</th>
+                                <th>Won</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Share -->
+            <div class="share-section">
+                <h3 class="share-title">Share Results</h3>
+                <p class="share-text">Let others see the final standings!</p>
+                <div class="share-buttons">
+                    <button class="btn btn-outline" onclick="copyLink()">📋 Copy Link</button>
+                    <button class="btn btn-primary" onclick="shareResults()">📤 Share</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHnMaQMwH9R3yEVQPV1M_RPWz9gF3IBJI",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.appspot.com",
+            messagingSenderId: "802492722498",
+            appId: "1:802492722498:web:ea2c0cd65ea2c0f40df9ee"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        let compId = null;
+        let competition = null;
+        let tournamentData = null;
+        
+        const formats = {
+            'americano': { emoji: '🔄', name: 'Americano' },
+            'mexicano': { emoji: '🎯', name: 'Mexicano' },
+            'mix': { emoji: '🏓', name: 'Mix Tournament' },
+            'team-league': { emoji: '👥', name: 'Team League' }
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            compId = params.get('id');
+            
+            if (!compId) {
+                showError();
+                return;
+            }
+            
+            loadResults();
+        });
+        
+        async function loadResults() {
+            try {
+                const snapshot = await database.ref(`competitions/${compId}`).once('value');
+                competition = snapshot.val();
+                
+                if (!competition) {
+                    showError();
+                    return;
+                }
+                
+                // Load tournament data
+                const tournamentKey = competition.tournamentKey || compId;
+                const tSnapshot = await database.ref(`tournaments/${tournamentKey}`).once('value');
+                tournamentData = tSnapshot.val();
+                
+                renderResults();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                
+            } catch (e) {
+                console.error('Error loading results:', e);
+                showError();
+            }
+        }
+        
+        function renderResults() {
+            const f = formats[competition.format] || { emoji: '🎾', name: competition.format };
+            
+            // Hero
+            document.getElementById('format-emoji').textContent = f.emoji;
+            document.getElementById('format-name').textContent = f.name;
+            document.getElementById('comp-name').textContent = competition.name;
+            
+            const date = competition.schedule?.date ? new Date(competition.schedule.date) : null;
+            const dateStr = date ? date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+            document.getElementById('comp-meta').textContent = `${dateStr} • ${competition.location?.name || ''}`;
+            
+            // Get standings
+            let standings = [];
+            if (tournamentData && tournamentData.standings) {
+                standings = tournamentData.standings;
+            } else if (competition.registrations) {
+                // Generate from registrations
+                standings = Object.values(competition.registrations)
+                    .filter(r => r.status === 'confirmed')
+                    .map(r => ({ name: r.name, played: 0, won: 0, points: 0 }));
+            }
+            
+            // Stats
+            const players = standings.length;
+            let matches = 0;
+            let rounds = 0;
+            let totalPoints = 0;
+            
+            if (tournamentData && tournamentData.matches) {
+                const matchList = Object.values(tournamentData.matches);
+                matches = matchList.filter(m => m.completed).length;
+                matchList.forEach(m => {
+                    if (m.round && m.round > rounds) rounds = m.round;
+                });
+            }
+            
+            standings.forEach(s => {
+                totalPoints += s.points || 0;
+            });
+            
+            document.getElementById('stat-players').textContent = players;
+            document.getElementById('stat-matches').textContent = matches;
+            document.getElementById('stat-rounds').textContent = rounds;
+            document.getElementById('stat-points').textContent = totalPoints;
+            
+            // Podium
+            renderPodium(standings);
+            
+            // Full standings
+            renderStandings(standings);
+        }
+        
+        function renderPodium(standings) {
+            const podium = document.getElementById('podium');
+            
+            if (standings.length < 1) {
+                document.getElementById('podium-section').style.display = 'none';
+                return;
+            }
+            
+            const medals = ['🥇', '🥈', '🥉'];
+            const places = ['first', 'second', 'third'];
+            
+            podium.innerHTML = standings.slice(0, 3).map((s, i) => {
+                const initial = (s.name || 'P')[0].toUpperCase();
+                return `
+                    <div class="podium-place ${places[i]}">
+                        <div class="podium-medal">${medals[i]}</div>
+                        <div class="podium-avatar">${initial}</div>
+                        <div class="podium-name">${esc(s.name)}</div>
+                        <div class="podium-points">${s.points || 0} points</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderStandings(standings) {
+            const tbody = document.getElementById('standings-body');
+            
+            if (standings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-light); padding: 2rem;">
+                            No standings available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = standings.map((s, i) => {
+                const rank = i + 1;
+                const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                const initial = (s.name || 'P')[0].toUpperCase();
+                
+                return `
+                    <tr>
+                        <td class="rank-cell ${rankClass}">${rank}</td>
+                        <td>
+                            <div class="player-cell">
+                                <div class="player-avatar">${initial}</div>
+                                <span class="player-name">${esc(s.name)}</span>
+                            </div>
+                        </td>
+                        <td>${s.played || 0}</td>
+                        <td>${s.won || 0}</td>
+                        <td class="points-cell">${s.points || 0}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function copyLink() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Link copied!', 'success');
+            });
+        }
+        
+        function shareResults() {
+            const url = window.location.href;
+            const text = `Check out the results from ${competition.name}!`;
+            
+            if (navigator.share) {
+                navigator.share({ title: competition.name, text, url });
+            } else {
+                copyLink();
+            }
+        }
+        
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+        }
+        
+        function esc(s) { return s ? s.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''; }
+        
+        function showToast(msg, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

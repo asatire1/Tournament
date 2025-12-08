@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Rankings - Uber Padel</title>
+    <meta name="description" content="View player rankings and leaderboards across all padel competitions on Uber Padel.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .leaderboard-row {
+            display: grid;
+            grid-template-columns: 50px 1fr 80px 80px 80px 60px;
+            align-items: center;
+            padding: 0.875rem 1rem;
+            background: white;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s;
+        }
+        .leaderboard-row:hover {
+            background: #f8fafc;
+        }
+        .leaderboard-header {
+            display: grid;
+            grid-template-columns: 50px 1fr 80px 80px 80px 60px;
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        @media (max-width: 640px) {
+            .leaderboard-row, .leaderboard-header {
+                grid-template-columns: 40px 1fr 60px 50px;
+            }
+            .hide-mobile { display: none; }
+        }
+        .rank-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+        .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; }
+        .rank-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); color: white; }
+        .rank-3 { background: linear-gradient(135deg, #d97706, #b45309); color: white; }
+        .rank-other { background: #f1f5f9; color: #64748b; }
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        .tab-btn:hover:not(.active) {
+            color: #374151;
+        }
+        .period-btn {
+            padding: 0.375rem 0.875rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 9999px;
+            transition: all 0.2s;
+        }
+        .period-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .period-btn:not(.active) {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .period-btn:not(.active):hover {
+            background: #e2e8f0;
+        }
+        .avatar-sm {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="/competitions/" class="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                <span>←</span>
+                <span class="text-sm font-medium">Competitions</span>
+            </a>
+            <a href="/" class="flex items-center gap-2">
+                <img src="/uberpadel-icon.svg" alt="Uber Padel" class="h-8 w-auto" onerror="this.style.display='none'">
+            </a>
+            <div class="w-24"></div>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <div class="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white">
+        <div class="max-w-4xl mx-auto px-4 py-8">
+            <h1 class="text-3xl font-bold mb-2">🏆 Player Rankings</h1>
+            <p class="text-white/80">Top performers across all competitions</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white border-b border-gray-200 sticky top-14 z-30">
+        <div class="max-w-4xl mx-auto px-4">
+            <!-- Tabs -->
+            <div class="flex gap-1 border-b border-gray-100" id="tabs">
+                <button class="tab-btn active" data-tab="overall">Overall</button>
+                <button class="tab-btn" data-tab="americano">🔄 Americano</button>
+                <button class="tab-btn" data-tab="mexicano">🎯 Mexicano</button>
+                <button class="tab-btn" data-tab="mix">🏓 Mix</button>
+            </div>
+            
+            <!-- Period Filter -->
+            <div class="flex gap-2 py-3" id="period-filters">
+                <button class="period-btn active" data-period="all">All Time</button>
+                <button class="period-btn" data-period="year">This Year</button>
+                <button class="period-btn" data-period="month">This Month</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="leaderboard-container">
+            <div class="text-center py-12">
+                <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p class="text-gray-500">Loading rankings...</p>
+            </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="mt-4 text-center text-xs text-gray-500">
+            <p>Rankings based on total points earned in completed competitions</p>
+        </div>
+    </main>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHnMaQMwH9R3yEVQPV1M_RPWz9gF3IBJI",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.appspot.com",
+            messagingSenderId: "802492722498",
+            appId: "1:802492722498:web:ea2c0cd65ea2c0f40df9ee"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // State
+        let allRankings = [];
+        let currentTab = 'overall';
+        let currentPeriod = 'all';
+
+        // Load all competition data and calculate rankings
+        async function loadRankings() {
+            try {
+                const snapshot = await database.ref('competitions').once('value');
+                const competitions = snapshot.val() || {};
+
+                // Aggregate player stats
+                const playerStats = {};
+
+                for (const [compId, comp] of Object.entries(competitions)) {
+                    if (comp.status !== 'completed') continue;
+
+                    const compDate = comp.completedAt || comp.schedule?.date;
+                    const format = comp.format || 'unknown';
+
+                    // Get standings for this competition
+                    if (comp.tournamentKey) {
+                        const tSnapshot = await database.ref(`tournaments/${comp.tournamentKey}/standings`).once('value');
+                        const standings = tSnapshot.val();
+
+                        if (Array.isArray(standings)) {
+                            standings.forEach((player, idx) => {
+                                if (!player.name) return;
+
+                                const name = player.name.trim();
+                                const key = name.toLowerCase();
+
+                                if (!playerStats[key]) {
+                                    playerStats[key] = {
+                                        name: name,
+                                        formats: {},
+                                        competitions: [],
+                                        totalPoints: 0,
+                                        totalMatches: 0,
+                                        totalWins: 0,
+                                        podiums: 0,
+                                        golds: 0
+                                    };
+                                }
+
+                                const placement = idx + 1;
+                                const points = player.points || 0;
+                                const played = player.played || 0;
+                                const won = player.won || 0;
+
+                                // Add competition entry
+                                playerStats[key].competitions.push({
+                                    compId,
+                                    date: compDate,
+                                    format,
+                                    placement,
+                                    points,
+                                    played,
+                                    won
+                                });
+
+                                // Aggregate stats
+                                playerStats[key].totalPoints += points;
+                                playerStats[key].totalMatches += played;
+                                playerStats[key].totalWins += won;
+                                if (placement <= 3) playerStats[key].podiums++;
+                                if (placement === 1) playerStats[key].golds++;
+
+                                // Per-format stats
+                                if (!playerStats[key].formats[format]) {
+                                    playerStats[key].formats[format] = {
+                                        points: 0,
+                                        matches: 0,
+                                        wins: 0,
+                                        competitions: 0,
+                                        podiums: 0
+                                    };
+                                }
+                                playerStats[key].formats[format].points += points;
+                                playerStats[key].formats[format].matches += played;
+                                playerStats[key].formats[format].wins += won;
+                                playerStats[key].formats[format].competitions++;
+                                if (placement <= 3) playerStats[key].formats[format].podiums++;
+                            });
+                        }
+                    }
+                }
+
+                // Convert to array
+                allRankings = Object.values(playerStats);
+                
+                renderLeaderboard();
+
+            } catch (e) {
+                console.error('Error loading rankings:', e);
+                document.getElementById('leaderboard-container').innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <p class="text-4xl mb-2">😕</p>
+                        <p>Failed to load rankings</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Filter rankings by period
+        function filterByPeriod(rankings, period) {
+            if (period === 'all') return rankings;
+
+            const now = new Date();
+            let cutoff;
+
+            if (period === 'year') {
+                cutoff = new Date(now.getFullYear(), 0, 1);
+            } else if (period === 'month') {
+                cutoff = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+
+            // Recalculate stats based on filtered competitions
+            return rankings.map(player => {
+                const filtered = player.competitions.filter(c => new Date(c.date) >= cutoff);
+                
+                if (filtered.length === 0) return null;
+
+                const recalc = {
+                    ...player,
+                    totalPoints: 0,
+                    totalMatches: 0,
+                    totalWins: 0,
+                    podiums: 0,
+                    golds: 0,
+                    filteredCompetitions: filtered.length
+                };
+
+                filtered.forEach(c => {
+                    recalc.totalPoints += c.points;
+                    recalc.totalMatches += c.played;
+                    recalc.totalWins += c.won;
+                    if (c.placement <= 3) recalc.podiums++;
+                    if (c.placement === 1) recalc.golds++;
+                });
+
+                return recalc;
+            }).filter(p => p !== null);
+        }
+
+        // Filter by format
+        function filterByFormat(rankings, format) {
+            if (format === 'overall') return rankings;
+
+            return rankings.map(player => {
+                const formatStats = player.formats[format];
+                if (!formatStats || formatStats.competitions === 0) return null;
+
+                return {
+                    ...player,
+                    totalPoints: formatStats.points,
+                    totalMatches: formatStats.matches,
+                    totalWins: formatStats.wins,
+                    podiums: formatStats.podiums,
+                    filteredCompetitions: formatStats.competitions
+                };
+            }).filter(p => p !== null);
+        }
+
+        // Render leaderboard
+        function renderLeaderboard() {
+            let rankings = [...allRankings];
+
+            // Apply filters
+            rankings = filterByFormat(rankings, currentTab);
+            rankings = filterByPeriod(rankings, currentPeriod);
+
+            // Sort by total points
+            rankings.sort((a, b) => b.totalPoints - a.totalPoints);
+
+            // Take top 100
+            rankings = rankings.slice(0, 100);
+
+            if (rankings.length === 0) {
+                document.getElementById('leaderboard-container').innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <p class="text-4xl mb-2">📊</p>
+                        <p>No rankings data for this selection</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <div class="leaderboard-header">
+                    <div>Rank</div>
+                    <div>Player</div>
+                    <div class="text-right">Points</div>
+                    <div class="text-right hide-mobile">Matches</div>
+                    <div class="text-right hide-mobile">Win %</div>
+                    <div class="text-center">🏆</div>
+                </div>
+                ${rankings.map((player, idx) => {
+                    const rank = idx + 1;
+                    let rankClass = 'rank-other';
+                    if (rank === 1) rankClass = 'rank-1';
+                    else if (rank === 2) rankClass = 'rank-2';
+                    else if (rank === 3) rankClass = 'rank-3';
+
+                    const initial = player.name.charAt(0).toUpperCase();
+                    const winRate = player.totalMatches > 0 
+                        ? Math.round((player.totalWins / player.totalMatches) * 100) 
+                        : 0;
+
+                    return `
+                        <div class="leaderboard-row cursor-pointer" onclick="viewPlayer('${encodeURIComponent(player.name)}')">
+                            <div>
+                                <div class="rank-cell ${rankClass}">${rank}</div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="avatar-sm">${initial}</div>
+                                <div>
+                                    <div class="font-semibold text-gray-800">${escapeHtml(player.name)}</div>
+                                    <div class="text-xs text-gray-500">${player.filteredCompetitions || player.competitions.length} competition${(player.filteredCompetitions || player.competitions.length) !== 1 ? 's' : ''}</div>
+                                </div>
+                            </div>
+                            <div class="text-right font-bold text-gray-800">${player.totalPoints}</div>
+                            <div class="text-right text-gray-600 hide-mobile">${player.totalMatches}</div>
+                            <div class="text-right hide-mobile">
+                                <span class="text-${winRate >= 50 ? 'green' : 'gray'}-600">${winRate}%</span>
+                            </div>
+                            <div class="text-center">
+                                ${player.podiums > 0 ? `<span class="text-yellow-600 font-bold">${player.podiums}</span>` : '<span class="text-gray-300">-</span>'}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+
+            document.getElementById('leaderboard-container').innerHTML = html;
+        }
+
+        // View player profile (by name search since we don't have userId)
+        function viewPlayer(name) {
+            // For now, we'll just alert - would need user lookup
+            alert(`Player profile for "${decodeURIComponent(name)}" - Coming soon!`);
+        }
+
+        // Escape HTML
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // Tab handlers
+        document.getElementById('tabs').addEventListener('click', (e) => {
+            if (e.target.classList.contains('tab-btn')) {
+                document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentTab = e.target.dataset.tab;
+                renderLeaderboard();
+            }
+        });
+
+        // Period handlers
+        document.getElementById('period-filters').addEventListener('click', (e) => {
+            if (e.target.classList.contains('period-btn')) {
+                document.querySelectorAll('.period-btn').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentPeriod = e.target.dataset.period;
+                renderLeaderboard();
+            }
+        });
+
+        // Initialize
+        loadRankings();
+    </script>
+</body>
+</html>

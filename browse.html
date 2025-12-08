@@ -209,7 +209,7 @@
                             <p class="font-medium text-amber-800">Sign in to see tournaments open to you</p>
                             <p class="text-sm text-amber-600">Some tournaments require registration or verification</p>
                         </div>
-                        <a href="login.html?return=${encodeURIComponent(window.location.href)}" 
+                        <a href="account/login.html?redirect=${encodeURIComponent(window.location.href)}" 
                             class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium text-sm transition-colors">
                             Sign In
                         </a>
@@ -223,7 +223,7 @@
                             <p class="font-medium text-blue-800">Welcome, ${currentUser.name}!</p>
                             <p class="text-sm text-blue-600">Register with Google to access more tournaments</p>
                         </div>
-                        <a href="login.html" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-colors">
+                        <a href="account/login.html" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-colors">
                             Upgrade Account
                         </a>
                     </div>
@@ -533,7 +533,7 @@
                                         </span>
                                     `}
                                 ` : `
-                                    <a href="login.html?return=${encodeURIComponent(window.location.href)}"
+                                    <a href="account/login.html?redirect=${encodeURIComponent(window.location.href)}"
                                         class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-colors text-center">
                                         Sign In
                                     </a>
@@ -547,7 +547,7 @@
                                     <span class="font-medium">🔒</span> ${lockReason}
                                 </p>
                                 ${showUpgradePrompt ? `
-                                    <a href="login.html" class="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                    <a href="account/login.html" class="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
                                         ⬆️ Upgrade to registered account to join
                                     </a>
                                 ` : ''}

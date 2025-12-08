@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>Browse Competitions | Uber Padel</title>
+    <meta name="description" content="Find and join padel competitions at Uber Padel. Filter by format, level, and date to find the perfect tournament.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://uberpadel.com/competitions/browse.html">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="../uberpadel-icon.svg">
+    <link rel="apple-touch-icon" href="../uberpadel-icon-512.png">
+    
+    <!-- Theme -->
+    <meta name="theme-color" content="#2563EB">
+    
+    <!-- Performance: Preconnect to critical origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+    
+    <!-- Performance: Preload critical resources -->
+    <link rel="preload" href="../account/auth-service.js" as="script">
+    <link rel="preload" href="competition-service.js" as="script">
+    
+    <!-- Performance: DNS prefetch for analytics (if used) -->
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+    
+    <!-- Google Fonts - with display=swap for faster text -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs - async loading -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        body { font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif; }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        
+        .competition-card {
+            transition: all 0.3s ease;
+        }
+        .competition-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.15);
+        }
+        
+        .format-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .format-americano { background: #DBEAFE; color: #1E40AF; }
+        .format-mexicano { background: #FFEDD5; color: #C2410C; }
+        .format-mix { background: #F3E8FF; color: #6B21A8; }
+        .format-team-league { background: #FEF3C7; color: #92400E; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="../index.html" class="flex items-center gap-3">
+                    <img src="../uberpadel-icon.svg" alt="Uber Padel" class="w-10 h-10">
+                    <span class="font-bold text-xl text-gray-800">Uber Padel</span>
+                </a>
+                <div class="flex items-center gap-4">
+                    <a href="browse.html" class="text-blue-600 font-semibold">Competitions</a>
+                    <a href="create.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Create</a>
+                    <a href="../account/profile.html" id="nav-profile" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Profile</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">Find Competitions</h1>
+                    <p class="text-blue-100">Browse tournaments and join one that matches your level</p>
+                </div>
+                
+                <!-- User Status Badge -->
+                <div id="user-badge" class="hidden bg-white/10 backdrop-blur rounded-xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div id="user-avatar" class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold">?</div>
+                        <div>
+                            <div id="user-name" class="font-semibold">Guest</div>
+                            <div id="user-level" class="text-sm text-blue-200">Level: -</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sign In CTA -->
+                <div id="signin-cta" class="hidden">
+                    <a href="../account/login.html?redirect=/competitions/browse.html" 
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
+                        <span>Sign In</span>
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Filters -->
+    <section class="bg-white border-b border-gray-100 py-4 sticky top-[73px] z-40">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Status Filter -->
+                <div class="flex-1 min-w-[150px]">
+                    <select id="filter-status" onchange="applyFilters()" 
+                        class="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-white">
+                        <option value="registration">Registration Open</option>
+                        <option value="all">All Statuses</option>
+                        <option value="active">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                
+                <!-- Format Filter -->
+                <div class="flex-1 min-w-[150px]">
+                    <select id="filter-format" onchange="applyFilters()" 
+                        class="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-white">
+                        <option value="all">All Formats</option>
+                        <option value="americano">Americano</option>
+                        <option value="mexicano">Mexicano</option>
+                        <option value="mix">Mix Tournament</option>
+                        <option value="team-league">Team League</option>
+                    </select>
+                </div>
+                
+                <!-- Eligible Only Toggle -->
+                <div id="eligible-filter" class="hidden">
+                    <label class="flex items-center gap-2 cursor-pointer px-4 py-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" id="filter-eligible" onchange="applyFilters()" class="w-4 h-4 text-blue-600">
+                        <span class="text-sm font-medium text-gray-700">Eligible for me</span>
+                    </label>
+                </div>
+                
+                <!-- Reset -->
+                <button onclick="resetFilters()" class="px-4 py-2 text-gray-500 hover:text-gray-700 font-medium transition-colors">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center py-20">
+            <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-500">Loading competitions...</p>
+        </div>
+        
+        <!-- Results Count -->
+        <div id="results-count" class="hidden mb-6 text-gray-600">
+            Showing <span id="count-value" class="font-semibold">0</span> competitions
+        </div>
+        
+        <!-- Competitions Grid -->
+        <div id="competitions-grid" class="hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Populated by JS -->
+        </div>
+        
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-20">
+            <div class="text-6xl mb-4">🔍</div>
+            <h2 class="text-xl font-bold text-gray-800 mb-2">No competitions found</h2>
+            <p class="text-gray-600 mb-6">Try adjusting your filters or check back later</p>
+            <button onclick="resetFilters()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                Reset Filters
+            </button>
+        </div>
+        
+        <!-- Create CTA -->
+        <div class="mt-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-3xl p-8 text-white text-center">
+            <h2 class="text-2xl font-bold mb-2">Want to organize your own?</h2>
+            <p class="text-purple-100 mb-6">Create a competition and invite players to join</p>
+            <a href="create.html" class="inline-block px-8 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-purple-50 transition-colors">
+                Create Competition
+            </a>
+        </div>
+        
+    </main>
+    
+    <!-- Services -->
+    <script src="../account/auth-service.js"></script>
+    
+    <!-- Competition Service (Phase 5) -->
+    <script src="competition-service.js"></script>
+    
+    <script>
+        // ===== STATE =====
+        let currentUser = null;
+        let allCompetitions = [];
+        
+        // ===== INITIALIZATION =====
+        
+        async function init() {
+            // Initialize services
+            await AuthService.init();
+            CompetitionService.init();
+            
+            // Get current user
+            currentUser = AuthService.getCurrentUser();
+            updateUserDisplay();
+            
+            // Load competitions
+            await loadCompetitions();
+        }
+        
+        function updateUserDisplay() {
+            const badge = document.getElementById('user-badge');
+            const cta = document.getElementById('signin-cta');
+            const eligibleFilter = document.getElementById('eligible-filter');
+            
+            if (currentUser) {
+                badge.classList.remove('hidden');
+                cta.classList.add('hidden');
+                
+                document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
+                document.getElementById('user-name').textContent = currentUser.name;
+                
+                if (currentUser.playtomicLevel) {
+                    document.getElementById('user-level').textContent = `Level: ${CompetitionService.formatLevel(currentUser.playtomicLevel)}`;
+                    eligibleFilter.classList.remove('hidden');
+                } else {
+                    document.getElementById('user-level').textContent = AuthService.getStatusLabel();
+                }
+            } else {
+                badge.classList.add('hidden');
+                cta.classList.remove('hidden');
+                eligibleFilter.classList.add('hidden');
+            }
+        }
+        
+        async function loadCompetitions() {
+            try {
+                allCompetitions = await CompetitionService.getAll();
+                
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('results-count').classList.remove('hidden');
+                
+                applyFilters();
+            } catch (error) {
+                console.error('Error loading competitions:', error);
+                document.getElementById('loading-state').innerHTML = `
+                    <div class="text-red-500">
+                        <div class="text-4xl mb-2">❌</div>
+                        <p>Error loading competitions. Please refresh.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // ===== FILTERING =====
+        
+        function applyFilters() {
+            const statusFilter = document.getElementById('filter-status').value;
+            const formatFilter = document.getElementById('filter-format').value;
+            const eligibleOnly = document.getElementById('filter-eligible').checked;
+            
+            let filtered = [...allCompetitions];
+            
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(c => c.meta.status === statusFilter);
+            }
+            
+            // Filter by format
+            if (formatFilter !== 'all') {
+                filtered = filtered.filter(c => c.meta.format === formatFilter);
+            }
+            
+            // Filter by eligibility
+            if (eligibleOnly && currentUser && currentUser.playtomicLevel) {
+                const level = parseFloat(currentUser.playtomicLevel);
+                filtered = filtered.filter(c => {
+                    const { eligible } = CompetitionService.checkEligibility(c, level);
+                    return eligible;
+                });
+            }
+            
+            renderCompetitions(filtered);
+        }
+        
+        function resetFilters() {
+            document.getElementById('filter-status').value = 'registration';
+            document.getElementById('filter-format').value = 'all';
+            document.getElementById('filter-eligible').checked = false;
+            applyFilters();
+        }
+        
+        // ===== RENDERING =====
+        
+        function renderCompetitions(competitions) {
+            const grid = document.getElementById('competitions-grid');
+            const empty = document.getElementById('empty-state');
+            const count = document.getElementById('count-value');
+            
+            count.textContent = competitions.length;
+            
+            if (competitions.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            empty.classList.add('hidden');
+            grid.classList.remove('hidden');
+            
+            grid.innerHTML = competitions.map((comp, i) => renderCompetitionCard(comp, i)).join('');
+        }
+        
+        function renderCompetitionCard(comp, index) {
+            const meta = comp.meta;
+            const formatInfo = CompetitionService.getFormatInfo(meta.format);
+            const statusInfo = CompetitionService.getStatusInfo(meta.status);
+            
+            const registeredCount = Object.keys(comp.registeredPlayers || {}).length;
+            const spotsLeft = meta.maxPlayers - registeredCount;
+            const isRegistered = currentUser && comp.registeredPlayers && comp.registeredPlayers[currentUser.id];
+            
+            // Check eligibility
+            let eligibilityBadge = '';
+            if (currentUser && currentUser.playtomicLevel && meta.status === 'registration') {
+                const { eligible, reason } = CompetitionService.checkEligibility(comp, currentUser.playtomicLevel);
+                if (!eligible) {
+                    eligibilityBadge = `<div class="text-xs text-red-600 mt-2">⚠️ ${reason}</div>`;
+                }
+            }
+            
+            // Format date
+            const eventDate = meta.eventDate ? new Date(meta.eventDate).toLocaleDateString('en-GB', {
+                weekday: 'short', day: 'numeric', month: 'short'
+            }) : 'TBD';
+            
+            return `
+                <a href="view.html?id=${comp.id}" class="competition-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in-up block" style="animation-delay: ${index * 0.05}s;">
+                    <!-- Header -->
+                    <div class="p-5 border-b border-gray-50">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <span class="format-badge format-${meta.format}">${formatInfo.emoji} ${formatInfo.label}</span>
+                            <span class="text-xs px-2 py-1 rounded-lg ${statusInfo.bgClass}">${statusInfo.label}</span>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-800 mb-1">${escapeHtml(meta.name)}</h3>
+                        <p class="text-sm text-gray-500">${escapeHtml(meta.organizerName || 'Organizer')}</p>
+                    </div>
+                    
+                    <!-- Details -->
+                    <div class="p-5 space-y-3">
+                        <div class="flex items-center gap-2 text-sm text-gray-600">
+                            <span>📅</span>
+                            <span>${eventDate}${meta.eventTime ? ' at ' + meta.eventTime : ''}</span>
+                        </div>
+                        
+                        ${meta.location ? `
+                        <div class="flex items-center gap-2 text-sm text-gray-600">
+                            <span>📍</span>
+                            <span>${escapeHtml(meta.location)}</span>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="flex items-center gap-2 text-sm text-gray-600">
+                            <span>🎯</span>
+                            <span>Level ${CompetitionService.formatLevel(meta.minLevel)} - ${CompetitionService.formatLevel(meta.maxLevel)}</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 text-sm">
+                            <span>👥</span>
+                            <span class="${spotsLeft <= 2 ? 'text-orange-600 font-medium' : 'text-gray-600'}">
+                                ${registeredCount}/${meta.maxPlayers} players
+                                ${spotsLeft <= 2 && spotsLeft > 0 ? `(${spotsLeft} spots left!)` : ''}
+                            </span>
+                        </div>
+                        
+                        ${eligibilityBadge}
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="px-5 pb-5">
+                        ${isRegistered ? `
+                            <div class="w-full py-2 bg-green-100 text-green-700 rounded-xl text-center font-medium text-sm">
+                                ✓ You're registered
+                            </div>
+                        ` : meta.status === 'registration' ? `
+                            <div class="w-full py-2 bg-blue-600 text-white rounded-xl text-center font-semibold text-sm">
+                                View Details →
+                            </div>
+                        ` : `
+                            <div class="w-full py-2 bg-gray-100 text-gray-600 rounded-xl text-center font-medium text-sm">
+                                View Details
+                            </div>
+                        `}
+                    </div>
+                </a>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+        
+        // Start
+        init();
+    </script>
+</body>
+</html>
