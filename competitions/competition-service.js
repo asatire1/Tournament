@@ -559,12 +559,12 @@ const CompetitionService = {
             }
         }
         
-        // Register player
+        // Register player (use null instead of undefined - Firebase rejects undefined)
         const registration = {
             id: player.id,
             name: player.name,
             email: player.email || null,
-            level: player.level,
+            level: player.level !== undefined ? player.level : null,
             registeredAt: new Date().toISOString()
         };
         
