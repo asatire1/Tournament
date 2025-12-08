@@ -341,7 +341,7 @@ const CompetitionService = {
         const id = this._generateId();
         const organiserKey = this._generateOrganiserKey();
         
-        // Build competition object with safe defaults
+        // Build competition object with safe defaults (Firebase rejects undefined)
         const competition = {
             meta: {
                 id,
@@ -350,7 +350,7 @@ const CompetitionService = {
                 format: data.format,
                 status: this.STATUS.DRAFT,
                 
-                // Event details
+                // Event details (use null instead of undefined)
                 eventDate: data.eventDate || null,
                 eventTime: data.eventTime || null,
                 location: data.location || '',
@@ -364,10 +364,10 @@ const CompetitionService = {
                 maxLevel: parseFloat(data.maxLevel) || 10,
                 accessRestriction: data.accessRestriction || this.ACCESS.ANYONE,
                 
-                // Format-specific settings
+                // Format-specific settings (use null instead of undefined)
                 courts: parseInt(data.courts) || 4,
                 pointsPerGame: parseInt(data.pointsPerGame) || 32,
-                roundCount: data.roundCount || null,
+                roundCount: data.roundCount !== undefined ? data.roundCount : null,
                 
                 // Organizer
                 organizerId: data.organizerId,
@@ -385,10 +385,27 @@ const CompetitionService = {
         
         console.log('Saving competition to Firebase:', competition);
         
+        // Sanitize object - remove undefined values (Firebase rejects them)
+        const sanitize = (obj) => {
+            const result = {};
+            for (const [key, value] of Object.entries(obj)) {
+                if (value === undefined) continue;
+                if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+                    result[key] = sanitize(value);
+                } else {
+                    result[key] = value;
+                }
+            }
+            return result;
+        };
+        
+        const sanitizedCompetition = sanitize(competition);
+        console.log('Sanitized competition:', sanitizedCompetition);
+        
         try {
             await this._database
                 .ref(`${this.config.COMPETITIONS_DB_PATH}/${id}`)
-                .set(competition);
+                .set(sanitizedCompetition);
             
             console.log('Competition created successfully with ID:', id);
             
