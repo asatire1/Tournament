@@ -50,8 +50,8 @@ const OrganizerAuth = {
         try {
             // Check if Firebase is available
             if (typeof firebase === 'undefined' || !firebase.auth) {
-                console.warn('⚠️ OrganizerAuth: Firebase Auth not available');
-                return null;
+                console.warn('⚠️ OrganizerAuth: Firebase Auth not available, using local ID');
+                return this._useLocalFallback();
             }
 
             // Check current auth state
@@ -66,19 +66,46 @@ const OrganizerAuth = {
                 return this._currentUid;
             }
 
-            // Not signed in - do anonymous sign-in
-            const result = await firebase.auth().signInAnonymously();
-            this._currentUid = result.user.uid;
-            this._saveUidHint(result.user.uid);
-            this._initialized = true;
-            console.log('✅ OrganizerAuth: Anonymous sign-in', this._currentUid.substring(0, 8) + '...');
-            return this._currentUid;
+            // Try anonymous sign-in
+            try {
+                const result = await firebase.auth().signInAnonymously();
+                this._currentUid = result.user.uid;
+                this._saveUidHint(result.user.uid);
+                this._initialized = true;
+                console.log('✅ OrganizerAuth: Anonymous sign-in', this._currentUid.substring(0, 8) + '...');
+                return this._currentUid;
+            } catch (anonError) {
+                // Anonymous auth might be disabled - fall back to local ID
+                console.warn('⚠️ OrganizerAuth: Anonymous auth failed, using local ID', anonError.code);
+                return this._useLocalFallback();
+            }
 
         } catch (error) {
             console.error('❌ OrganizerAuth: Init failed', error);
-            this._initialized = true; // Mark as initialized even on failure
-            return null;
+            return this._useLocalFallback();
         }
+    },
+    
+    /**
+     * Fall back to localStorage-based ID when anonymous auth is unavailable
+     * @private
+     */
+    _useLocalFallback() {
+        // Try to get existing local ID
+        let localId = localStorage.getItem('uberpadel_organizer_id');
+        
+        if (!localId) {
+            // Generate a new local ID
+            localId = 'local_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('uberpadel_organizer_id', localId);
+            console.log('✅ OrganizerAuth: Created local ID', localId.substring(0, 12) + '...');
+        } else {
+            console.log('✅ OrganizerAuth: Using existing local ID', localId.substring(0, 12) + '...');
+        }
+        
+        this._currentUid = localId;
+        this._initialized = true;
+        return this._currentUid;
     },
 
     /**
