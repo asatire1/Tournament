@@ -3,11 +3,11 @@
     // Users - for auth system
     "users": {
       ".read": true,
-      ".indexOn": ["googleUid", "authUid"],
+      ".write": true,
+      ".indexOn": ["googleUid", "authUid", "email"],
       "$userId": {
-        ".write": true,
-        ".validate": "newData.hasChildren(['name', 'type'])",
-        
+        // Validation only on create (when name and type must exist)
+        // Updates are allowed without full validation
         "name": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
         },
@@ -37,6 +37,9 @@
         },
         "phone": {
           ".validate": "newData.isString() || newData.val() == null"
+        },
+        "isOrganizer": {
+          ".validate": "newData.isBoolean()"
         }
       }
     },

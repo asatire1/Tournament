@@ -745,6 +745,11 @@
                                         class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
                                         ✏️ Edit
                                     </button>
+                                    <button onclick="deletePlayer('${player.id}', '${escapeHtml(player.name)}')" 
+                                        class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                                        title="Delete player">
+                                        🗑️
+                                    </button>
                                 ` : player.status === 'pending' ? `
                                     <button onclick="showVerifyModal('${player.id}', '${escapeHtml(player.name)}', '${escapeHtml(player.playtomicUsername)}')" 
                                         class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
@@ -754,10 +759,20 @@
                                         class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors">
                                         ✗ Reject
                                     </button>
+                                    <button onclick="deletePlayer('${player.id}', '${escapeHtml(player.name)}')" 
+                                        class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                                        title="Delete player">
+                                        🗑️
+                                    </button>
                                 ` : `
                                     <button onclick="reinstatePlayer('${player.id}')" 
                                         class="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium transition-colors">
                                         Reinstate
+                                    </button>
+                                    <button onclick="deletePlayer('${player.id}', '${escapeHtml(player.name)}')" 
+                                        class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                                        title="Delete player">
+                                        🗑️
                                     </button>
                                 `}
                             </div>
@@ -788,6 +803,28 @@
             } catch (error) {
                 console.error('Error updating organiser status:', error);
                 showToast('❌ Failed to update');
+            }
+        }
+        
+        async function deletePlayer(playerId, playerName) {
+            if (!confirm(`⚠️ Delete "${playerName}"?\n\nThis will permanently remove this user from the system. This action cannot be undone.`)) {
+                return;
+            }
+            
+            // Double confirm for safety
+            if (!confirm(`Are you absolutely sure you want to delete "${playerName}"?`)) {
+                return;
+            }
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).remove();
+                
+                showToast('🗑️ Player deleted');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error deleting player:', error);
+                showToast('❌ Failed to delete player');
             }
         }
         
