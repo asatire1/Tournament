@@ -43,36 +43,36 @@
     
     // Tournament data - existing rules (Mix format)
     "tournaments": {
-      ".indexOn": ["meta/organizerUid"],
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".read": true,
         ".write": true
       }
     },
     
     // Americano tournaments
     "americano-tournaments": {
-      ".indexOn": ["meta/organizerUid"],
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".read": true,
         ".write": true
       }
     },
     
     // Mexicano tournaments
     "mexicano-tournaments": {
-      ".indexOn": ["meta/organizerUid"],
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".read": true,
         ".write": true
       }
     },
     
     // Team League tournaments
     "team-tournaments": {
-      ".indexOn": ["meta/organizerUid"],
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".read": true,
         ".write": true
       }
     },

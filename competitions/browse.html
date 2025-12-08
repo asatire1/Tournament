@@ -77,57 +77,64 @@
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
     
     <!-- Navigation -->
-    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-4">
+    <nav class="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
-                <a href="../index.html" class="flex items-center gap-3">
-                    <img src="../uberpadel-icon.svg" alt="Uber Padel" class="w-10 h-10">
-                    <span class="font-bold text-xl text-gray-800">Uber Padel</span>
+                <a href="../index.html" class="flex items-center gap-2">
+                    <img src="../uberpadel-icon.svg" alt="Uber Padel" class="w-8 h-8">
+                    <span class="font-bold text-lg text-gray-800">Uber Padel</span>
                 </a>
-                <div class="flex items-center gap-4">
-                    <a href="browse.html" class="text-blue-600 font-semibold">Competitions</a>
-                    <a href="create.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Create</a>
-                    <a href="../account/profile.html" id="nav-profile" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Profile</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-    
-    <!-- Hero Section -->
-    <section class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-12">
-        <div class="max-w-6xl mx-auto px-4">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-bold mb-2">Find Competitions</h1>
-                    <p class="text-blue-100">Browse tournaments and join one that matches your level</p>
-                </div>
-                
-                <!-- User Status Badge -->
-                <div id="user-badge" class="hidden bg-white/10 backdrop-blur rounded-xl p-4">
-                    <div class="flex items-center gap-3">
-                        <div id="user-avatar" class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold">?</div>
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <span id="user-name" class="font-semibold">Guest</span>
-                                <span id="user-type-badge" class="text-xs px-2 py-0.5 rounded-full bg-white/20">Guest</span>
-                            </div>
-                            <div id="user-level" class="text-sm text-blue-200">Level: -</div>
-                        </div>
-                        <button onclick="handleSignOut()" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Sign out">
+                <div class="flex items-center gap-3 md:gap-6">
+                    <a href="../index.html#quick-play" class="text-gray-600 hover:text-blue-600 font-medium text-sm md:text-base transition-colors">Quick Play</a>
+                    <a href="browse.html" class="text-purple-600 font-semibold text-sm md:text-base">Competitions</a>
+                    <a href="create.html" class="hidden md:inline text-gray-600 hover:text-purple-600 font-medium text-sm transition-colors">Organize</a>
+                    
+                    <!-- Signed In State -->
+                    <div id="nav-signed-in" class="hidden flex items-center gap-3">
+                        <a href="../account/profile.html" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
+                            <span id="nav-user-initial" class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">?</span>
+                            <span id="nav-user-name" class="hidden md:inline">Account</span>
+                        </a>
+                        <button onclick="handleSignOut()" class="text-gray-400 hover:text-red-500 transition-colors" title="Sign out">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                             </svg>
                         </button>
                     </div>
+                    
+                    <!-- Signed Out State -->
+                    <a href="../account/login.html?redirect=/competitions/browse.html" id="nav-sign-in" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium text-sm transition-colors">
+                        Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Page Header Banner -->
+    <section class="bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 text-white py-8">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-semibold uppercase tracking-wide">Competitions</span>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold">Find & Join Events</h1>
+                    <p class="text-purple-200 text-sm mt-1">Browse scheduled competitions with online registration</p>
                 </div>
                 
-                <!-- Sign In CTA -->
-                <div id="signin-cta" class="hidden">
-                    <a href="../account/login.html?redirect=/competitions/browse.html" 
-                       class="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
-                        <span>Sign In</span>
-                        <span>→</span>
-                    </a>
+                <!-- User Status Badge (when signed in) -->
+                <div id="user-badge" class="hidden bg-white/10 backdrop-blur rounded-xl p-3">
+                    <div class="flex items-center gap-3">
+                        <div id="user-avatar" class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-lg font-bold">?</div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span id="user-name" class="font-semibold text-sm">Guest</span>
+                                <span id="user-type-badge" class="text-xs px-2 py-0.5 rounded-full bg-white/20">Guest</span>
+                            </div>
+                            <div id="user-level" class="text-xs text-purple-200">Level: -</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -244,13 +251,27 @@
         
         function updateUserDisplay() {
             const badge = document.getElementById('user-badge');
-            const cta = document.getElementById('signin-cta');
             const eligibleFilter = document.getElementById('eligible-filter');
             const typeBadge = document.getElementById('user-type-badge');
             
+            // Navigation elements
+            const navSignedIn = document.getElementById('nav-signed-in');
+            const navSignIn = document.getElementById('nav-sign-in');
+            const navUserInitial = document.getElementById('nav-user-initial');
+            const navUserName = document.getElementById('nav-user-name');
+            
             if (currentUser) {
+                // Show signed-in nav, hide sign-in button
+                navSignedIn.classList.remove('hidden');
+                navSignedIn.classList.add('flex');
+                navSignIn.classList.add('hidden');
+                
+                // Set nav user info
+                navUserInitial.textContent = currentUser.name.charAt(0).toUpperCase();
+                navUserName.textContent = currentUser.name;
+                
+                // Show user badge in header
                 badge.classList.remove('hidden');
-                cta.classList.add('hidden');
                 
                 document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
                 document.getElementById('user-name').textContent = currentUser.name;
@@ -274,8 +295,11 @@
                     document.getElementById('user-level').textContent = currentUser.email || 'No level set';
                 }
             } else {
+                // Show sign-in button, hide signed-in nav
+                navSignedIn.classList.add('hidden');
+                navSignIn.classList.remove('hidden');
+                
                 badge.classList.add('hidden');
-                cta.classList.remove('hidden');
                 eligibleFilter.classList.add('hidden');
             }
         }

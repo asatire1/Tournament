@@ -108,6 +108,7 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="account/auth-service.js"></script>
     
     <style>
         * {
@@ -364,10 +365,24 @@
                     <span class="font-bold text-lg text-gray-800">Uber Padel</span>
                 </a>
                 <div class="flex items-center gap-3 md:gap-6">
-                    <a href="#quick-play" class="text-gray-600 hover:text-blue-600 font-medium text-sm md:text-base transition-colors">Quick Play</a>
-                    <a href="competitions/browse.html" class="text-gray-600 hover:text-purple-600 font-medium text-sm md:text-base transition-colors">Competitions</a>
-                    <a href="account/profile.html" class="hidden md:inline text-gray-600 hover:text-blue-600 font-medium transition-colors">My Account</a>
-                    <a href="account/login.html" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
+                    <a href="#quick-play" class="text-blue-600 hover:text-blue-700 font-medium text-sm md:text-base transition-colors">Quick Play</a>
+                    <a href="competitions/browse.html" class="text-purple-600 hover:text-purple-700 font-medium text-sm md:text-base transition-colors">Competitions</a>
+                    
+                    <!-- Signed In State -->
+                    <div id="nav-signed-in" class="hidden items-center gap-3">
+                        <a href="account/profile.html" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
+                            <span id="nav-user-initial" class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">?</span>
+                            <span id="nav-user-name" class="hidden md:inline">Account</span>
+                        </a>
+                        <button onclick="handleNavSignOut()" class="text-gray-400 hover:text-red-500 transition-colors" title="Sign out">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Signed Out State -->
+                    <a href="account/login.html" id="nav-sign-in" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
                         Sign In
                     </a>
                 </div>
@@ -949,6 +964,46 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        
+        // ===== AUTH & NAV =====
+        
+        let currentUser = null;
+        
+        async function initAuth() {
+            await AuthService.init();
+            currentUser = AuthService.getCurrentUser();
+            updateNavDisplay();
+        }
+        
+        function updateNavDisplay() {
+            const navSignedIn = document.getElementById('nav-signed-in');
+            const navSignIn = document.getElementById('nav-sign-in');
+            const navUserInitial = document.getElementById('nav-user-initial');
+            const navUserName = document.getElementById('nav-user-name');
+            
+            if (currentUser) {
+                navSignedIn.classList.remove('hidden');
+                navSignedIn.style.display = 'flex';
+                navSignIn.classList.add('hidden');
+                
+                navUserInitial.textContent = currentUser.name.charAt(0).toUpperCase();
+                navUserName.textContent = currentUser.name;
+            } else {
+                navSignedIn.classList.add('hidden');
+                navSignedIn.style.display = 'none';
+                navSignIn.classList.remove('hidden');
+            }
+        }
+        
+        async function handleNavSignOut() {
+            await AuthService.signOut();
+            currentUser = null;
+            updateNavDisplay();
+            showToast('Signed out successfully');
+        }
+        
+        // Initialize auth on page load
+        initAuth();
         
         // ===== LOAD RECENT TOURNAMENTS =====
         
