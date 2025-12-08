@@ -320,14 +320,17 @@
             const navSignIn = document.getElementById('nav-sign-in');
             const navUserInitial = document.getElementById('nav-user-initial');
             
+            console.log('View - updateNavDisplay, user:', currentUser);
+            
             if (currentUser) {
                 navSignedIn.classList.remove('hidden');
-                navSignedIn.style.display = 'flex';
-                navSignIn.classList.add('hidden');
-                navUserInitial.textContent = currentUser.name.charAt(0).toUpperCase();
+                navSignedIn.classList.add('flex');
+                navSignIn.style.display = 'none';
+                navUserInitial.textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
             } else {
                 navSignedIn.classList.add('hidden');
-                navSignIn.classList.remove('hidden');
+                navSignedIn.classList.remove('flex');
+                navSignIn.style.display = '';
             }
         }
         
@@ -346,9 +349,17 @@
             CompetitionService.init();
             
             currentUser = AuthService.getCurrentUser();
+            console.log('View - current user:', currentUser);
             
             // Update navigation
             updateNavDisplay();
+            
+            // Listen for auth changes
+            AuthService.onAuthStateChanged((user) => {
+                console.log('View - auth state changed:', user);
+                currentUser = user;
+                updateNavDisplay();
+            });
             
             // Load competition
             await loadCompetition();

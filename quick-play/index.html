@@ -427,25 +427,39 @@
     <script>
         // Initialize auth and update nav
         async function initAuth() {
+            console.log('Quick Play - initializing auth...');
             await AuthService.init();
-            const currentUser = AuthService.getCurrentUser();
+            updateNavDisplay();
             
+            // Listen for auth changes
+            AuthService.onAuthStateChanged((user) => {
+                console.log('Quick Play - auth state changed:', user);
+                updateNavDisplay();
+            });
+        }
+        
+        function updateNavDisplay() {
+            const currentUser = AuthService.getCurrentUser();
             const navSignedIn = document.getElementById('nav-signed-in');
             const navSignIn = document.getElementById('nav-sign-in');
             const navUserInitial = document.getElementById('nav-user-initial');
             const navUserName = document.getElementById('nav-user-name');
             
+            console.log('Quick Play - updateNavDisplay, user:', currentUser);
+            
             if (currentUser) {
                 navSignedIn.classList.remove('hidden');
-                navSignedIn.style.display = 'flex';
-                navSignIn.classList.add('hidden');
-                navUserInitial.textContent = currentUser.name.charAt(0).toUpperCase();
-                navUserName.textContent = currentUser.name;
+                navSignedIn.classList.add('flex');
+                navSignIn.style.display = 'none';
+                navUserInitial.textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
+                navUserName.textContent = currentUser.name || 'Account';
             } else {
                 navSignedIn.classList.add('hidden');
-                navSignIn.classList.remove('hidden');
+                navSignedIn.classList.remove('flex');
+                navSignIn.style.display = '';
             }
         }
+        
         initAuth();
     </script>
 </body>

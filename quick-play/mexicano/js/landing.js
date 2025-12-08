@@ -21,8 +21,13 @@ async function renderLandingPage() {
     // Check for logged in user
     let currentUser = null;
     if (typeof AuthService !== 'undefined') {
-        await AuthService.init();
-        currentUser = AuthService.getCurrentUser();
+        try {
+            await AuthService.init();
+            currentUser = AuthService.getCurrentUser();
+            console.log('Mexicano landing - current user:', currentUser);
+        } catch (e) {
+            console.warn('Auth init error:', e);
+        }
     }
     
     // Get tournaments from localStorage first (fast)

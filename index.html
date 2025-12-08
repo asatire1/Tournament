@@ -970,9 +970,18 @@
         let currentUser = null;
         
         async function initAuth() {
+            console.log('Initializing auth...');
             await AuthService.init();
             currentUser = AuthService.getCurrentUser();
+            console.log('Current user after init:', currentUser);
             updateNavDisplay();
+            
+            // Also listen for auth changes
+            AuthService.onAuthStateChanged((user) => {
+                console.log('Auth state changed:', user);
+                currentUser = user;
+                updateNavDisplay();
+            });
         }
         
         function updateNavDisplay() {
@@ -981,17 +990,23 @@
             const navUserInitial = document.getElementById('nav-user-initial');
             const navUserName = document.getElementById('nav-user-name');
             
+            console.log('updateNavDisplay called, currentUser:', currentUser);
+            
             if (currentUser) {
+                // Show signed in state
                 navSignedIn.classList.remove('hidden');
-                navSignedIn.style.display = 'flex';
-                navSignIn.classList.add('hidden');
+                navSignedIn.classList.add('flex');
+                navSignIn.style.display = 'none';
                 
-                navUserInitial.textContent = currentUser.name.charAt(0).toUpperCase();
-                navUserName.textContent = currentUser.name;
+                navUserInitial.textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
+                navUserName.textContent = currentUser.name || 'Account';
+                console.log('Showing signed-in nav for:', currentUser.name);
             } else {
+                // Show signed out state
                 navSignedIn.classList.add('hidden');
-                navSignedIn.style.display = 'none';
-                navSignIn.classList.remove('hidden');
+                navSignedIn.classList.remove('flex');
+                navSignIn.style.display = '';
+                console.log('Showing sign-in button');
             }
         }
         

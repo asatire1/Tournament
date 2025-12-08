@@ -243,7 +243,15 @@
             
             // Get current user
             currentUser = AuthService.getCurrentUser();
+            console.log('Browse - current user:', currentUser);
             updateUserDisplay();
+            
+            // Listen for auth changes
+            AuthService.onAuthStateChanged((user) => {
+                console.log('Browse - auth state changed:', user);
+                currentUser = user;
+                updateUserDisplay();
+            });
             
             // Load competitions
             await loadCompetitions();
@@ -260,21 +268,23 @@
             const navUserInitial = document.getElementById('nav-user-initial');
             const navUserName = document.getElementById('nav-user-name');
             
+            console.log('Browse - updateUserDisplay, user:', currentUser);
+            
             if (currentUser) {
                 // Show signed-in nav, hide sign-in button
                 navSignedIn.classList.remove('hidden');
                 navSignedIn.classList.add('flex');
-                navSignIn.classList.add('hidden');
+                navSignIn.style.display = 'none';
                 
                 // Set nav user info
-                navUserInitial.textContent = currentUser.name.charAt(0).toUpperCase();
-                navUserName.textContent = currentUser.name;
+                navUserInitial.textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
+                navUserName.textContent = currentUser.name || 'Account';
                 
                 // Show user badge in header
                 badge.classList.remove('hidden');
                 
-                document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
-                document.getElementById('user-name').textContent = currentUser.name;
+                document.getElementById('user-avatar').textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
+                document.getElementById('user-name').textContent = currentUser.name || 'User';
                 
                 // Set type badge
                 if (currentUser.type === 'guest') {
@@ -297,7 +307,8 @@
             } else {
                 // Show sign-in button, hide signed-in nav
                 navSignedIn.classList.add('hidden');
-                navSignIn.classList.remove('hidden');
+                navSignedIn.classList.remove('flex');
+                navSignIn.style.display = '';
                 
                 badge.classList.add('hidden');
                 eligibleFilter.classList.add('hidden');
