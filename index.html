@@ -1010,7 +1010,7 @@
             
             // Load Americano Tournaments
             try {
-                const snapshot = await database.ref('americano')
+                const snapshot = await database.ref('americano-tournaments')
                     .orderByChild('meta/updatedAt')
                     .limitToLast(5)
                     .once('value');
@@ -1038,7 +1038,7 @@
             
             // Load Mexicano Tournaments
             try {
-                const snapshot = await database.ref('mexicano')
+                const snapshot = await database.ref('mexicano-tournaments')
                     .orderByChild('meta/updatedAt')
                     .limitToLast(5)
                     .once('value');
@@ -1306,7 +1306,7 @@
             
             // Check if it's an Americano tournament
             try {
-                const snapshotAm = await database.ref(`americano/${code}/meta`).once('value');
+                const snapshotAm = await database.ref(`americano-tournaments/${code}/meta`).once('value');
                 if (snapshotAm.exists()) {
                     window.location.href = `./quick-play/americano/#/t/${code}`;
                     return;
@@ -1317,7 +1317,7 @@
             
             // Check if it's a Mexicano tournament
             try {
-                const snapshotMex = await database.ref(`mexicano/${code}/meta`).once('value');
+                const snapshotMex = await database.ref(`mexicano-tournaments/${code}/meta`).once('value');
                 if (snapshotMex.exists()) {
                     window.location.href = `./quick-play/mexicano/#/t/${code}`;
                     return;
