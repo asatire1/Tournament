@@ -828,7 +828,7 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
         knockoutMaxScore: CONFIG.KNOCKOUT_MAX_SCORE,
         semiMaxScore: CONFIG.SEMI_MAX_SCORE,
         finalMaxScore: CONFIG.FINAL_MAX_SCORE,
-        showFairnessTabs: true,
+        showFairnessTabs: false,
         savedVersions: [],
         // Registered players tracking (for registered/level-based modes)
         registeredPlayers: {}

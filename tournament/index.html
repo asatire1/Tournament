@@ -1,140 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGJ6CZ4DZ0"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-TGJ6CZ4DZ0');
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Mix Tournament...</title>
     
-    <!-- Primary Meta Tags -->
-    <title>Mix Tournament - Uber Padel | 20, 24 or 28 Player Padel Tournament</title>
-    <meta name="title" content="Mix Tournament - Uber Padel | 20, 24 or 28 Player Padel Tournament">
-    <meta name="description" content="Create and manage Mix padel tournaments with 20, 24, or 28 players. Skill-based tiers, league rounds plus knockout stage, real-time scoring, and automatic leaderboards. Free to use.">
-    <meta name="keywords" content="mix tournament, padel tournament, 24 player tournament, padel league, skill tiers, knockout tournament, padel scoring app, tournament bracket">
-    <meta name="author" content="Uber Padel">
-    <meta name="robots" content="index, follow">
-    <meta name="language" content="English">
+    <!-- SEO: Tell search engines about the new location -->
+    <link rel="canonical" href="https://uberpadel.com/quick-play/tournament/">
     
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://uberpadel.com/tournament/">
+    <!-- Redirect to new location after 0 seconds -->
+    <meta http-equiv="refresh" content="0; url=/quick-play/tournament/">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-    <link rel="apple-touch-icon" href="../favicon.svg">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://uberpadel.com/tournament/">
-    <meta property="og:title" content="Mix Tournament - Uber Padel">
-    <meta property="og:description" content="Create Mix padel tournaments with 20-28 players. Skill-based tiers, league rounds plus knockout stage, and real-time scoring.">
-    <meta property="og:image" content="https://uberpadel.com/og-image-mix.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:site_name" content="Uber Padel">
-    <meta property="og:locale" content="en_GB">
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://uberpadel.com/tournament/">
-    <meta name="twitter:title" content="Mix Tournament - Uber Padel">
-    <meta name="twitter:description" content="Create Mix padel tournaments with 20-28 players. Skill-based tiers, league rounds plus knockout stage.">
-    <meta name="twitter:image" content="https://uberpadel.com/og-image-mix.png">
-    
-    <!-- Additional Meta Tags -->
-    <meta name="theme-color" content="#2563EB">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mix Tournament">
-    <meta name="application-name" content="Mix Tournament">
-    
-    <!-- Structured Data - WebApplication -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Mix Tournament - Uber Padel",
-        "description": "Mix padel tournament format supporting 20, 24, or 28 players with skill-based tiers and knockout stages.",
-        "url": "https://uberpadel.com/tournament/",
-        "applicationCategory": "SportsApplication",
-        "operatingSystem": "Any",
-        "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "GBP"
-        },
-        "featureList": [
-            "20, 24, or 28 player support",
-            "5-7 skill-based tiers",
-            "League rounds with rotating partners",
-            "Knockout stage finals",
-            "Real-time score synchronization",
-            "Automatic standings calculation"
-        ],
-        "parent": {
-            "@type": "WebApplication",
-            "name": "Uber Padel Tournament Manager",
-            "url": "https://uberpadel.com/"
-        }
-    }
+    <script>
+        // Handle hash routes (e.g., /tournament/#/t/abc123)
+        const hash = window.location.hash;
+        window.location.replace('/quick-play/tournament/' + hash);
     </script>
     
-    <!-- Structured Data - SportsEvent -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "SportsEvent",
-        "name": "Mix Padel Tournament",
-        "description": "Competitive padel tournament with skill-based tiers and knockout finals",
-        "sport": "Padel",
-        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-        "organizer": {
-            "@type": "Organization",
-            "name": "Uber Padel",
-            "url": "https://uberpadel.com/"
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%);
+            color: white;
         }
-    }
-    </script>
-    
-    <!-- Preconnect hints -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
-    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="./css/styles.css">
-    
-    <!-- Google Fonts for landing page -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+        a { color: white; }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
-    <!-- Main App Container -->
-    <div id="app"></div>
-
-    <!-- JavaScript Files - Load in correct order -->
-    <script src="./js/config.js"></script>
-    <script src="./js/firebase-config.js"></script>
-    <script src="../src/core/organizer-auth.js"></script>
-    <script src="./js/router.js"></script>
-    <script src="./js/state.js"></script>
-    <script src="./js/components.js"></script>
-    <script src="./js/handlers.js"></script>
-    <script src="./js/landing.js"></script>
-    <script src="./js/main.js"></script>
+<body>
+    <p>Redirecting to <a href="/quick-play/tournament/">Mix Tournament</a>...</p>
 </body>
 </html>

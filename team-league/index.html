@@ -1,146 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGJ6CZ4DZ0"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-TGJ6CZ4DZ0');
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Team Tournament...</title>
     
-    <!-- Primary Meta Tags -->
-    <title>Team Tournament - Uber Padel | Fixed Pairs Padel Tournament</title>
-    <meta name="title" content="Team Tournament - Uber Padel | Fixed Pairs Padel Tournament">
-    <meta name="description" content="Run team-based padel leagues with fixed partner pairs. Group stages, knockout rounds, automatic standings, and real-time scoring. Perfect for club leagues and competitive play.">
-    <meta name="keywords" content="team league, padel league, fixed pairs padel, padel doubles, team tournament, padel club league, partner padel, league table">
-    <meta name="author" content="Uber Padel">
-    <meta name="robots" content="index, follow">
-    <meta name="language" content="English">
+    <!-- SEO: Tell search engines about the new location -->
+    <link rel="canonical" href="https://uberpadel.com/quick-play/team-league/">
     
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://uberpadel.com/team-league/">
+    <!-- Redirect to new location after 0 seconds -->
+    <meta http-equiv="refresh" content="0; url=/quick-play/team-league/">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://uberpadel.com/team-league/">
-    <meta property="og:title" content="Team Tournament - Uber Padel">
-    <meta property="og:description" content="Run team-based padel leagues with fixed partner pairs. Group stages, knockout rounds, and real-time scoring.">
-    <meta property="og:image" content="https://uberpadel.com/og-image-team.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:site_name" content="Uber Padel">
-    <meta property="og:locale" content="en_GB">
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://uberpadel.com/team-league/">
-    <meta name="twitter:title" content="Team Tournament - Uber Padel">
-    <meta name="twitter:description" content="Run team-based padel leagues with fixed partner pairs. Group stages, knockout rounds.">
-    <meta name="twitter:image" content="https://uberpadel.com/og-image-team.png">
-    
-    <!-- Additional Meta Tags -->
-    <meta name="theme-color" content="#DB2777">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Team Tournament">
-    <meta name="application-name" content="Team Tournament">
-    
-    <!-- Structured Data - WebApplication -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Team Tournament - Uber Padel",
-        "description": "Team-based padel league manager with fixed partner pairs, group stages, and knockout rounds.",
-        "url": "https://uberpadel.com/team-league/",
-        "applicationCategory": "SportsApplication",
-        "operatingSystem": "Any",
-        "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "GBP"
-        },
-        "featureList": [
-            "Fixed partner pairs",
-            "Flexible team count",
-            "Group stage format",
-            "Knockout rounds",
-            "Automatic league tables",
-            "Real-time score sync"
-        ],
-        "parent": {
-            "@type": "WebApplication",
-            "name": "Uber Padel Tournament Manager",
-            "url": "https://uberpadel.com/"
-        }
-    }
+    <script>
+        // Handle hash routes (e.g., /team-league/#/t/abc123)
+        const hash = window.location.hash;
+        window.location.replace('/quick-play/team-league/' + hash);
     </script>
     
-    <!-- Structured Data - SportsEvent -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "SportsEvent",
-        "name": "Team Tournament Padel Tournament",
-        "description": "Team-based padel competition with fixed partner pairs competing in league format",
-        "sport": "Padel",
-        "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
-        "organizer": {
-            "@type": "Organization",
-            "name": "Uber Padel",
-            "url": "https://uberpadel.com/"
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            color: white;
         }
-    }
-    </script>
-    
-    <!-- Preconnect hints -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
-    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="./css/styles.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+        a { color: white; }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
-    <!-- Main App Container -->
-    <div id="app"></div>
-    
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
-    
-    <!-- Modal Container -->
-    <div id="modal-container"></div>
-
-    <!-- JavaScript Files - Load in correct order -->
-    <script src="./js/config.js"></script>
-    <script src="./js/firebase-config.js"></script>
-    <script src="../src/core/organizer-auth.js"></script>
-    <script src="./js/router.js"></script>
-    <script src="./js/state.js"></script>
-    <script src="./js/components.js"></script>
-    <script src="./js/handlers.js"></script>
-    <script src="./js/landing.js"></script>
-    <script src="./js/main.js"></script>
+<body>
+    <p>Redirecting to <a href="/quick-play/team-league/">Team Tournament</a>...</p>
 </body>
 </html>
