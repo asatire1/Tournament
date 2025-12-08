@@ -92,6 +92,10 @@
                 <div class="flex items-center gap-4">
                     <a href="browse.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Browse</a>
                     <a href="create.html" class="text-blue-600 font-semibold">Create</a>
+                    <div id="user-status" class="hidden flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                        <span id="user-status-icon">✓</span>
+                        <span id="user-status-name">Logged in</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -397,11 +401,33 @@
             
             currentUser = AuthService.getCurrentUser();
             
+            console.log('Create page loaded. Current user:', currentUser);
+            
             document.getElementById('loading-state').classList.add('hidden');
             
             if (!currentUser) {
                 document.getElementById('auth-required').classList.remove('hidden');
                 return;
+            }
+            
+            // Show user status in nav
+            const statusEl = document.getElementById('user-status');
+            const statusName = document.getElementById('user-status-name');
+            const statusIcon = document.getElementById('user-status-icon');
+            
+            statusEl.classList.remove('hidden');
+            statusEl.classList.add('flex');
+            statusName.textContent = currentUser.name;
+            
+            if (currentUser.type === 'guest') {
+                statusEl.className = 'flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium';
+                statusIcon.textContent = '👤';
+            } else if (currentUser.status === 'verified') {
+                statusEl.className = 'flex items-center gap-2 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium';
+                statusIcon.textContent = '✓';
+            } else {
+                statusEl.className = 'flex items-center gap-2 bg-amber-100 text-amber-700 px-3 py-1.5 rounded-full text-sm font-medium';
+                statusIcon.textContent = '⏳';
             }
             
             // Set minimum date to today
@@ -514,7 +540,17 @@
             btn.textContent = 'Creating...';
             
             try {
+                console.log('Creating competition with data:', formData);
+                
+                // Validate required fields
+                if (!formData.name) throw new Error('Competition name is required');
+                if (!formData.format) throw new Error('Please select a format');
+                if (!formData.eventDate) throw new Error('Event date is required');
+                if (!formData.organizerId) throw new Error('You must be logged in to create a competition');
+                
                 const { competition, organiserKey } = await CompetitionService.create(formData);
+                
+                console.log('Competition created:', competition);
                 
                 // Show success
                 document.getElementById('step-indicators').classList.add('hidden');
@@ -526,7 +562,7 @@
                 
             } catch (error) {
                 console.error('Create error:', error);
-                showToast('Failed to create competition', 'error');
+                showToast(error.message || 'Failed to create competition', 'error');
                 btn.disabled = false;
                 btn.textContent = 'Create Competition';
             }

@@ -106,10 +106,18 @@
                 <div id="user-badge" class="hidden bg-white/10 backdrop-blur rounded-xl p-4">
                     <div class="flex items-center gap-3">
                         <div id="user-avatar" class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold">?</div>
-                        <div>
-                            <div id="user-name" class="font-semibold">Guest</div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span id="user-name" class="font-semibold">Guest</span>
+                                <span id="user-type-badge" class="text-xs px-2 py-0.5 rounded-full bg-white/20">Guest</span>
+                            </div>
                             <div id="user-level" class="text-sm text-blue-200">Level: -</div>
                         </div>
+                        <button onclick="handleSignOut()" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Sign out">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 
@@ -238,6 +246,7 @@
             const badge = document.getElementById('user-badge');
             const cta = document.getElementById('signin-cta');
             const eligibleFilter = document.getElementById('eligible-filter');
+            const typeBadge = document.getElementById('user-type-badge');
             
             if (currentUser) {
                 badge.classList.remove('hidden');
@@ -246,17 +255,36 @@
                 document.getElementById('user-avatar').textContent = currentUser.name.charAt(0).toUpperCase();
                 document.getElementById('user-name').textContent = currentUser.name;
                 
+                // Set type badge
+                if (currentUser.type === 'guest') {
+                    typeBadge.textContent = '👤 Guest';
+                    typeBadge.className = 'text-xs px-2 py-0.5 rounded-full bg-gray-500/30';
+                } else if (currentUser.status === 'verified') {
+                    typeBadge.textContent = '✓ Verified';
+                    typeBadge.className = 'text-xs px-2 py-0.5 rounded-full bg-green-500/30';
+                } else {
+                    typeBadge.textContent = '⏳ Pending';
+                    typeBadge.className = 'text-xs px-2 py-0.5 rounded-full bg-amber-500/30';
+                }
+                
                 if (currentUser.playtomicLevel) {
                     document.getElementById('user-level').textContent = `Level: ${CompetitionService.formatLevel(currentUser.playtomicLevel)}`;
                     eligibleFilter.classList.remove('hidden');
                 } else {
-                    document.getElementById('user-level').textContent = AuthService.getStatusLabel();
+                    document.getElementById('user-level').textContent = currentUser.email || 'No level set';
                 }
             } else {
                 badge.classList.add('hidden');
                 cta.classList.remove('hidden');
                 eligibleFilter.classList.add('hidden');
             }
+        }
+        
+        async function handleSignOut() {
+            await AuthService.signOut();
+            currentUser = null;
+            updateUserDisplay();
+            showToast('Signed out successfully');
         }
         
         async function loadCompetitions() {

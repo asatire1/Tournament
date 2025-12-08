@@ -544,6 +544,7 @@
                 await CompetitionService.registerPlayer(competitionId, {
                     id: currentUser.id,
                     name: currentUser.name,
+                    email: currentUser.email || null,
                     level: currentUser.playtomicLevel
                 });
                 

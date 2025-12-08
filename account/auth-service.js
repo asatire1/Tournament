@@ -57,6 +57,13 @@ const AuthService = {
             }
             this._auth = firebase.auth();
             this._database = firebase.database();
+            
+            // Set persistence to LOCAL (survives browser restart)
+            try {
+                await this._auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            } catch (e) {
+                console.warn('Could not set auth persistence:', e);
+            }
         }
         
         // Load cached user for instant UI
@@ -71,8 +78,15 @@ const AuthService = {
         // Listen for Firebase auth state changes
         if (this._auth) {
             this._auth.onAuthStateChanged(async (firebaseUser) => {
+                console.log('Firebase auth state changed:', firebaseUser ? firebaseUser.email : 'signed out');
                 if (firebaseUser && (!this._currentUser || this._currentUser.type !== 'guest')) {
                     await this._syncFirebaseUser(firebaseUser);
+                } else if (!firebaseUser && this._currentUser && this._currentUser.type === 'registered') {
+                    // Firebase signed out but we have a registered user - clear local storage
+                    console.log('Firebase signed out, clearing local user');
+                    this._currentUser = null;
+                    localStorage.removeItem(this.config.USER_STORAGE_KEY);
+                    this._notifyListeners();
                 }
             });
         }
