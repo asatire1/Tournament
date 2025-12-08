@@ -50,8 +50,13 @@ const AuthService = {
             return this._currentUser;
         }
         
+        console.log('AuthService.init() called');
+        console.log('typeof firebase:', typeof firebase);
+        console.log('typeof firebase.auth:', typeof firebase !== 'undefined' ? typeof firebase.auth : 'N/A');
+        
         // Initialize Firebase if not already done
-        if (typeof firebase !== 'undefined') {
+        if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function') {
+            console.log('Firebase Auth SDK available');
             if (!firebase.apps.length) {
                 firebase.initializeApp(this.config.FIREBASE_CONFIG);
             }
@@ -64,6 +69,11 @@ const AuthService = {
             } catch (e) {
                 console.warn('Could not set auth persistence:', e);
             }
+        } else {
+            console.warn('Firebase Auth SDK not loaded. Checking if scripts are present...');
+            // Log what scripts are loaded
+            const scripts = document.querySelectorAll('script[src*="firebase"]');
+            scripts.forEach(s => console.log('Firebase script:', s.src));
         }
         
         // Load cached user for instant UI
