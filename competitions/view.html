@@ -323,13 +323,12 @@
             console.log('View - updateNavDisplay, user:', currentUser);
             
             if (currentUser) {
-                navSignedIn.classList.remove('hidden');
-                navSignedIn.classList.add('flex');
+                // Use explicit style.display to override CSS
+                navSignedIn.style.display = 'flex';
                 navSignIn.style.display = 'none';
                 navUserInitial.textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
             } else {
-                navSignedIn.classList.add('hidden');
-                navSignedIn.classList.remove('flex');
+                navSignedIn.style.display = 'none';
                 navSignIn.style.display = '';
             }
         }

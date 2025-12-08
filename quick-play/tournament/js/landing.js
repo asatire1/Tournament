@@ -84,6 +84,30 @@ async function renderLandingPage() {
         }
     }
     
+    // Function to build auth nav HTML
+    function buildAuthNav(user) {
+        if (user) {
+            return `
+                <div id="nav-signed-in" class="flex items-center gap-2">
+                    <a href="../../account/profile.html" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
+                        <span class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">${user.name ? user.name.charAt(0).toUpperCase() : '?'}</span>
+                        <span class="hidden md:inline">${user.name || 'Account'}</span>
+                    </a>
+                </div>
+                <a id="nav-sign-in" href="../../account/login.html" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors" style="display: none;">
+                    Sign In
+                </a>
+            `;
+        } else {
+            return `
+                <div id="nav-signed-in" class="flex items-center gap-2" style="display: none;"></div>
+                <a id="nav-sign-in" href="../../account/login.html" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
+                    Sign In
+                </a>
+            `;
+        }
+    }
+    
     // Build nav HTML
     const navHtml = `
         <nav class="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
@@ -96,23 +120,27 @@ async function renderLandingPage() {
                     <div class="flex items-center gap-3 md:gap-6">
                         <a href="../../index.html#quick-play" class="text-blue-600 font-semibold text-sm md:text-base">Quick Play</a>
                         <a href="../../competitions/browse.html" class="text-gray-600 hover:text-purple-600 font-medium text-sm md:text-base transition-colors">Competitions</a>
-                        ${currentUser ? `
-                            <div class="flex items-center gap-2">
-                                <a href="../../account/profile.html" class="flex items-center gap-2 text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors">
-                                    <span class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">${currentUser.name.charAt(0).toUpperCase()}</span>
-                                    <span class="hidden md:inline">${currentUser.name}</span>
-                                </a>
-                            </div>
-                        ` : `
-                            <a href="../../account/login.html" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
-                                Sign In
-                            </a>
-                        `}
+                        <div id="nav-auth-container" class="flex items-center gap-3">
+                            ${buildAuthNav(currentUser)}
+                        </div>
                     </div>
                 </div>
             </div>
         </nav>
     `;
+    
+    // Listen for auth changes and update nav (after a short delay for DOM to be ready)
+    if (typeof AuthService !== 'undefined') {
+        setTimeout(() => {
+            AuthService.onAuthStateChanged((user) => {
+                console.log('Tournament - auth state changed:', user);
+                const container = document.getElementById('nav-auth-container');
+                if (container) {
+                    container.innerHTML = buildAuthNav(user);
+                }
+            });
+        }, 100);
+    }
     
     return `
         ${navHtml}

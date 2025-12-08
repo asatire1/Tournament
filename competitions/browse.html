@@ -271,9 +271,8 @@
             console.log('Browse - updateUserDisplay, user:', currentUser);
             
             if (currentUser) {
-                // Show signed-in nav, hide sign-in button
-                navSignedIn.classList.remove('hidden');
-                navSignedIn.classList.add('flex');
+                // Show signed-in nav, hide sign-in button - use explicit style
+                navSignedIn.style.display = 'flex';
                 navSignIn.style.display = 'none';
                 
                 // Set nav user info
@@ -305,9 +304,8 @@
                     document.getElementById('user-level').textContent = currentUser.email || 'No level set';
                 }
             } else {
-                // Show sign-in button, hide signed-in nav
-                navSignedIn.classList.add('hidden');
-                navSignedIn.classList.remove('flex');
+                // Show sign-in button, hide signed-in nav - use explicit style
+                navSignedIn.style.display = 'none';
                 navSignIn.style.display = '';
                 
                 badge.classList.add('hidden');

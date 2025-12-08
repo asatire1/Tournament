@@ -107,6 +107,7 @@
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="account/auth-service.js"></script>
     
@@ -993,9 +994,8 @@
             console.log('updateNavDisplay called, currentUser:', currentUser);
             
             if (currentUser) {
-                // Show signed in state
-                navSignedIn.classList.remove('hidden');
-                navSignedIn.classList.add('flex');
+                // Show signed in state - use explicit style to override any CSS
+                navSignedIn.style.display = 'flex';
                 navSignIn.style.display = 'none';
                 
                 navUserInitial.textContent = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
@@ -1003,8 +1003,7 @@
                 console.log('Showing signed-in nav for:', currentUser.name);
             } else {
                 // Show signed out state
-                navSignedIn.classList.add('hidden');
-                navSignedIn.classList.remove('flex');
+                navSignedIn.style.display = 'none';
                 navSignIn.style.display = '';
                 console.log('Showing sign-in button');
             }
