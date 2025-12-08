@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>Quick Play - Uber Padel | Start a Tournament Now</title>
+    <meta name="title" content="Quick Play - Uber Padel | Start a Tournament Now">
+    <meta name="description" content="Start a padel tournament instantly. Choose from Mix, Team Tournament, Americano, or Mexicano formats. No account required - just enter player names and play!">
+    <meta name="keywords" content="padel tournament, quick play, americano padel, mexicano padel, team league, instant tournament">
+    <meta name="author" content="Uber Padel">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://uberpadel.com/quick-play/">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="../uberpadel-icon.svg">
+    <link rel="apple-touch-icon" href="../uberpadel-icon-512.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://uberpadel.com/quick-play/">
+    <meta property="og:title" content="Quick Play - Uber Padel">
+    <meta property="og:description" content="Start a padel tournament instantly. No account required!">
+    <meta property="og:image" content="https://uberpadel.com/og-image.png">
+    
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content="#2563EB">
+    
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0;
+        }
+        
+        .animate-delay-100 { animation-delay: 0.1s; }
+        .animate-delay-200 { animation-delay: 0.2s; }
+        .animate-delay-300 { animation-delay: 0.3s; }
+        .animate-delay-400 { animation-delay: 0.4s; }
+        .animate-delay-500 { animation-delay: 0.5s; }
+        
+        /* Format Cards */
+        .format-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            border: 1px solid #E5E7EB;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .format-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .format-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .format-card:hover::before {
+            opacity: 1;
+        }
+        
+        .format-card-blue:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        
+        .format-card-blue:hover::before {
+            background: linear-gradient(135deg, #3B82F6, #06B6D4);
+        }
+        
+        .format-card-purple:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .format-card-pink:hover {
+            border-color: rgba(236, 72, 153, 0.3);
+        }
+        
+        .format-card-pink:hover::before {
+            background: linear-gradient(135deg, #8B5CF6, #EC4899);
+        }
+        
+        .format-card-teal:hover {
+            border-color: rgba(20, 184, 166, 0.3);
+        }
+        
+        .format-card-teal:hover::before {
+            background: linear-gradient(135deg, #14B8A6, #06B6D4);
+        }
+        
+        /* Hero background pattern */
+        .hero-pattern {
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(139,92,246,0.2) 0%, transparent 30%),
+                radial-gradient(circle at 60% 60%, rgba(59,130,246,0.2) 0%, transparent 30%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- Navigation -->
+    <nav class="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <a href="../index.html" class="flex items-center gap-2">
+                    <img src="../uberpadel-icon.svg" alt="Uber Padel" class="w-8 h-8">
+                    <span class="font-bold text-lg text-gray-800">Uber Padel</span>
+                </a>
+                <div class="flex items-center gap-3 md:gap-6">
+                    <a href="../index.html" class="text-gray-600 hover:text-blue-600 font-medium text-sm md:text-base transition-colors">Home</a>
+                    <a href="../competitions/browse.html" class="text-gray-600 hover:text-purple-600 font-medium text-sm md:text-base transition-colors">Competitions</a>
+                    <a href="../account/login.html" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
+                        Sign In
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden">
+        <!-- Background -->
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 hero-pattern"></div>
+        
+        <div class="relative max-w-6xl mx-auto px-6 py-12 md:py-16">
+            <div class="text-center">
+                <!-- Badge -->
+                <div class="animate-fade-in-up animate-delay-100">
+                    <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6 border border-white/20">
+                        <span class="text-xl">🎮</span>
+                        <span class="text-white font-medium">Quick Play</span>
+                    </div>
+                </div>
+                
+                <!-- Main Heading -->
+                <h1 class="animate-fade-in-up animate-delay-200 text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4" style="letter-spacing: -1px;">
+                    Choose Your Format
+                </h1>
+                
+                <!-- Subtitle -->
+                <p class="animate-fade-in-up animate-delay-300 text-lg text-white/80 max-w-xl mx-auto mb-4">
+                    Start a tournament instantly. No account required.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Wave divider -->
+        <div class="absolute bottom-0 left-0 right-0">
+            <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                <path d="M0 80L60 73.3C120 66.7 240 53.3 360 46.7C480 40 600 40 720 43.3C840 46.7 960 53.3 1080 56.7C1200 60 1320 60 1380 60L1440 60V80H1380C1320 80 1200 80 1080 80C960 80 840 80 720 80C600 80 480 80 360 80C240 80 120 80 60 80H0Z" fill="#F9FAFB"/>
+            </svg>
+        </div>
+    </div>
+    
+    <!-- Format Selection Cards -->
+    <div class="bg-gray-50 py-12">
+        <div class="max-w-6xl mx-auto px-6">
+            
+            <!-- Format Cards Grid -->
+            <div class="animate-fade-in-up animate-delay-400 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                
+                <!-- Mix Tournament Card -->
+                <a href="./tournament/" class="format-card format-card-blue group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-3xl shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                            👥
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Mix Tournament</h3>
+                            <p class="text-gray-500">20, 24, or 28 players</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <span>Pre-set fixtures by tier</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <span>League stage + knockout</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                            <span>Best for club nights</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 group-hover:gap-3 transition-all">
+                            Start Mix Tournament
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+                
+                <!-- Team Tournament Card -->
+                <a href="./team-league/" class="format-card format-card-pink group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-3xl shadow-lg shadow-pink-500/30 group-hover:scale-110 transition-transform">
+                            🏆
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Team Tournament</h3>
+                            <p class="text-gray-500">4-24 teams (fixed pairs)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                            <span>Partners stay together</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                            <span>Group stage + knockout</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                            <span>League-style competition</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-pink-600 group-hover:gap-3 transition-all">
+                            Start Team Tournament
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+                
+                <!-- Americano Format Card -->
+                <a href="./americano/" class="format-card format-card-purple group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
+                            🔄
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Americano</h3>
+                            <p class="text-gray-500">5-24 players</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                            <span>Rotating partners each round</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                            <span>Play with everyone</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                            <span>Great for social play</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-purple-600 group-hover:gap-3 transition-all">
+                            Start Americano
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+                
+                <!-- Mexicano Format Card -->
+                <a href="./mexicano/" class="format-card format-card-teal group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-3xl shadow-lg shadow-teal-500/30 group-hover:scale-110 transition-transform">
+                            🎯
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Mexicano</h3>
+                            <p class="text-gray-500">8+ players or 4+ teams</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                            <span>Pairings based on standings</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                            <span>Competitive & balanced</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                            <span>Unlimited rounds</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-teal-600 group-hover:gap-3 transition-all">
+                            Start Mexicano
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+            </div>
+            
+            <!-- Help text -->
+            <div class="text-center mt-10">
+                <p class="text-gray-500 text-sm mb-3">Not sure which format to choose?</p>
+                <a href="../about.html" class="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700 transition-colors">
+                    Learn about each format
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- How It Works -->
+    <div class="bg-white py-12 border-t border-gray-100">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-2xl font-bold text-gray-900 text-center mb-8">How Quick Play Works</h2>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mx-auto mb-3 text-2xl">
+                        1️⃣
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">Choose Format</h3>
+                    <p class="text-gray-600 text-sm">Select from Mix, Team, Americano, or Mexicano</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mx-auto mb-3 text-2xl">
+                        2️⃣
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">Enter Players</h3>
+                    <p class="text-gray-600 text-sm">Type in player names and configure settings</p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mx-auto mb-3 text-2xl">
+                        3️⃣
+                    </div>
+                    <h3 class="font-semibold text-gray-900 mb-1">Share & Play</h3>
+                    <p class="text-gray-600 text-sm">Get a code to share with players and start!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-6">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <img src="../uberpadel-logo-dark.svg" alt="UberPadel" class="h-5" />
+                </div>
+                <div class="flex items-center gap-6 text-sm">
+                    <a href="../index.html" class="hover:text-white transition-colors">Home</a>
+                    <a href="../about.html" class="hover:text-white transition-colors">How It Works</a>
+                    <a href="../competitions/browse.html" class="hover:text-white transition-colors">Competitions</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

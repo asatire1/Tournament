@@ -77,6 +77,69 @@
       }
     },
     
+    // Competitions (Phase 5) - with performance indexes
+    "competitions": {
+      ".read": true,
+      // Indexes for optimized queries
+      ".indexOn": [
+        "meta/eventDate",
+        "meta/status",
+        "meta/format",
+        "meta/organizerId",
+        "meta/createdAt"
+      ],
+      "$competitionId": {
+        ".write": true,
+        
+        "meta": {
+          ".validate": "newData.hasChildren(['name', 'format', 'status'])",
+          
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          },
+          "format": {
+            ".validate": "newData.isString() && (newData.val() == 'americano' || newData.val() == 'mexicano' || newData.val() == 'mix' || newData.val() == 'team-league')"
+          },
+          "status": {
+            ".validate": "newData.isString() && (newData.val() == 'draft' || newData.val() == 'registration' || newData.val() == 'active' || newData.val() == 'completed' || newData.val() == 'cancelled')"
+          },
+          "accessRestriction": {
+            ".validate": "newData.isString() && (newData.val() == 'anyone' || newData.val() == 'registered' || newData.val() == 'verified')"
+          },
+          "minLevel": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+          },
+          "maxLevel": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+          },
+          "minPlayers": {
+            ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 100"
+          },
+          "maxPlayers": {
+            ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 100"
+          }
+        },
+        
+        "registeredPlayers": {
+          "$playerId": {
+            ".validate": "newData.hasChildren(['id', 'name'])"
+          }
+        },
+        
+        "matches": {
+          "$matchId": {
+            ".validate": "newData.hasChild('team1') && newData.hasChild('team2')"
+          }
+        },
+        
+        "standings": {
+          "$playerId": {
+            ".validate": "newData.hasChild('id')"
+          }
+        }
+      }
+    },
+    
     // Community messages with rate limiting
     "community": {
       "messages": {

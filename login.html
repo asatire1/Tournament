@@ -4,101 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Primary Meta Tags -->
-    <title>Login | Uber Padel</title>
-    <meta name="description" content="Sign in to Uber Padel to join tournaments, track your progress, and compete with other players.">
-    <meta name="robots" content="index, follow">
+    <!-- Redirect to new location -->
+    <title>Redirecting... | Uber Padel</title>
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="https://uberpadel.com/account/login.html">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="uberpadel-icon.svg">
-    <link rel="apple-touch-icon" href="uberpadel-icon-512.png">
     
-    <!-- Theme -->
-    <meta name="theme-color" content="#2563EB">
+    <!-- Instant redirect -->
+    <script>
+        // Preserve any query parameters (like ?redirect=...)
+        const newUrl = 'account/login.html' + window.location.search + window.location.hash;
+        window.location.replace(newUrl);
+    </script>
     
-    <!-- Preconnect hints -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Fallback meta redirect -->
+    <noscript>
+        <meta http-equiv="refresh" content="0;url=account/login.html">
+    </noscript>
     
     <style>
-        * {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
         body {
-            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f8fafc, #e0e7ff);
         }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .redirect-message {
+            text-align: center;
+            padding: 2rem;
         }
-        
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
+        .redirect-message p {
+            color: #64748b;
+            margin-bottom: 1rem;
         }
-        
-        @keyframes pulse-soft {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        .redirect-message a {
+            color: #2563eb;
+            text-decoration: none;
         }
-        
-        .animate-pulse-soft {
-            animation: pulse-soft 2s ease-in-out infinite;
-        }
-        
-        .btn-google {
-            background: white;
-            border: 2px solid #e5e7eb;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-google:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-            transform: translateY(-1px);
-        }
-        
-        .btn-guest {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            transition: all 0.2s ease;
-        }
-        
-        .btn-guest:hover {
-            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-            transform: translateY(-1px);
-        }
-        
-        .input-field {
-            transition: all 0.2s ease;
-        }
-        
-        .input-field:focus {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        .redirect-message a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
+<body>
+    <div class="redirect-message">
+        <p>Redirecting to login page...</p>
+        <p><a href="account/login.html">Click here if not redirected</a></p>
+    </div>
+</body>
+</html>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
     
     <!-- Navigation -->

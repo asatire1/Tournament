@@ -4,86 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Primary Meta Tags -->
-    <title>My Account | Uber Padel</title>
-    <meta name="description" content="View your player profile, verification status, and tournaments on Uber Padel.">
-    <meta name="robots" content="noindex, nofollow">
+    <!-- Redirect to new location -->
+    <title>Redirecting... | Uber Padel</title>
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="https://uberpadel.com/account/profile.html">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="uberpadel-icon.svg">
-    <link rel="apple-touch-icon" href="uberpadel-icon-512.png">
     
-    <!-- Theme -->
-    <meta name="theme-color" content="#2563EB">
+    <!-- Instant redirect -->
+    <script>
+        // Preserve any query parameters
+        const newUrl = 'account/profile.html' + window.location.search + window.location.hash;
+        window.location.replace(newUrl);
+    </script>
     
-    <!-- Preconnect hints -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Fallback meta redirect -->
+    <noscript>
+        <meta http-equiv="refresh" content="0;url=account/profile.html">
+    </noscript>
     
     <style>
-        * {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        
         body {
-            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .animate-fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-        
-        .status-badge {
-            display: inline-flex;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
             align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 9999px;
-            font-size: 14px;
-            font-weight: 600;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f8fafc, #e0e7ff);
         }
-        
-        .status-guest {
-            background: #F3F4F6;
-            color: #4B5563;
+        .redirect-message {
+            text-align: center;
+            padding: 2rem;
         }
-        
-        .status-pending {
-            background: #FEF3C7;
-            color: #92400E;
+        .redirect-message p {
+            color: #64748b;
+            margin-bottom: 1rem;
         }
-        
-        .status-verified {
-            background: #D1FAE5;
-            color: #065F46;
+        .redirect-message a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .redirect-message a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
+<body>
+    <div class="redirect-message">
+        <p>Redirecting to your profile...</p>
+        <p><a href="account/profile.html">Click here if not redirected</a></p>
+    </div>
+</body>
+</html>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
     
     <!-- Navigation -->
