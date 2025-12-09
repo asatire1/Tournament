@@ -1359,8 +1359,8 @@ const TeamLeagueApp = {
                 })}
                 
                 <!-- Tabs -->
-                <div class="bg-white border-b border-gray-100 sticky top-0 z-40">
-                    <div class="max-w-6xl mx-auto px-4">
+                <div class="bg-white border-b border-gray-100">
+                    <div class="max-w-5xl mx-auto px-4">
                         <div class="flex gap-1 overflow-x-auto py-3" style="-webkit-overflow-scrolling: touch;">
                             <button onclick="setTab('fixtures')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'fixtures' ? 'tab-active' : 'tab-inactive'}">
                                 📋 Fixtures
@@ -1388,7 +1388,7 @@ const TeamLeagueApp = {
                 </div>
                 
                 <!-- Tab Content -->
-                <div class="max-w-6xl mx-auto px-4 py-6">
+                <div class="max-w-5xl mx-auto px-4 py-6">
                     ${currentTab === 'fixtures' ? FixturesTab() : ''}
                     ${currentTab === 'standings' ? StandingsTab() : ''}
                     ${currentTab === 'knockout' ? KnockoutTab() : ''}

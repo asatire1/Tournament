@@ -126,8 +126,8 @@ async function sharedNavSignOut() {
 
 /**
  * Initialize the navigation bar
- * Only adds nav on tournament view pages (when URL has #/t/)
- * Landing pages already have their own nav
+ * Only adds nav on landing pages that don't have their own nav
+ * Tournament views have their own header via tournament-header.js
  */
 function initSharedNav() {
     // Don't add if nav already exists
@@ -136,12 +136,10 @@ function initSharedNav() {
     // Don't add if another nav already exists (landing pages have their own)
     if (document.querySelector('nav')) return;
     
-    // Only show on tournament view pages (URL contains #/t/)
+    // Don't add on tournament views - they have their own header
     const hash = window.location.hash;
-    if (!hash || !hash.includes('/t/')) {
-        // Not a tournament view, don't add nav yet but listen for hash changes
-        window.addEventListener('hashchange', initSharedNav, { once: true });
-        return;
+    if (hash && hash.includes('/t/')) {
+        return; // Tournament view - don't add shared nav
     }
     
     // Get current user
