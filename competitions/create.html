@@ -32,6 +32,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
+    <!-- Shared Config -->
+    <script src="../shared/format-config.js"></script>
+    
     <style>
         * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         body { font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -310,16 +313,19 @@
                         <h3 class="font-semibold text-gray-800 mb-4">Player Capacity</h3>
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Players</label>
-                                <input type="number" id="min-players" min="4" max="32"
+                                <label for="min-players" class="block text-sm font-medium text-gray-700 mb-2">Minimum Players</label>
+                                <input type="number" id="min-players" min="4" max="80"
                                     class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Players</label>
-                                <input type="number" id="max-players" min="4" max="32"
+                                <label for="max-players" class="block text-sm font-medium text-gray-700 mb-2">Maximum Players</label>
+                                <input type="number" id="max-players" min="4" max="80"
                                     class="input-field w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
                             </div>
                         </div>
+                        <p id="player-count-hint" class="text-xs text-gray-500 mt-2">
+                            ℹ️ Select a format first to see player requirements
+                        </p>
                     </div>
                     
                     <!-- Level Restrictions -->
@@ -545,17 +551,53 @@
         }
         
         function updateFormatDefaults(format) {
-            const defaults = {
-                'americano': { min: 8, max: 24, courts: 2 },
-                'mexicano': { min: 8, max: 24, courts: 2 },
-                'mix': { min: 8, max: 32, courts: 2 },
-                'team-league': { min: 6, max: 32, courts: 2 }
-            };
+            const config = getFormatConfig(format);
+            if (!config) return;
             
-            const d = defaults[format] || defaults.americano;
-            document.getElementById('min-players').value = d.min;
-            document.getElementById('max-players').value = d.max;
-            document.getElementById('courts').value = d.courts;
+            const minInput = document.getElementById('min-players');
+            const maxInput = document.getElementById('max-players');
+            const hint = document.getElementById('player-count-hint');
+            const minLabel = document.querySelector('label[for="min-players"]');
+            const maxLabel = document.querySelector('label[for="max-players"]');
+            
+            const isTeamFormat = config.rule === 'teams';
+            const min = isTeamFormat ? config.minTeams : config.minPlayers;
+            const max = isTeamFormat ? config.maxTeams : config.maxPlayers;
+            const step = config.rule === 'divisible4' ? 4 : 1;
+            
+            // Update labels for team-league
+            if (isTeamFormat) {
+                minLabel.textContent = 'Minimum Teams';
+                maxLabel.textContent = 'Maximum Teams';
+            } else {
+                minLabel.textContent = 'Minimum Players';
+                maxLabel.textContent = 'Maximum Players';
+            }
+            
+            minInput.value = min;
+            maxInput.value = max;
+            minInput.step = step;
+            maxInput.step = step;
+            minInput.min = min;
+            maxInput.min = min;
+            minInput.max = max;
+            maxInput.max = max;
+            
+            document.getElementById('courts').value = config.defaults.courts;
+            
+            // Show hint
+            hint.textContent = 'ℹ️ ' + config.hint;
+            hint.className = 'text-xs text-blue-600 mt-2';
+        }
+        
+        function getFormatName(format) {
+            const config = getFormatConfig(format);
+            return config ? config.name : format;
+        }
+        
+        // Use shared validation function
+        function validatePlayerCount(count, format) {
+            return validateFormatCount(count, format);
         }
         
         // ===== FORM HANDLERS =====
@@ -575,9 +617,32 @@
         document.getElementById('settings-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const minPlayers = parseInt(document.getElementById('min-players').value);
+            const maxPlayers = parseInt(document.getElementById('max-players').value);
+            
+            // Validate min players
+            const minValidation = validatePlayerCount(minPlayers, selectedFormat);
+            if (!minValidation.valid) {
+                showToast('❌ ' + minValidation.error, 'error');
+                return;
+            }
+            
+            // Validate max players
+            const maxValidation = validatePlayerCount(maxPlayers, selectedFormat);
+            if (!maxValidation.valid) {
+                showToast('❌ ' + maxValidation.error, 'error');
+                return;
+            }
+            
+            // Validate min <= max
+            if (minPlayers > maxPlayers) {
+                showToast('❌ Minimum players cannot exceed maximum players', 'error');
+                return;
+            }
+            
             formData.format = selectedFormat;
-            formData.minPlayers = parseInt(document.getElementById('min-players').value);
-            formData.maxPlayers = parseInt(document.getElementById('max-players').value);
+            formData.minPlayers = minPlayers;
+            formData.maxPlayers = maxPlayers;
             formData.minLevel = parseFloat(document.getElementById('min-level').value);
             formData.maxLevel = parseFloat(document.getElementById('max-level').value);
             formData.accessRestriction = document.querySelector('input[name="access"]:checked').value;

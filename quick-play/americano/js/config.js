@@ -1,12 +1,17 @@
 /**
  * config.js - Americano Tournament Configuration
  * Constants for player limits, courts, points system, etc.
+ * 
+ * Player limits are loaded from shared/format-config.js
  */
 
+// Get limits from shared config (falls back to defaults if not loaded)
+const _sharedConfig = typeof FORMAT_CONFIG !== 'undefined' ? FORMAT_CONFIG.americano : null;
+
 const CONFIG = {
-    // Player limits (5-24 supported)
-    MIN_PLAYERS: 5,
-    MAX_PLAYERS: 24,
+    // Player limits from shared config (5-24 supported)
+    MIN_PLAYERS: _sharedConfig?.minPlayers ?? 5,
+    MAX_PLAYERS: _sharedConfig?.maxPlayers ?? 24,
     
     // Court limits (max 6 courts for 24 players)
     MIN_COURTS: 1,
@@ -15,7 +20,7 @@ const CONFIG = {
     // Default settings
     DEFAULT_PLAYERS: 6,
     DEFAULT_COURTS: 1,
-    DEFAULT_TOTAL_POINTS: 16,
+    DEFAULT_TOTAL_POINTS: _sharedConfig?.defaults?.pointsPerMatch ?? 16,
     DEFAULT_FIXED_POINTS: true,
     
     // Points system options

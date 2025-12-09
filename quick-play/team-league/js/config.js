@@ -1,13 +1,16 @@
 // ===== TEAM LEAGUE CONFIGURATION =====
 
+// Get limits from shared config (falls back to defaults if not loaded)
+const _sharedTeamConfig = typeof FORMAT_CONFIG !== 'undefined' ? FORMAT_CONFIG['team-league'] : null;
+
 const CONFIG = {
     // Format identifier
     FORMAT_TYPE: 'team_league',
     
-    // Team Settings
+    // Team Settings (from shared config)
     DEFAULT_TEAM_COUNT: 22,
-    MIN_TEAMS: 4,
-    MAX_TEAMS: 24,
+    MIN_TEAMS: _sharedTeamConfig?.minTeams ?? 4,
+    MAX_TEAMS: _sharedTeamConfig?.maxTeams ?? 24,
     
     // Group Settings
     GROUP_MODES: {
@@ -22,8 +25,8 @@ const CONFIG = {
         TWO_GROUPS: 4       // Top 4 from each group
     },
     
-    // Match Settings
-    DEFAULT_MAX_SCORE: 16,
+    // Match Settings (from shared config)
+    DEFAULT_MAX_SCORE: _sharedTeamConfig?.defaults?.pointsPerMatch ?? 16,
     KNOCKOUT_MAX_SCORE: 16,
     SEMI_MAX_SCORE: 16,
     THIRD_PLACE_MAX_SCORE: 16,
