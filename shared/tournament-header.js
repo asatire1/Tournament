@@ -63,12 +63,12 @@ function renderTournamentHeader(options) {
     return `
         <div class="tournament-header bg-gradient-to-r ${config.gradient} text-white sticky top-0 z-40">
             <div class="max-w-5xl mx-auto px-4 py-3">
-                <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center justify-between">
                     
-                    <!-- Left: Home + Logo + Title -->
-                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <!-- Left: Home + Format Logo -->
+                    <div class="flex items-center gap-4 flex-shrink-0">
                         <!-- Site Home Link -->
-                        <a href="${siteHomeUrl}" class="flex-shrink-0 hover:opacity-80 transition-opacity" title="Back to Uber Padel">
+                        <a href="${siteHomeUrl}" class="hover:opacity-80 transition-opacity" title="Back to Uber Padel">
                             <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
@@ -76,14 +76,18 @@ function renderTournamentHeader(options) {
                             </div>
                         </a>
                         
-                        <!-- Format Home + Title -->
-                        <a href="${homeUrl}" class="flex items-center gap-2 min-w-0 hover:opacity-90 transition-opacity" title="Back to ${config.name}">
-                            <span class="text-3xl flex-shrink-0">${config.emoji}</span>
-                            <div class="min-w-0">
-                                <h1 class="font-bold text-lg truncate leading-tight">${tournamentName}</h1>
-                                ${subtitle ? `<p class="text-sm text-white/70 truncate">${subtitle}</p>` : ''}
+                        <!-- Format Home Link -->
+                        <a href="${homeUrl}" class="hover:opacity-80 transition-opacity" title="Back to ${config.name}">
+                            <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center text-2xl">
+                                ${config.emoji}
                             </div>
                         </a>
+                    </div>
+                    
+                    <!-- Center: Title + Subtitle -->
+                    <div class="flex-1 text-center px-4">
+                        <h1 class="font-bold text-lg leading-tight truncate">${tournamentName}</h1>
+                        ${subtitle ? `<p class="text-sm text-white/70">${subtitle}</p>` : ''}
                     </div>
                     
                     <!-- Right: Status + Code + Share -->
