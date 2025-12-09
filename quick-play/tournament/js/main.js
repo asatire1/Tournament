@@ -570,45 +570,26 @@ function render() {
     const progressPercent = Math.round((completedMatches / totalMatches) * 100);
     
     app.innerHTML = `
-        <div class="max-w-7xl mx-auto p-4 md:p-6 pb-12">
-            <!-- Header -->
-            <div class="relative bg-white text-gray-900 rounded-3xl shadow-sm p-6 md:p-8 mb-6 overflow-hidden border border-gray-100">
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-60"></div>
-                <div class="relative">
-                    <!-- Top row: Back button and Share -->
-                    <div class="flex items-center justify-between mb-4">
-                        <button onclick="Router.navigate('home')" class="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors group" title="Back to home">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            <span class="text-sm font-medium">Home</span>
-                        </button>
-                        <button onclick="showShareLinksModal()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium flex items-center gap-2 transition-colors text-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                            </svg>
-                            Share
-                        </button>
-                    </div>
-                    
-                    <!-- Main header content -->
-                    <div class="flex items-start gap-4 mb-4">
-                        <a href="./" class="hover:scale-110 transition-transform flex-shrink-0" style="font-size: 45px; line-height: 1;">
-                            <span class="sm:hidden">🏓</span>
-                            <span class="hidden sm:inline" style="font-size: 77px;">🏓</span>
-                        </a>
-                        <div class="flex-1 min-w-0">
-                            <h1 class="text-2xl md:text-3xl font-bold mb-1 truncate" style="letter-spacing: -0.5px;">${state.tournamentName || 'Padel Tournament'}</h1>
-                            <div class="flex items-center gap-3 text-sm">
-                                <span class="text-gray-500">Code: <span class="font-mono font-bold text-blue-600">${state.tournamentId?.toUpperCase() || ''}</span></span>
-                                <span class="text-gray-300">•</span>
-                                <span class="text-gray-500">${completedMatches}/${totalMatches} matches</span>
-                            </div>
-                        </div>
-                    </div>
-                    
+        <div class="min-h-screen pb-12">
+            <!-- Shared Header -->
+            ${renderTournamentHeader({
+                format: 'mix',
+                tournamentId: state.tournamentId,
+                tournamentName: state.tournamentName || 'Mix Tournament',
+                isOrganiser: canEdit,
+                onShare: 'showShareLinksModal',
+                subtitle: CONFIG.TOTAL_PLAYERS + ' players • ' + completedMatches + '/' + totalMatches + ' matches'
+            })}
+            
+            <!-- Progress & Stats Card -->
+            <div class="max-w-7xl mx-auto px-4 pt-4">
+                <div class="bg-white rounded-2xl shadow-sm p-4 mb-4 border border-gray-100">
                     <!-- Progress bar -->
-                    <div class="mb-4">
+                    <div class="mb-3">
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-gray-600 font-medium">Progress</span>
+                            <span class="text-gray-500">${progressPercent}%</span>
+                        </div>
                         <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500" style="width: ${progressPercent}%"></div>
                         </div>
@@ -616,48 +597,32 @@ function render() {
                     
                     <!-- Status badges -->
                     <div class="flex flex-wrap gap-2 text-xs">
-                        <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
-                            <span>👥</span>
-                            <span class="font-semibold text-gray-700">${CONFIG.TOTAL_PLAYERS} Players</span>
-                        </div>
-                        <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
+                        <div class="flex items-center gap-1.5 bg-gray-50 rounded-full px-3 py-1.5 border border-gray-200">
                             <span>🎯</span>
                             <span class="font-semibold text-gray-700">${CONFIG.TOTAL_ROUNDS} Rounds</span>
                         </div>
-                        <div id="connection-indicator" class="flex items-center gap-1.5 bg-green-50 backdrop-blur rounded-full px-3 py-1.5 border border-green-200">
+                        <div id="connection-indicator" class="flex items-center gap-1.5 bg-green-50 rounded-full px-3 py-1.5 border border-green-200">
                             <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                             <span class="font-semibold text-green-700">Live</span>
                         </div>
                         ${canEdit ? `
-                            <div class="flex items-center gap-1.5 bg-blue-50 backdrop-blur rounded-full px-3 py-1.5 border border-blue-200">
-                                <span>✏️</span>
-                                <span class="font-semibold text-blue-700">Organiser</span>
-                            </div>
-                            <button onclick="showTournamentStatusModal()" class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 backdrop-blur rounded-full px-3 py-1.5 border border-indigo-200 transition-colors cursor-pointer">
+                            <button onclick="showTournamentStatusModal()" class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-full px-3 py-1.5 border border-indigo-200 transition-colors cursor-pointer">
                                 ${getTournamentStatusBadge()}
                             </button>
                             ${(state.registeredPlayers && Object.keys(state.registeredPlayers).length > 0) ? `
-                                <button onclick="showRegisteredPlayersModal()" class="flex items-center gap-1.5 bg-green-50 hover:bg-green-100 backdrop-blur rounded-full px-3 py-1.5 border border-green-200 transition-colors cursor-pointer">
+                                <button onclick="showRegisteredPlayersModal()" class="flex items-center gap-1.5 bg-green-50 hover:bg-green-100 rounded-full px-3 py-1.5 border border-green-200 transition-colors cursor-pointer">
                                     <span>📋</span>
                                     <span class="font-semibold text-green-700">Registrations (${Object.keys(state.registeredPlayers).length})</span>
                                 </button>
                             ` : ''}
-                        ` : `
-                            <div class="flex items-center gap-1.5 bg-gray-100 backdrop-blur rounded-full px-3 py-1.5 border border-gray-200">
-                                <span>👀</span>
-                                <span class="font-semibold text-gray-600">View Only</span>
-                            </div>
-                            <button onclick="showOrganiserLoginModal()" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 backdrop-blur rounded-full px-3 py-1.5 border border-amber-200 transition-colors cursor-pointer">
-                                <span>🔑</span>
-                                <span class="font-semibold text-amber-700">Enter as Organiser</span>
-                            </button>
-                        `}
+                        ` : ''}
                     </div>
                 </div>
             </div>
             
             <!-- Navigation Tabs -->
-            <div class="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden border border-gray-100">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="bg-white rounded-2xl shadow-sm mb-6 overflow-hidden border border-gray-100">
                 <div class="overflow-x-auto">
                     <div class="flex p-2 gap-1 min-w-max">
                         <button onclick="state.currentTab = 'fixtures'; render();" class="px-4 py-2.5 font-semibold text-sm rounded-xl transition-all ${state.currentTab === 'fixtures' ? 'tab-active' : 'tab-inactive hover:bg-gray-100'}">Fixtures</button>
@@ -675,7 +640,9 @@ function render() {
             </div>
             
             <!-- Tab Content -->
-            <div>${tabContent[state.currentTab]}</div>
+            <div class="max-w-7xl mx-auto px-4">
+                ${tabContent[state.currentTab]}
+            </div>
         </div>
         
         <!-- Modal container -->

@@ -75,37 +75,14 @@ function renderTournament() {
     
     document.getElementById('app').innerHTML = `
         <div class="min-h-screen pb-24">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-purple-800 text-white">
-                <div class="max-w-5xl mx-auto px-4 py-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 sm:gap-3">
-                            <a href="./" class="hover:scale-110 transition-transform flex-shrink-0" style="font-size: 45px; line-height: 1;">
-                                <span class="sm:hidden">🔄</span>
-                                <span class="hidden sm:inline" style="font-size: 77px;">🔄</span>
-                            </a>
-                            <div>
-                                <h1 class="text-lg font-bold truncate">${state.tournamentName || 'Americano Session'}</h1>
-                                <div class="flex items-center gap-2 text-sm text-white/70">
-                                    <span class="font-mono bg-white/10 px-2 py-0.5 rounded">${state.tournamentId?.toUpperCase()}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            ${canEdit ? '<span class="text-xs bg-amber-500/20 text-amber-200 px-2 py-1 rounded-full">Organiser</span>' : ''}
-                            ${canEdit && state.registeredPlayers && Object.keys(state.registeredPlayers).length > 0 ? `
-                                <button onclick="showRegisteredPlayersModal()" class="text-xs bg-green-500/20 text-green-200 px-2 py-1 rounded-full hover:bg-green-500/30 transition-colors">
-                                    📋 ${Object.keys(state.registeredPlayers).length} Registrations
-                                </button>
-                            ` : ''}
-                            <button onclick="showShareModal()" class="p-2 hover:bg-white/10 rounded-xl transition-colors" title="Share">
-                                <span class="text-xl">📤</span>
-                            </button>
-                            ${!canEdit ? `<button onclick="showOrganiserLoginModal()" class="p-2 hover:bg-white/10 rounded-xl transition-colors" title="Organiser Login"><span class="text-xl">🔑</span></button>` : ''}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Shared Header -->
+            ${renderTournamentHeader({
+                format: 'americano',
+                tournamentId: state.tournamentId,
+                tournamentName: state.tournamentName || 'Americano Session',
+                isOrganiser: canEdit,
+                subtitle: state.playerCount + ' players • ' + state.courtCount + ' court' + (state.courtCount > 1 ? 's' : '')
+            })}
             
             <!-- Tournament Summary Card -->
             <div class="bg-gradient-to-b from-blue-800 to-transparent">

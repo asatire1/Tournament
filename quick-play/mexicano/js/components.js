@@ -19,43 +19,14 @@ function renderTournament() {
     
     document.getElementById('app').innerHTML = `
         <div class="min-h-screen">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-teal-600 to-teal-500 text-white sticky top-0 z-30 shadow-lg">
-                <div class="max-w-3xl mx-auto px-4 py-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 sm:gap-3">
-                            <a href="./" class="hover:scale-110 transition-transform flex-shrink-0" style="font-size: 45px; line-height: 1;">
-                                <span class="sm:hidden">🎯</span>
-                                <span class="hidden sm:inline" style="font-size: 77px;">🎯</span>
-                            </a>
-                            <div>
-                                <h1 class="font-bold text-lg leading-tight">${state.tournamentName}</h1>
-                                <div class="flex items-center gap-2 text-sm text-teal-100">
-                                    <span>${state.mode === 'individual' ? 'Individual' : 'Team'}</span>
-                                    <span>•</span>
-                                    <span>${state.pointsPerMatch} pts</span>
-                                    ${!canEdit ? '<span>•</span><span class="text-amber-200">👁 View Only</span>' : ''}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            ${!canEdit ? `
-                                <button onclick="showOrganiserLoginModal()" class="bg-amber-500/20 hover:bg-amber-500/30 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors">
-                                    🔑 Login
-                                </button>
-                            ` : ''}
-                            <button onclick="showShareModal()" class="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2 hover:bg-white/30 transition-colors cursor-pointer">
-                                <span class="font-mono font-bold tracking-wider">${state.tournamentId.toUpperCase()}</span>
-                                <span class="text-teal-100">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                    </svg>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Shared Header -->
+            ${renderTournamentHeader({
+                format: 'mexicano',
+                tournamentId: state.tournamentId,
+                tournamentName: state.tournamentName,
+                isOrganiser: canEdit,
+                subtitle: (state.mode === 'individual' ? 'Individual' : 'Team') + ' • ' + state.pointsPerMatch + ' pts'
+            })}
             
             <!-- Tab Navigation -->
             <div class="max-w-3xl mx-auto px-4 py-4">

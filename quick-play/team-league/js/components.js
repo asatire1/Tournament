@@ -1349,31 +1349,14 @@ const TeamLeagueApp = {
         
         document.getElementById('app').innerHTML = `
             <div class="min-h-screen">
-                <!-- Header -->
-                <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                    <div class="max-w-6xl mx-auto px-4 py-6">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2 sm:gap-3">
-                                <a href="./" class="hover:scale-110 transition-transform flex-shrink-0" style="font-size: 45px; line-height: 1;">
-                                    <span class="sm:hidden">👥</span>
-                                    <span class="hidden sm:inline" style="font-size: 77px;">👥</span>
-                                </a>
-                                <div>
-                                    <div class="flex items-center gap-2 text-purple-200 text-sm mb-1">
-                                        <span class="font-mono">${state.tournamentId?.toUpperCase() || ''}</span>
-                                        ${state.isOrganiser ? '<span class="bg-white/20 px-2 py-0.5 rounded text-xs">Organiser</span>' : ''}
-                                    </div>
-                                    <h1 class="text-2xl font-bold">${state.tournamentName || 'Team Tournament'}</h1>
-                                </div>
-                            </div>
-                            <button onclick="showShareModal()" class="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Share">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Shared Header -->
+                ${renderTournamentHeader({
+                    format: 'team-league',
+                    tournamentId: state.tournamentId,
+                    tournamentName: state.tournamentName || 'Team Tournament',
+                    isOrganiser: state.isOrganiser,
+                    subtitle: (state.teams?.length || 0) + ' teams • ' + (isTwoGroups ? '2 groups' : '1 group')
+                })}
                 
                 <!-- Tabs -->
                 <div class="bg-white border-b border-gray-100 sticky top-0 z-40">
