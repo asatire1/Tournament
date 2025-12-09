@@ -54,7 +54,7 @@ const FORMAT_CONFIG = {
     
     mix: {
         name: 'Mix Tournament',
-        description: 'League format with skill tiers and knockout',
+        description: 'Balanced competition with skill-based tiers ensuring fair matches for all levels',
         emoji: '🏆',
         
         // Player limits (fixed options only)
