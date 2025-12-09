@@ -63,10 +63,10 @@ function renderTournamentHeader(options) {
     return `
         <div class="tournament-header bg-gradient-to-r ${config.gradient} text-white sticky top-0 z-40">
             <div class="max-w-5xl mx-auto px-4 py-3">
-                <div class="flex items-center justify-between">
+                <div class="relative flex items-center justify-between">
                     
                     <!-- Left: Home + Format Logo -->
-                    <div class="flex items-center gap-4 flex-shrink-0">
+                    <div class="flex items-center gap-4 flex-shrink-0 z-10">
                         <!-- Site Home Link -->
                         <a href="${siteHomeUrl}" class="hover:opacity-80 transition-opacity" title="Back to Uber Padel">
                             <div class="w-10 h-10 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
@@ -84,14 +84,14 @@ function renderTournamentHeader(options) {
                         </a>
                     </div>
                     
-                    <!-- Center: Title + Subtitle -->
-                    <div class="flex-1 text-center px-4">
-                        <h1 class="font-bold text-lg leading-tight truncate">${tournamentName}</h1>
+                    <!-- Center: Title + Subtitle (absolute for true center) -->
+                    <div class="absolute left-1/2 transform -translate-x-1/2 text-center pointer-events-none">
+                        <h1 class="font-bold text-lg leading-tight">${tournamentName}</h1>
                         ${subtitle ? `<p class="text-sm text-white/70">${subtitle}</p>` : ''}
                     </div>
                     
                     <!-- Right: Status + Code + Share -->
-                    <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="flex items-center gap-2 flex-shrink-0 z-10">
                         ${isOrganiser ? `
                             <span class="hidden sm:inline-flex items-center gap-1 bg-amber-500/30 text-amber-100 px-2.5 py-1 rounded-lg text-xs font-medium">
                                 <span>✏️</span>
