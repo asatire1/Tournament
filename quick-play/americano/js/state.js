@@ -268,7 +268,7 @@ class AmericanoState {
     }
     
     /**
-     * Stop listening to Firebase changes
+     * Stop listening to Firebase changes and clean up all listeners
      */
     stopListening() {
         // Clear real-time listeners
@@ -283,6 +283,9 @@ class AmericanoState {
             this.pollingInterval = null;
             console.log('🛑 Stopped polling');
         }
+        
+        // Stop idle detection (clean up event listeners)
+        this.stopIdleDetection();
     }
     
     /**
