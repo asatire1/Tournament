@@ -114,10 +114,31 @@ class BaseTournament {
     }
 
     /**
-     * Hash a passcode
+     * Hash a passcode using SHA-256 (async)
      * @param {string} passcode
+     * @returns {Promise<string>}
      */
-    hashPasscode(passcode) {
+    async hashPasscode(passcode) {
+        if (!passcode) {
+            this.passcodeHash = '';
+            return '';
+        }
+        
+        // Use Web Crypto API for secure hashing
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(passcode);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                this.passcodeHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                return this.passcodeHash;
+            } catch (e) {
+                console.warn('Web Crypto API failed, using fallback');
+            }
+        }
+        
+        // Fallback
         let hash = 0;
         for (let i = 0; i < passcode.length; i++) {
             const char = passcode.charCodeAt(i);
@@ -131,8 +152,9 @@ class BaseTournament {
     /**
      * Initialize tournament with basic setup
      * @param {object} options
+     * @returns {Promise<BaseTournament>}
      */
-    initialize(options = {}) {
+    async initialize(options = {}) {
         const {
             name = 'New Tournament',
             players = [],
@@ -153,7 +175,7 @@ class BaseTournament {
 
         this.generateOrganiserKey();
         if (passcode) {
-            this.hashPasscode(passcode);
+            await this.hashPasscode(passcode);
         }
 
         return this;
@@ -469,15 +491,40 @@ class BaseTournament {
      * @returns {Promise<string|null>} Organiser key if valid, null otherwise
      */
     async verifyPasscode(passcode) {
-        const hash = this.hashPasscode(passcode);
-        
         try {
             const Firebase = window.Firebase;
             const storedHash = await Firebase.getPasscodeHash(this.format, this.id);
             
+            if (!storedHash) return null;
+            
+            // Handle legacy base64 encoded passcodes
+            try {
+                if (btoa(atob(storedHash)) === storedHash) {
+                    if (atob(storedHash) === passcode) {
+                        return await Firebase.getOrganiserKey(this.format, this.id);
+                    }
+                }
+            } catch (e) { /* Not base64 */ }
+            
+            // Handle legacy simple hash
+            if (storedHash.length <= 8 && /^-?[0-9a-f]+$/i.test(storedHash)) {
+                let legacyHash = 0;
+                for (let i = 0; i < passcode.length; i++) {
+                    const char = passcode.charCodeAt(i);
+                    legacyHash = ((legacyHash << 5) - legacyHash) + char;
+                    legacyHash = legacyHash & legacyHash;
+                }
+                if (legacyHash.toString(16) === storedHash) {
+                    return await Firebase.getOrganiserKey(this.format, this.id);
+                }
+            }
+            
+            // Compare with SHA-256 hash
+            const hash = await this.hashPasscode(passcode);
             if (storedHash === hash) {
                 return await Firebase.getOrganiserKey(this.format, this.id);
             }
+            
             return null;
         } catch (error) {
             console.error('Error verifying passcode:', error);

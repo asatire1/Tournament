@@ -213,17 +213,32 @@ function createRouter(config = {}) {
         },
         
         /**
-         * Generate a passcode hash (simple hash for demo)
+         * Generate a passcode hash using SHA-256 (async)
          * @param {string} passcode
-         * @returns {string}
+         * @returns {Promise<string>}
          */
-        hashPasscode(passcode) {
-            // Simple hash - in production, use proper hashing
+        async hashPasscode(passcode) {
+            if (!passcode) return '';
+            
+            // Use Web Crypto API for secure hashing
+            if (typeof crypto !== 'undefined' && crypto.subtle) {
+                try {
+                    const encoder = new TextEncoder();
+                    const data = encoder.encode(passcode);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                } catch (e) {
+                    console.warn('Web Crypto API failed, using fallback');
+                }
+            }
+            
+            // Fallback for environments without Web Crypto
             let hash = 0;
             for (let i = 0; i < passcode.length; i++) {
                 const char = passcode.charCodeAt(i);
                 hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32bit integer
+                hash = hash & hash;
             }
             return hash.toString(16);
         },

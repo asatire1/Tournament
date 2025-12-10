@@ -627,7 +627,7 @@ async function handleCreateTournament() {
         
         const tournamentId = Router.generateTournamentId();
         const organiserKey = Router.generateOrganiserKey();
-        const hashedPasscode = btoa(passcode); // Simple hash for demo
+        const hashedPasscode = await CryptoUtils.hashPasscode(passcode);
         
         console.log('✅ Generated IDs:', { tournamentId, organiserKey });
         
@@ -949,7 +949,7 @@ async function handleOrganiserLogin() {
     try {
         const storedHash = await getPasscodeHash(state.tournamentId);
         
-        if (storedHash && btoa(passcode) === storedHash) {
+        if (storedHash && await CryptoUtils.verifyPasscode(passcode, storedHash)) {
             const organiserKey = await getOrganiserKey(state.tournamentId);
             state.isOrganiser = true;
             state.organiserKey = organiserKey;

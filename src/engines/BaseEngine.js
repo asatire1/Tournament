@@ -362,19 +362,71 @@ class BaseEngine {
     }
     
     /**
-     * Hash a passcode (simple hash for browser use)
+     * Hash a passcode using SHA-256 (async)
      * 
      * @param {string} passcode
-     * @returns {string}
+     * @returns {Promise<string>} Hex-encoded hash
      */
-    static hashPasscode(passcode) {
+    static async hashPasscode(passcode) {
+        if (!passcode) return '';
+        
+        // Use Web Crypto API for secure hashing
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(passcode);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (e) {
+                console.warn('Web Crypto API failed, using fallback:', e);
+                return this._legacyHash(passcode);
+            }
+        }
+        
+        return this._legacyHash(passcode);
+    }
+    
+    /**
+     * Legacy hash for backwards compatibility (sync)
+     * @private
+     */
+    static _legacyHash(passcode) {
         let hash = 0;
         for (let i = 0; i < passcode.length; i++) {
             const char = passcode.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32bit integer
+            hash = hash & hash;
         }
         return hash.toString(16);
+    }
+    
+    /**
+     * Verify a passcode against a stored hash
+     * Handles legacy base64 and simple hash formats
+     * 
+     * @param {string} passcode
+     * @param {string} storedHash
+     * @returns {Promise<boolean>}
+     */
+    static async verifyPasscode(passcode, storedHash) {
+        if (!passcode || !storedHash) return false;
+        
+        // Handle legacy base64 encoded passcodes
+        try {
+            if (btoa(atob(storedHash)) === storedHash) {
+                if (atob(storedHash) === passcode) return true;
+            }
+        } catch (e) { /* Not base64 */ }
+        
+        // Handle legacy simple hash
+        if (storedHash.length <= 8 && /^-?[0-9a-f]+$/i.test(storedHash)) {
+            if (this._legacyHash(passcode) === storedHash) return true;
+        }
+        
+        // Compare with SHA-256 hash
+        const hash = await this.hashPasscode(passcode);
+        return hash === storedHash;
     }
     
     /**
