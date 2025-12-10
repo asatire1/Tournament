@@ -343,6 +343,9 @@ class TournamentState {
             this.pollingInterval = null;
             console.log('🛑 Stopped polling');
         }
+        
+        // Stop idle detection (clean up event listeners)
+        this.stopIdleDetection();
     }
     
     // Reload static data (called when organiser updates settings)
