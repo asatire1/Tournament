@@ -1,0 +1,28 @@
+{
+  "players": [
+    { "id": 1, "name": "Player 1", "rating": 0.00 },
+    { "id": 2, "name": "Player 2", "rating": 0.00 },
+    { "id": 3, "name": "Player 3", "rating": 0.00 },
+    { "id": 4, "name": "Player 4", "rating": 0.00 },
+    { "id": 5, "name": "Player 5", "rating": 0.00 },
+    { "id": 6, "name": "Player 6", "rating": 0.00 },
+    { "id": 7, "name": "Player 7", "rating": 0.00 },
+    { "id": 8, "name": "Player 8", "rating": 0.00 },
+    { "id": 9, "name": "Player 9", "rating": 0.00 },
+    { "id": 10, "name": "Player 10", "rating": 0.00 },
+    { "id": 11, "name": "Player 11", "rating": 0.00 },
+    { "id": 12, "name": "Player 12", "rating": 0.00 },
+    { "id": 13, "name": "Player 13", "rating": 0.00 },
+    { "id": 14, "name": "Player 14", "rating": 0.00 },
+    { "id": 15, "name": "Player 15", "rating": 0.00 },
+    { "id": 16, "name": "Player 16", "rating": 0.00 },
+    { "id": 17, "name": "Player 17", "rating": 0.00 },
+    { "id": 18, "name": "Player 18", "rating": 0.00 },
+    { "id": 19, "name": "Player 19", "rating": 0.00 },
+    { "id": 20, "name": "Player 20", "rating": 0.00 },
+    { "id": 21, "name": "Player 21", "rating": 0.00 },
+    { "id": 22, "name": "Player 22", "rating": 0.00 },
+    { "id": 23, "name": "Player 23", "rating": 0.00 },
+    { "id": 24, "name": "Player 24", "rating": 0.00 }
+  ]
+}

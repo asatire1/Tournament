@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGJ6CZ4DZ0"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-TGJ6CZ4DZ0');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>About - How to Run Padel Tournaments | Uber Padel Tournament Manager</title>
+    <meta name="title" content="About - How to Run Padel Tournaments | Uber Padel Tournament Manager">
+    <meta name="description" content="Learn how to organize padel tournaments with our free online tool. Complete guide to Americano, Mexicano, Team Tournament, and Mix Tournament formats. Step-by-step instructions for creating and managing padel competitions.">
+    <meta name="keywords" content="how to run padel tournament, padel tournament rules, americano padel rules, mexicano padel format, padel scoring system, organize padel event, padel competition guide, padel tournament app tutorial">
+    <meta name="author" content="Uber Padel">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://uberpadel.com/about.html">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="uberpadel-icon.svg">
+    <link rel="apple-touch-icon" href="uberpadel-icon-512.png">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://uberpadel.com/about.html">
+    <meta property="og:title" content="How to Run Padel Tournaments - Complete Guide">
+    <meta property="og:description" content="Learn how to organize padel tournaments with Americano, Mexicano, Team Tournament, and Mix Tournament formats. Free online tool with step-by-step guide.">
+    <meta property="og:site_name" content="Uber Padel">
+    <meta property="og:locale" content="en_GB">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How to Run Padel Tournaments - Complete Guide">
+    <meta name="twitter:description" content="Learn how to organize padel tournaments with our free online tool. Complete guide to all padel tournament formats.">
+    
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content="#2563EB">
+    
+    <!-- Structured Data - Article -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "How to Run Padel Tournaments - Complete Guide",
+        "description": "Learn how to organize padel tournaments with Americano, Mexicano, Team Tournament, and Mix Tournament formats.",
+        "author": {
+            "@type": "Organization",
+            "name": "Uber Padel"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Uber Padel"
+        },
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https://uberpadel.com/about.html"
+        }
+    }
+    </script>
+    
+    <!-- Structured Data - FAQPage -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is Americano padel?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Americano is a padel format where players rotate partners each round. Everyone plays with everyone, and individual points are accumulated. The player with the most points at the end wins. It's perfect for social play with 8-16 players."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What is Mexicano padel?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Mexicano is a dynamic padel format where matchups are determined by current standings. After the first round, players with similar point totals play each other. This creates competitive matches throughout the tournament. Can be played individually or in fixed teams."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How many players do I need for a padel tournament?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "It depends on the format. Americano works best with 8-16 players. Mexicano needs 8-24 players. Team Tournament requires 4-8 teams (8-16 players). Mix Tournament is designed for 20-28 players split into groups."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Is this padel tournament app free?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, Uber Padel Tournament Manager is completely free. No registration required. Create unlimited tournaments, share links with players, and track scores in real-time."
+                }
+            }
+        ]
+    }
+    </script>
+    
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .animate-delay-100 { animation-delay: 0.1s; opacity: 0; }
+        .animate-delay-200 { animation-delay: 0.2s; opacity: 0; }
+        .animate-delay-300 { animation-delay: 0.3s; opacity: 0; }
+        
+        .format-section {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .format-section:hover {
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .faq-item {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 20px 0;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .toc-link {
+            transition: all 0.2s ease;
+        }
+        
+        .toc-link:hover {
+            color: #2563eb;
+            padding-left: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="index.html" class="flex items-center gap-2">
+                        <img src="uberpadel-logo.svg" alt="UberPadel" class="h-8" />
+                    </a>
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="text-gray-600 hover:text-blue-600 font-medium transition-colors">Home</a>
+                    <a href="about.html" class="text-blue-600 font-semibold">About</a>
+                    <a href="index.html#formats" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold transition-colors">Create Tournament</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="py-16 px-4">
+        <div class="max-w-4xl mx-auto text-center animate-fade-in-up">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                How to Run <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Padel Tournaments</span>
+            </h1>
+            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                Everything you need to know about organizing padel competitions. From Americano to Mexicano, learn the rules and get started in minutes.
+            </p>
+        </div>
+    </header>
+
+    <!-- Table of Contents -->
+    <section class="max-w-4xl mx-auto px-4 mb-12 animate-fade-in-up animate-delay-100">
+        <div class="bg-white rounded-2xl p-6 shadow-sm">
+            <h2 class="font-bold text-lg text-gray-800 mb-4">📖 Contents</h2>
+            <div class="grid md:grid-cols-2 gap-2">
+                <a href="#what-is-this" class="toc-link text-gray-600 hover:text-blue-600">What is Uber Padel?</a>
+                <a href="#how-it-works" class="toc-link text-gray-600 hover:text-blue-600">How It Works</a>
+                <a href="#americano" class="toc-link text-gray-600 hover:text-blue-600">Americano Format</a>
+                <a href="#mexicano" class="toc-link text-gray-600 hover:text-blue-600">Mexicano Format</a>
+                <a href="#team-league" class="toc-link text-gray-600 hover:text-blue-600">Team Tournament Format</a>
+                <a href="#mix-tournament" class="toc-link text-gray-600 hover:text-blue-600">Mix Tournament Format</a>
+                <a href="#choosing-format" class="toc-link text-gray-600 hover:text-blue-600">Choosing the Right Format</a>
+                <a href="#faq" class="toc-link text-gray-600 hover:text-blue-600">FAQ</a>
+                <a href="#community" class="toc-link text-gray-600 hover:text-blue-600">💬 Community Board</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 pb-20">
+        
+        <!-- What Is This Section -->
+        <section id="what-is-this" class="mb-12 animate-fade-in-up animate-delay-200">
+            <div class="format-section">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">🏓 What is Uber Padel Tournament Manager?</h2>
+                <p class="text-gray-600 mb-4">
+                    Uber Padel Tournament Manager is a <strong>free online tool</strong> for organizing and running padel tournaments. Whether you're a club, a group of friends, or organizing a corporate event, our app handles all the complexity of tournament management.
+                </p>
+                <div class="grid md:grid-cols-2 gap-4 mt-6">
+                    <div class="bg-green-50 rounded-xl p-4">
+                        <h3 class="font-semibold text-green-800 mb-2">✅ What's Included</h3>
+                        <ul class="text-green-700 text-sm space-y-1">
+                            <li>• 4 tournament formats</li>
+                            <li>• Real-time score syncing</li>
+                            <li>• Live leaderboards</li>
+                            <li>• Automatic fixture generation</li>
+                            <li>• Shareable links for players</li>
+                            <li>• Works on any device</li>
+                        </ul>
+                    </div>
+                    <div class="bg-blue-50 rounded-xl p-4">
+                        <h3 class="font-semibold text-blue-800 mb-2">🎯 Perfect For</h3>
+                        <ul class="text-blue-700 text-sm space-y-1">
+                            <li>• Club social sessions</li>
+                            <li>• Weekly leagues</li>
+                            <li>• Corporate events</li>
+                            <li>• Charity tournaments</li>
+                            <li>• Friends meetups</li>
+                            <li>• Any skill level</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section id="how-it-works" class="mb-12">
+            <div class="format-section">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">🚀 How It Works</h2>
+                <p class="text-gray-600 mb-6">Get your tournament running in 3 simple steps:</p>
+                
+                <div class="space-y-6">
+                    <div class="flex gap-4">
+                        <div class="step-number bg-blue-100 text-blue-600">1</div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Choose Your Format</h3>
+                            <p class="text-gray-600">Select from Americano, Mexicano, Team Tournament, or Mix Tournament based on your group size and preferences.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <div class="step-number bg-purple-100 text-purple-600">2</div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Enter Players & Settings</h3>
+                            <p class="text-gray-600">Add player names, set the number of courts, and configure scoring. The app generates all fixtures automatically.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <div class="step-number bg-green-100 text-green-600">3</div>
+                        <div>
+                            <h3 class="font-semibold text-gray-800">Share & Play</h3>
+                            <p class="text-gray-600">Share the tournament link with players. Everyone can view live scores and standings. The organiser enters scores as matches finish.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 bg-amber-50 rounded-xl p-4">
+                    <p class="text-amber-800 text-sm">
+                        <strong>💡 Pro Tip:</strong> Save your organiser link! You'll need it to edit scores. Players only need the viewer link to follow along.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Americano Section -->
+        <section id="americano" class="mb-12">
+            <div class="format-section border-l-4 border-teal-500">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-3xl">🔄</span>
+                    <h2 class="text-2xl font-bold text-gray-900">Americano Format</h2>
+                </div>
+                
+                <p class="text-gray-600 mb-4">
+                    <strong>Americano</strong> is the most popular social padel format. Players rotate partners each round, so everyone plays with everyone. Individual points are accumulated across all matches.
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-6 my-6">
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">How It Works</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• Players rotate partners each round</li>
+                            <li>• Play matches to a fixed point total (e.g., 32 points)</li>
+                            <li>• Points split based on score (16-16, 20-12, etc.)</li>
+                            <li>• Individual leaderboard tracks total points</li>
+                            <li>• Highest scorer wins</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">Best For</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• Social club sessions</li>
+                            <li>• Meeting new players</li>
+                            <li>• Mixed skill levels</li>
+                            <li>• 8-16 players</li>
+                            <li>• 2-4 courts</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="bg-teal-50 rounded-xl p-4">
+                    <p class="text-teal-800 text-sm">
+                        <strong>Example:</strong> With 8 players and 2 courts, everyone plays 7 matches (one with each partner). A typical session takes 2-3 hours.
+                    </p>
+                </div>
+                
+                <a href="americano/" class="inline-block mt-6 bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                    Create Americano Tournament →
+                </a>
+            </div>
+        </section>
+
+        <!-- Mexicano Section -->
+        <section id="mexicano" class="mb-12">
+            <div class="format-section border-l-4 border-orange-500">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-3xl">🌶️</span>
+                    <h2 class="text-2xl font-bold text-gray-900">Mexicano Format</h2>
+                </div>
+                
+                <p class="text-gray-600 mb-4">
+                    <strong>Mexicano</strong> adds a competitive twist. After the first round, matchups are determined by standings - players with similar points play each other. This creates exciting, closely-matched games throughout.
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-6 my-6">
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">How It Works</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• Round 1: Random matchups</li>
+                            <li>• Subsequent rounds: Matched by standings</li>
+                            <li>• Top players face top players</li>
+                            <li>• Available in Individual or Team mode</li>
+                            <li>• Creates competitive balance</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">Best For</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• Competitive sessions</li>
+                            <li>• Players wanting close matches</li>
+                            <li>• 8-24 players</li>
+                            <li>• Fixed pairs (Team Mexicano)</li>
+                            <li>• 2-6 courts</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="bg-orange-50 rounded-xl p-4 mb-4">
+                    <h4 class="font-semibold text-orange-800 mb-2">Individual vs Team Mexicano</h4>
+                    <p class="text-orange-700 text-sm">
+                        <strong>Individual:</strong> Partners rotate (like Americano) but matchups are by standings.<br>
+                        <strong>Team:</strong> Fixed pairs compete, teams matched by standings.
+                    </p>
+                </div>
+                
+                <a href="mexicano/" class="inline-block mt-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                    Create Mexicano Tournament →
+                </a>
+            </div>
+        </section>
+
+        <!-- Team Tournament Section -->
+        <section id="team-league" class="mb-12">
+            <div class="format-section border-l-4 border-purple-500">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-3xl">👥</span>
+                    <h2 class="text-2xl font-bold text-gray-900">Team Tournament Format</h2>
+                </div>
+                
+                <p class="text-gray-600 mb-4">
+                    <strong>Team Tournament</strong> is a traditional league format with fixed pairs. Teams are split into two groups, play round-robin within their group, then the top teams advance to knockout playoffs.
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-6 my-6">
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">How It Works</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• Fixed pairs (teams of 2)</li>
+                            <li>• Two groups (Group A & B)</li>
+                            <li>• Round-robin within groups</li>
+                            <li>• Top teams advance to knockouts</li>
+                            <li>• Semi-finals and Final</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">Best For</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• Established partnerships</li>
+                            <li>• Club championships</li>
+                            <li>• Competitive events</li>
+                            <li>• 4-8 teams (8-16 players)</li>
+                            <li>• Half-day events</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <a href="team-league/" class="inline-block mt-4 bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                    Create Team Tournament →
+                </a>
+            </div>
+        </section>
+
+        <!-- Mix Tournament Section -->
+        <section id="mix-tournament" class="mb-12">
+            <div class="format-section border-l-4 border-blue-500">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-3xl">🏆</span>
+                    <h2 class="text-2xl font-bold text-gray-900">Mix Tournament Format</h2>
+                </div>
+                
+                <p class="text-gray-600 mb-4">
+                    <strong>Mix Tournament</strong> is designed for larger groups (20-28 players). Players are split into groups of 4, play round-robin within their group, then the top performers advance to knockout rounds.
+                </p>
+                
+                <div class="grid md:grid-cols-2 gap-6 my-6">
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">How It Works</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• 20-28 players in groups of 4</li>
+                            <li>• Round-robin within groups</li>
+                            <li>• Group winners advance</li>
+                            <li>• Quarter-finals, Semi-finals, Final</li>
+                            <li>• Full tournament experience</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-2">Best For</h3>
+                        <ul class="text-gray-600 text-sm space-y-2">
+                            <li>• Large club events</li>
+                            <li>• Corporate tournaments</li>
+                            <li>• Charity events</li>
+                            <li>• 20-28 players</li>
+                            <li>• Full-day events</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <a href="tournament/" class="inline-block mt-4 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                    Create Mix Tournament →
+                </a>
+            </div>
+        </section>
+
+        <!-- Choosing Format Section -->
+        <section id="choosing-format" class="mb-12">
+            <div class="format-section">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">🎯 Choosing the Right Format</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b-2 border-gray-200">
+                                <th class="text-left py-3 px-2 font-semibold text-gray-800">Format</th>
+                                <th class="text-left py-3 px-2 font-semibold text-gray-800">Players</th>
+                                <th class="text-left py-3 px-2 font-semibold text-gray-800">Partners</th>
+                                <th class="text-left py-3 px-2 font-semibold text-gray-800">Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-600">
+                            <tr class="border-b border-gray-100">
+                                <td class="py-3 px-2 font-medium">Americano</td>
+                                <td class="py-3 px-2">8-16</td>
+                                <td class="py-3 px-2">Rotating</td>
+                                <td class="py-3 px-2">Social sessions, meeting new players</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-3 px-2 font-medium">Mexicano Individual</td>
+                                <td class="py-3 px-2">8-24</td>
+                                <td class="py-3 px-2">Rotating</td>
+                                <td class="py-3 px-2">Competitive social, close matches</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-3 px-2 font-medium">Mexicano Team</td>
+                                <td class="py-3 px-2">8-24</td>
+                                <td class="py-3 px-2">Fixed</td>
+                                <td class="py-3 px-2">Established pairs, competitive</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-3 px-2 font-medium">Team Tournament</td>
+                                <td class="py-3 px-2">8-16</td>
+                                <td class="py-3 px-2">Fixed</td>
+                                <td class="py-3 px-2">Club championships, leagues</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 px-2 font-medium">Mix Tournament</td>
+                                <td class="py-3 px-2">20-28</td>
+                                <td class="py-3 px-2">Fixed</td>
+                                <td class="py-3 px-2">Large events, full tournament</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6 grid md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">🤝 Want to meet new people?</h4>
+                        <p class="text-gray-600 text-sm">Choose <strong>Americano</strong> - you'll play with everyone!</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">🎯 Want competitive matches?</h4>
+                        <p class="text-gray-600 text-sm">Choose <strong>Mexicano</strong> - similar levels play each other!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="mb-12">
+            <div class="format-section">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">❓ Frequently Asked Questions</h2>
+                
+                <div class="space-y-0">
+                    <div class="faq-item">
+                        <h3 class="font-semibold text-gray-800 mb-2">Is this app really free?</h3>
+                        <p class="text-gray-600">Yes, completely free! No registration, no hidden costs, no limits on tournaments. We built this for the padel community.</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h3 class="font-semibold text-gray-800 mb-2">Do players need to create accounts?</h3>
+                        <p class="text-gray-600">No. The organiser creates the tournament and shares a link. Players just open the link to view scores - no signup required.</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h3 class="font-semibold text-gray-800 mb-2">Can multiple people enter scores?</h3>
+                        <p class="text-gray-600">Only the organiser (with the organiser link) can edit scores. This prevents accidental changes. Players can view everything but not edit.</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h3 class="font-semibold text-gray-800 mb-2">How long do tournaments stay available?</h3>
+                        <p class="text-gray-600">Tournaments are stored indefinitely. You can return to your tournament link anytime to view results.</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h3 class="font-semibold text-gray-800 mb-2">What devices work with this app?</h3>
+                        <p class="text-gray-600">Any device with a web browser - phones, tablets, laptops, desktops. Works on iPhone, Android, Windows, Mac, everything.</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h3 class="font-semibold text-gray-800 mb-2">Can I use this for my padel club?</h3>
+                        <p class="text-gray-600">Absolutely! Many clubs use Uber Padel for their weekly social sessions and tournaments. It's designed for exactly this.</p>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <h3 class="font-semibold text-gray-800 mb-2">What's the difference between Americano and Mexicano?</h3>
+                        <p class="text-gray-600">In Americano, matchups are pre-set and everyone plays with everyone. In Mexicano, matchups are dynamic based on standings, so you play against people with similar scores.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Community Section -->
+        <section id="community" class="mb-12">
+            <div class="format-section">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">💬 Community Board</h2>
+                <p class="text-gray-600 mb-6">Share feedback, ask questions, or connect with other padel players.</p>
+                
+                <!-- Post Form -->
+                <div class="bg-gray-50 rounded-xl p-4 mb-6">
+                    <div class="grid md:grid-cols-4 gap-3">
+                        <input type="text" id="comment-name" placeholder="Your name" maxlength="30"
+                            class="px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none" />
+                        <input type="text" id="comment-text" placeholder="Your message..." maxlength="280"
+                            class="md:col-span-2 px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none" 
+                            onkeypress="if(event.key==='Enter') postComment()" />
+                        <button onclick="postComment()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors">
+                            Post
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Be respectful. Messages are public and visible to everyone.</p>
+                </div>
+                
+                <!-- Comments List -->
+                <div id="comments-list" class="space-y-3">
+                    <div class="text-center py-8 text-gray-400">
+                        <div class="animate-spin inline-block w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full mb-2"></div>
+                        <p>Loading messages...</p>
+                    </div>
+                </div>
+                
+                <!-- Load More -->
+                <div id="load-more-container" class="text-center mt-4 hidden">
+                    <button onclick="loadMoreComments()" class="text-blue-600 hover:text-blue-800 font-medium">
+                        Load more messages ↓
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="text-center">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-8 md:p-12 text-white">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4">Ready to Run Your Tournament?</h2>
+                <p class="text-blue-100 mb-8 max-w-xl mx-auto">
+                    Pick a format and get started in less than 2 minutes. No signup required.
+                </p>
+                <a href="index.html#formats" class="inline-block bg-white text-blue-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-50 transition-colors">
+                    Choose Format →
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-400 py-12 px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="flex items-center justify-center gap-2 mb-4">
+                    <img src="uberpadel-logo-dark.svg" alt="UberPadel" class="h-8" />
+                </div>
+            <p class="mb-6">Free online padel tournament manager for clubs, groups, and events.</p>
+            <div class="flex justify-center gap-6 mb-6">
+                <a href="index.html" class="hover:text-white transition-colors">Home</a>
+                <a href="about.html" class="hover:text-white transition-colors">About</a>
+                <a href="americano/" class="hover:text-white transition-colors">Americano</a>
+                <a href="mexicano/" class="hover:text-white transition-colors">Mexicano</a>
+                <a href="team-league/" class="hover:text-white transition-colors">Team Tournament</a>
+                <a href="tournament/" class="hover:text-white transition-colors">Mix Tournament</a>
+            </div>
+            <p class="text-sm text-gray-500">© 2024 Uber Padel. Made for the padel community.</p>
+        </div>
+    </footer>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+    
+    <!-- Firebase & Comments Script -->
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI_UR_krpPwfogdCSVlWPwl7zMde4jhng",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.firebasestorage.app",
+            messagingSenderId: "564215582230",
+            appId: "1:564215582230:web:31564ab8d3d9f37bb5587b"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Comments state
+        const COMMENTS_PATH = 'community/messages';
+        const COMMENTS_PER_PAGE = 20;
+        let lastLoadedKey = null;
+        let allCommentsLoaded = false;
+        
+        // Load comments on page load
+        document.addEventListener('DOMContentLoaded', loadComments);
+        
+        // Load comments from Firebase
+        function loadComments() {
+            const commentsRef = database.ref(COMMENTS_PATH)
+                .orderByChild('timestamp')
+                .limitToLast(COMMENTS_PER_PAGE);
+            
+            commentsRef.once('value').then(snapshot => {
+                const comments = [];
+                snapshot.forEach(child => {
+                    comments.push({ key: child.key, ...child.val() });
+                });
+                
+                // Reverse to show newest first
+                comments.reverse();
+                
+                if (comments.length > 0) {
+                    lastLoadedKey = comments[comments.length - 1].key;
+                }
+                
+                if (comments.length < COMMENTS_PER_PAGE) {
+                    allCommentsLoaded = true;
+                }
+                
+                renderComments(comments);
+                
+                // Show load more button if there might be more
+                if (!allCommentsLoaded) {
+                    document.getElementById('load-more-container').classList.remove('hidden');
+                }
+            }).catch(error => {
+                console.error('Error loading comments:', error);
+                document.getElementById('comments-list').innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <p>Unable to load messages. Please refresh the page.</p>
+                    </div>
+                `;
+            });
+            
+            // Listen for new comments in real-time
+            database.ref(COMMENTS_PATH)
+                .orderByChild('timestamp')
+                .startAt(Date.now())
+                .on('child_added', snapshot => {
+                    const comment = { key: snapshot.key, ...snapshot.val() };
+                    prependComment(comment);
+                });
+        }
+        
+        // Load more comments (pagination)
+        function loadMoreComments() {
+            if (allCommentsLoaded || !lastLoadedKey) return;
+            
+            database.ref(COMMENTS_PATH)
+                .orderByChild('timestamp')
+                .endBefore(null, lastLoadedKey)
+                .limitToLast(COMMENTS_PER_PAGE)
+                .once('value').then(snapshot => {
+                    const comments = [];
+                    snapshot.forEach(child => {
+                        if (child.key !== lastLoadedKey) {
+                            comments.push({ key: child.key, ...child.val() });
+                        }
+                    });
+                    
+                    comments.reverse();
+                    
+                    if (comments.length > 0) {
+                        lastLoadedKey = comments[comments.length - 1].key;
+                        comments.forEach(comment => appendComment(comment));
+                    }
+                    
+                    if (comments.length < COMMENTS_PER_PAGE - 1) {
+                        allCommentsLoaded = true;
+                        document.getElementById('load-more-container').classList.add('hidden');
+                    }
+                });
+        }
+        
+        // Render comments list
+        function renderComments(comments) {
+            const container = document.getElementById('comments-list');
+            
+            if (comments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <p class="text-4xl mb-2">🎾</p>
+                        <p>No messages yet. Be the first to post!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = comments.map(comment => createCommentHTML(comment)).join('');
+        }
+        
+        // Create HTML for a single comment
+        function createCommentHTML(comment) {
+            // Hide reported messages from regular users
+            if (comment.reported && comment.reportCount >= 2) {
+                return ''; // Don't show messages reported 2+ times
+            }
+            
+            const date = new Date(comment.timestamp);
+            const timeAgo = getTimeAgo(date);
+            const initial = (comment.name || 'A')[0].toUpperCase();
+            const bgColors = ['bg-blue-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+            const bgColor = bgColors[comment.name.length % bgColors.length];
+            
+            // Check if user already reported this
+            const reportedByUser = hasUserReported(comment.key);
+            const reportButton = reportedByUser 
+                ? `<span class="text-xs text-gray-400">Reported</span>`
+                : `<button onclick="reportComment('${comment.key}')" class="text-xs text-gray-400 hover:text-red-500 transition-colors">Report</button>`;
+            
+            return `
+                <div class="flex gap-3 p-4 bg-gray-50 rounded-xl" data-key="${comment.key}">
+                    <div class="w-10 h-10 ${bgColor} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                        ${initial}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-semibold text-gray-800">${escapeHtml(comment.name)}</span>
+                            <span class="text-xs text-gray-400">${timeAgo}</span>
+                            <span class="flex-1"></span>
+                            ${reportButton}
+                        </div>
+                        <p class="text-gray-600 break-words">${escapeHtml(comment.text)}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Prepend new comment to list (for real-time updates)
+        function prependComment(comment) {
+            const container = document.getElementById('comments-list');
+            const emptyState = container.querySelector('.text-center');
+            if (emptyState) {
+                container.innerHTML = '';
+            }
+            container.insertAdjacentHTML('afterbegin', createCommentHTML(comment));
+        }
+        
+        // Append comment to end of list (for pagination)
+        function appendComment(comment) {
+            const container = document.getElementById('comments-list');
+            container.insertAdjacentHTML('beforeend', createCommentHTML(comment));
+        }
+        
+        // Post a new comment
+        function postComment() {
+            const nameInput = document.getElementById('comment-name');
+            const textInput = document.getElementById('comment-text');
+            
+            const name = nameInput.value.trim();
+            const text = textInput.value.trim();
+            
+            if (!name) {
+                showToast('⚠️ Please enter your name');
+                nameInput.focus();
+                return;
+            }
+            
+            if (!text) {
+                showToast('⚠️ Please enter a message');
+                textInput.focus();
+                return;
+            }
+            
+            if (text.length > 280) {
+                showToast('⚠️ Message too long (max 280 characters)');
+                return;
+            }
+            
+            // Basic spam prevention - check for URLs
+            if (text.includes('http://') || text.includes('https://') || text.includes('www.')) {
+                showToast('⚠️ Links are not allowed');
+                return;
+            }
+            
+            // Rate limiting
+            if (!canUserPost()) {
+                showToast('⚠️ Please wait 30 seconds between posts');
+                return;
+            }
+            
+            const comment = {
+                name: name.substring(0, 30),
+                text: text.substring(0, 280),
+                timestamp: Date.now(),
+                reported: false,
+                reportCount: 0
+            };
+            
+            database.ref(COMMENTS_PATH).push(comment)
+                .then(() => {
+                    textInput.value = '';
+                    updateLastPostTime();
+                    showToast('✅ Message posted!');
+                    
+                    // Save name for convenience
+                    localStorage.setItem('communityName', name);
+                })
+                .catch(error => {
+                    console.error('Error posting comment:', error);
+                    showToast('❌ Failed to post. Please try again.');
+                });
+        }
+        
+        // Helper: Get relative time
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+            
+            return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        }
+        
+        // Helper: Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Helper: Show toast notification
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg mb-2';
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Report a comment
+        function reportComment(commentKey) {
+            if (hasUserReported(commentKey)) {
+                showToast('⚠️ You already reported this message');
+                return;
+            }
+            
+            // Increment report count
+            const commentRef = database.ref(`${COMMENTS_PATH}/${commentKey}`);
+            commentRef.transaction(comment => {
+                if (comment) {
+                    comment.reported = true;
+                    comment.reportCount = (comment.reportCount || 0) + 1;
+                }
+                return comment;
+            }).then(() => {
+                // Save to local storage that user reported this
+                markAsReported(commentKey);
+                showToast('🚩 Message reported. Thank you.');
+                
+                // Update UI
+                const commentEl = document.querySelector(`[data-key="${commentKey}"]`);
+                if (commentEl) {
+                    const reportBtn = commentEl.querySelector('button');
+                    if (reportBtn) {
+                        reportBtn.outerHTML = `<span class="text-xs text-gray-400">Reported</span>`;
+                    }
+                }
+            }).catch(error => {
+                console.error('Error reporting:', error);
+                showToast('❌ Failed to report. Try again.');
+            });
+        }
+        
+        // Check if user has reported a comment
+        function hasUserReported(commentKey) {
+            const reported = JSON.parse(localStorage.getItem('reportedComments') || '[]');
+            return reported.includes(commentKey);
+        }
+        
+        // Mark comment as reported by this user
+        function markAsReported(commentKey) {
+            const reported = JSON.parse(localStorage.getItem('reportedComments') || '[]');
+            if (!reported.includes(commentKey)) {
+                reported.push(commentKey);
+                localStorage.setItem('reportedComments', JSON.stringify(reported));
+            }
+        }
+        
+        // Rate limiting - check if user can post
+        function canUserPost() {
+            const lastPost = localStorage.getItem('lastPostTime');
+            if (!lastPost) return true;
+            
+            const timeSinceLastPost = Date.now() - parseInt(lastPost);
+            const minInterval = 30 * 1000; // 30 seconds between posts
+            
+            return timeSinceLastPost >= minInterval;
+        }
+        
+        // Update last post time
+        function updateLastPostTime() {
+            localStorage.setItem('lastPostTime', Date.now().toString());
+        }
+        
+        // Load saved name from localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('communityName');
+            if (savedName) {
+                document.getElementById('comment-name').value = savedName;
+            }
+        });
+    </script>
+</body>
+</html>

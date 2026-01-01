@@ -1,0 +1,15 @@
+# Robots.txt for Uber Padel Tournament Manager
+# https://uberpadel.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://uberpadel.com/sitemap.xml
+
+# Block admin page from indexing
+Disallow: /admin.html
+
+# Block debug/test pages
+Disallow: /debug.html
+Disallow: /index-4.html

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Mix Tournament...</title>
+    
+    <!-- SEO: Tell search engines about the new location -->
+    <link rel="canonical" href="https://uberpadel.com/quick-play/tournament/">
+    
+    <!-- Redirect to new location after 0 seconds -->
+    <meta http-equiv="refresh" content="0; url=/quick-play/tournament/">
+    
+    <script>
+        // Handle hash routes (e.g., /tournament/#/t/abc123)
+        const hash = window.location.hash;
+        window.location.replace('/quick-play/tournament/' + hash);
+    </script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #3B82F6 0%, #06B6D4 100%);
+            color: white;
+        }
+        a { color: white; }
+    </style>
+</head>
+<body>
+    <p>Redirecting to <a href="/quick-play/tournament/">Mix Tournament</a>...</p>
+</body>
+</html>

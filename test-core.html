@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Modules Test - UberPadel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-pass { color: #22c55e; }
+        .test-fail { color: #ef4444; }
+        .test-section { margin-bottom: 1.5rem; padding: 1rem; background: #f8fafc; border-radius: 0.5rem; }
+        .code { font-family: monospace; background: #1e293b; color: #e2e8f0; padding: 0.25rem 0.5rem; border-radius: 0.25rem; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">🧪 Core Modules Test</h1>
+        <p class="text-gray-600 mb-8">Testing the Phase 1 foundation modules for UberPadel</p>
+        
+        <div id="test-results"></div>
+        
+        <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+            <h2 class="font-bold text-blue-800 mb-2">📝 Console Output</h2>
+            <p class="text-blue-600 text-sm">Check browser console for detailed logs</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    
+    <!-- Core Modules (in order) -->
+    <script src="src/core/firebase.js"></script>
+    <script src="src/core/permissions.js"></script>
+    <script src="src/core/storage.js"></script>
+    <script src="src/core/router.js"></script>
+    <script src="src/core/auth.js"></script>
+    <script src="src/core/compat.js"></script>
+    <script src="src/core/index.js"></script>
+
+    <script>
+        const tests = [];
+        
+        function test(name, fn) {
+            try {
+                const result = fn();
+                tests.push({ name, passed: result === true, result });
+            } catch (e) {
+                tests.push({ name, passed: false, error: e.message });
+            }
+        }
+        
+        function testAsync(name, fn) {
+            return fn().then(result => {
+                tests.push({ name, passed: result === true, result });
+            }).catch(e => {
+                tests.push({ name, passed: false, error: e.message });
+            });
+        }
+        
+        function renderResults() {
+            const container = document.getElementById('test-results');
+            const passed = tests.filter(t => t.passed).length;
+            const total = tests.length;
+            
+            let html = `
+                <div class="mb-6 p-4 ${passed === total ? 'bg-green-100' : 'bg-yellow-100'} rounded-lg">
+                    <span class="text-2xl font-bold ${passed === total ? 'text-green-700' : 'text-yellow-700'}">
+                        ${passed}/${total} tests passed
+                    </span>
+                </div>
+            `;
+            
+            // Group by module
+            const modules = {
+                'Firebase': tests.filter(t => t.name.startsWith('Firebase')),
+                'Permissions': tests.filter(t => t.name.startsWith('Permission')),
+                'Storage': tests.filter(t => t.name.startsWith('Storage')),
+                'Router': tests.filter(t => t.name.startsWith('Router')),
+                'Auth': tests.filter(t => t.name.startsWith('Auth')),
+                'Compat': tests.filter(t => t.name.startsWith('Compat')),
+            };
+            
+            for (const [module, moduleTests] of Object.entries(modules)) {
+                if (moduleTests.length === 0) continue;
+                
+                html += `<div class="test-section">
+                    <h3 class="font-bold text-lg mb-3">${module} Module</h3>
+                    <ul class="space-y-2">`;
+                
+                for (const t of moduleTests) {
+                    const icon = t.passed ? '✅' : '❌';
+                    const className = t.passed ? 'test-pass' : 'test-fail';
+                    const detail = t.error ? ` - <span class="code">${t.error}</span>` : '';
+                    html += `<li class="${className}">${icon} ${t.name}${detail}</li>`;
+                }
+                
+                html += `</ul></div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        async function runTests() {
+            console.log('🧪 Starting Core Module Tests...\n');
+            
+            // ===== FIREBASE TESTS =====
+            test('Firebase - Module loaded', () => typeof Firebase !== 'undefined');
+            test('Firebase - FIREBASE_ROOTS defined', () => typeof FIREBASE_ROOTS !== 'undefined');
+            test('Firebase - init() works', () => {
+                const result = Firebase.init();
+                return result.database !== null;
+            });
+            test('Firebase - getDatabase() returns db', () => Firebase.getDatabase() !== null);
+            test('Firebase - getTournamentRef() works', () => {
+                const ref = Firebase.getTournamentRef('AMERICANO', 'test123');
+                return ref !== null;
+            });
+            test('Firebase - normalizeData() handles arrays', () => {
+                const input = { '0': 'a', '1': 'b', '2': 'c' };
+                const output = Firebase.normalizeData(input);
+                return Array.isArray(output) && output.length === 3;
+            });
+            
+            // ===== PERMISSIONS TESTS =====
+            test('Permissions - Module loaded', () => typeof Permissions !== 'undefined');
+            test('Permissions - ROLES defined', () => typeof ROLES !== 'undefined');
+            test('Permissions - getRole(null) returns guest', () => Permissions.getRole(null) === 'guest');
+            test('Permissions - getRole(guest user)', () => {
+                const user = { type: 'guest', name: 'Test' };
+                return Permissions.getRole(user) === 'guest';
+            });
+            test('Permissions - getRole(verified user)', () => {
+                const user = { type: 'registered', status: 'verified', name: 'Test' };
+                return Permissions.getRole(user) === 'verified';
+            });
+            test('Permissions - can() check works', () => {
+                const user = { type: 'registered', status: 'verified' };
+                return Permissions.can(user, 'CREATE_LEVEL_BASED_TOURNAMENT') === true;
+            });
+            test('Permissions - guest cannot create level-based', () => {
+                const user = { type: 'guest' };
+                return Permissions.can(user, 'CREATE_LEVEL_BASED_TOURNAMENT') === false;
+            });
+            test('Permissions - canJoinTournament() works', () => {
+                const user = { type: 'registered', status: 'verified', playtomicLevel: '3.5' };
+                const tournament = { mode: 'level-based', levelCriteria: { min: 3.0, max: 4.0 } };
+                const result = Permissions.canJoinTournament(user, tournament);
+                return result.allowed === true;
+            });
+            test('Permissions - level check fails correctly', () => {
+                const user = { type: 'registered', status: 'verified', playtomicLevel: '5.0' };
+                const tournament = { mode: 'level-based', levelCriteria: { min: 3.0, max: 4.0 } };
+                const result = Permissions.canJoinTournament(user, tournament);
+                return result.allowed === false;
+            });
+            
+            // ===== STORAGE TESTS =====
+            test('Storage - Module loaded', () => typeof Storage !== 'undefined');
+            test('Storage - isAvailable() works', () => Storage.isAvailable() === true);
+            test('Storage - set/get works', () => {
+                Storage.set('__test__', { foo: 'bar' });
+                const result = Storage.get('__test__');
+                Storage.remove('__test__');
+                return result && result.foo === 'bar';
+            });
+            test('Storage - get with default works', () => {
+                const result = Storage.get('__nonexistent__', 'default');
+                return result === 'default';
+            });
+            test('Storage - remove works', () => {
+                Storage.set('__test2__', 'value');
+                Storage.remove('__test2__');
+                return Storage.get('__test2__') === null;
+            });
+            
+            // ===== ROUTER TESTS =====
+            test('Router - Module loaded', () => typeof Router !== 'undefined');
+            test('Router - ROUTES defined', () => typeof ROUTES !== 'undefined');
+            test('Router - generateTournamentId() correct length', () => {
+                const id = Router.generateTournamentId();
+                return id.length === 6;
+            });
+            test('Router - generateOrganiserKey() correct length', () => {
+                const key = Router.generateOrganiserKey();
+                return key.length === 16;
+            });
+            test('Router - getPlayerLink() works', () => {
+                const link = Router.getPlayerLink('abc123');
+                return link.includes('#/t/abc123');
+            });
+            test('Router - getOrganiserLink() includes key', () => {
+                const link = Router.getOrganiserLink('abc123', 'key456');
+                return link.includes('#/t/abc123?key=key456');
+            });
+            
+            // ===== AUTH TESTS =====
+            test('Auth - Module loaded', () => typeof Auth !== 'undefined');
+            test('Auth - UberAuth alias exists', () => typeof UberAuth !== 'undefined' && UberAuth === Auth);
+            test('Auth - isLoggedIn() works when no user', () => {
+                Auth.clearUser();
+                return Auth.isLoggedIn() === false;
+            });
+            test('Auth - setUser/getCurrentUser works', () => {
+                const testUser = { type: 'guest', name: 'Test User' };
+                Auth.setUser(testUser);
+                const current = Auth.getCurrentUser();
+                Auth.clearUser();
+                return current && current.name === 'Test User';
+            });
+            test('Auth - can() integrates with Permissions', () => {
+                const testUser = { type: 'registered', status: 'verified' };
+                Auth.setUser(testUser);
+                const result = Auth.can('CREATE_LEVEL_BASED_TOURNAMENT');
+                Auth.clearUser();
+                return result === true;
+            });
+            
+            // ===== COMPAT TESTS =====
+            test('Compat - setupCompat function exists', () => typeof setupCompat === 'function');
+            test('Compat - FORMAT_CONFIGS defined', () => typeof FORMAT_CONFIGS !== 'undefined');
+            test('Compat - americano config exists', () => FORMAT_CONFIGS.americano !== undefined);
+            test('Compat - setupCompat creates CONFIG', () => {
+                setupCompat('americano');
+                return typeof CONFIG !== 'undefined' && CONFIG.FIREBASE_ROOT === 'americano-tournaments';
+            });
+            test('Compat - legacy functions created', () => {
+                return typeof initializeFirebase === 'function' && 
+                       typeof checkTournamentExists === 'function' &&
+                       typeof createTournamentInFirebase === 'function';
+            });
+            test('Compat - PLAYER_COLORS available', () => {
+                return Array.isArray(PLAYER_COLORS) && PLAYER_COLORS.length === 24;
+            });
+            test('Compat - getPlayerColorClass works', () => {
+                return getPlayerColorClass(1) === 'player-color-1';
+            });
+            
+            // ===== CORE INDEX TESTS =====
+            test('Compat - Core facade exists', () => typeof Core !== 'undefined');
+            
+            // Render results
+            renderResults();
+            
+            const passed = tests.filter(t => t.passed).length;
+            console.log(`\n🏁 Tests complete: ${passed}/${tests.length} passed`);
+        }
+        
+        // Run tests after page load
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

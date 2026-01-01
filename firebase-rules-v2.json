@@ -1,0 +1,346 @@
+{
+  "rules": {
+    // =============================================
+    // UBERPADEL FIREBASE SECURITY RULES v2.0
+    // =============================================
+    // 
+    // Security Model:
+    // - Public read for all tournament data (viewers need access)
+    // - Passcode-based organizer access (validated client-side + hashed)
+    // - Validation rules to prevent malformed/oversized data
+    // - No Firebase Auth required (simpler UX for casual players)
+    //
+    // For production, consider adding:
+    // - Firebase App Check (prevents API abuse)
+    // - Cloud Functions for server-side validation
+    // - Firebase Auth for registered users
+    // =============================================
+
+    // ==================
+    // USERS
+    // ==================
+    "users": {
+      ".read": true,
+      ".indexOn": ["googleUid", "authUid", "email", "playtomicUsername"],
+      
+      "$userId": {
+        // Anyone can create/update users (registration flow)
+        ".write": true,
+        
+        // Validate user structure
+        ".validate": "newData.hasChildren(['name', 'type'])",
+        
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+        },
+        "type": {
+          ".validate": "newData.isString() && (newData.val() == 'guest' || newData.val() == 'registered')"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'verified')"
+        },
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "googleUid": {
+          ".validate": "newData.isString() && newData.val().length <= 128"
+        },
+        "authUid": {
+          ".validate": "newData.isString() && newData.val().length <= 128"
+        },
+        "authProvider": {
+          ".validate": "newData.isString() && (newData.val() == 'google' || newData.val() == 'email' || newData.val() == 'anonymous')"
+        },
+        "playtomicUsername": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+        },
+        "playtomicLevel": {
+          ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 10) || newData.val() == null"
+        },
+        "phone": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "isOrganizer": {
+          ".validate": "newData.isBoolean()"
+        },
+        "createdAt": {
+          ".validate": "newData.isString()"
+        },
+        "updatedAt": {
+          ".validate": "newData.isString()"
+        }
+      }
+    },
+    
+    // ==================
+    // AMERICANO TOURNAMENTS
+    // ==================
+    "americano-tournaments": {
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
+      
+      "$tournamentId": {
+        ".write": true,
+        
+        // Validate tournament ID format (alphanumeric, 6-20 chars)
+        ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
+        
+        "meta": {
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          },
+          "organiserKey": {
+            ".validate": "newData.isString() && newData.val().length >= 8 && newData.val().length <= 64"
+          },
+          "passcodeHash": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128"
+          },
+          "createdAt": {
+            ".validate": "newData.isString()"
+          },
+          "updatedAt": {
+            ".validate": "newData.isString()"
+          },
+          "organizerUid": {
+            ".validate": "newData.isString() && newData.val().length <= 128"
+          }
+        },
+        
+        // Player count limits
+        "playerCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 24"
+        },
+        
+        // Player names - max 24 players, max 50 chars each
+        "playerNames": {
+          "$index": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+          }
+        },
+        
+        // Court limits
+        "courtCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10"
+        },
+        
+        "courtNames": {
+          "$index": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+          }
+        },
+        
+        // Scores - validate structure
+        "scores": {
+          "$matchId": {
+            "team1": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            },
+            "team2": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            }
+          }
+        },
+        
+        // Point settings
+        "fixedPoints": {
+          ".validate": "newData.isBoolean()"
+        },
+        "totalPoints": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100"
+        }
+      }
+    },
+    
+    // ==================
+    // MEXICANO TOURNAMENTS
+    // ==================
+    "mexicano-tournaments": {
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
+      
+      "$tournamentId": {
+        ".write": true,
+        ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
+        
+        "meta": {
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          },
+          "organiserKey": {
+            ".validate": "newData.isString() && newData.val().length >= 8 && newData.val().length <= 64"
+          },
+          "passcodeHash": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128"
+          }
+        },
+        
+        "playerCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 24"
+        },
+        
+        "playerNames": {
+          "$index": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50"
+          }
+        },
+        
+        "courtCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10"
+        },
+        
+        "scores": {
+          "$matchId": {
+            "team1": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            },
+            "team2": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            }
+          }
+        }
+      }
+    },
+    
+    // ==================
+    // MIX TOURNAMENTS (generic)
+    // ==================
+    "tournaments": {
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
+      
+      "$tournamentId": {
+        ".write": true,
+        ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
+        
+        "meta": {
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          }
+        },
+        
+        "playerCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 32"
+        }
+      }
+    },
+    
+    // ==================
+    // TEAM LEAGUE TOURNAMENTS
+    // ==================
+    "team-tournaments": {
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
+      
+      "$tournamentId": {
+        ".write": true,
+        ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
+        
+        "meta": {
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          }
+        },
+        
+        // Team count limits
+        "teamCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 16"
+        }
+      }
+    },
+    
+    // ==================
+    // COMPETITIONS (Scheduled Events)
+    // ==================
+    "competitions": {
+      ".read": true,
+      ".indexOn": ["meta/eventDate", "meta/status", "meta/format", "meta/organizerId", "meta/createdAt"],
+      
+      "$competitionId": {
+        ".write": true,
+        
+        "meta": {
+          ".validate": "newData.hasChildren(['name', 'format', 'status'])",
+          
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          },
+          "format": {
+            ".validate": "newData.isString() && (newData.val() == 'americano' || newData.val() == 'mexicano' || newData.val() == 'mix' || newData.val() == 'team-league')"
+          },
+          "status": {
+            ".validate": "newData.isString() && (newData.val() == 'draft' || newData.val() == 'registration' || newData.val() == 'active' || newData.val() == 'completed' || newData.val() == 'cancelled')"
+          },
+          "accessRestriction": {
+            ".validate": "newData.isString() && (newData.val() == 'anyone' || newData.val() == 'registered' || newData.val() == 'verified')"
+          },
+          "minLevel": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+          },
+          "maxLevel": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+          },
+          "minPlayers": {
+            ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 100"
+          },
+          "maxPlayers": {
+            ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 100"
+          }
+        },
+        
+        "registeredPlayers": {
+          "$playerId": {
+            ".validate": "newData.hasChildren(['id', 'name'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length <= 50"
+            }
+          }
+        }
+      }
+    },
+    
+    // ==================
+    // COMMUNITY CHAT
+    // ==================
+    "community": {
+      "messages": {
+        ".read": true,
+        
+        "$messageId": {
+          ".write": true,
+          ".validate": "newData.hasChildren(['name', 'text', 'timestamp'])",
+          
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
+          },
+          "text": {
+            // No URLs, max 280 chars
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 280 && !newData.val().contains('http://') && !newData.val().contains('https://') && !newData.val().contains('www.')"
+          },
+          "timestamp": {
+            ".validate": "newData.isNumber()"
+          },
+          "reported": {
+            ".validate": "newData.isBoolean()"
+          },
+          "reportCount": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+          }
+        }
+      },
+      
+      "rateLimit": {
+        "$ipHash": {
+          ".read": false,
+          ".write": true,
+          ".validate": "newData.hasChildren(['lastPost', 'count'])"
+        }
+      }
+    },
+    
+    // ==================
+    // DENY ALL OTHER PATHS
+    // ==================
+    ".read": false,
+    ".write": false
+  }
+}

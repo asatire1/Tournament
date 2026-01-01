@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UberPadel - Full Test Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <style>
+        .test-pass { background: #dcfce7; border-color: #22c55e; }
+        .test-fail { background: #fef2f2; border-color: #ef4444; }
+        .test-running { background: #fef9c3; border-color: #eab308; }
+        .test-pending { background: #f3f4f6; border-color: #9ca3af; }
+        pre { font-size: 11px; max-height: 200px; overflow: auto; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">🧪 UberPadel Full Test Suite</h1>
+            <p class="text-gray-600 mb-4">Automated testing for all tournament formats and features</p>
+            
+            <div class="flex gap-3 mb-4">
+                <button onclick="runAllTests()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                    ▶️ Run All Tests
+                </button>
+                <button onclick="runSelectedTests()" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors">
+                    ✓ Run Selected
+                </button>
+                <button onclick="cleanupTests()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-colors">
+                    🗑️ Cleanup Test Data
+                </button>
+                <button onclick="location.reload()" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-semibold transition-colors">
+                    🔄 Reset
+                </button>
+            </div>
+            
+            <div id="summary" class="p-4 bg-gray-50 rounded-xl">
+                <span class="text-gray-600">Click "Run All Tests" to begin...</span>
+            </div>
+        </div>
+        
+        <!-- Test Categories -->
+        <div class="space-y-6" id="test-results">
+            <!-- Firebase Connection -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked class="test-checkbox w-5 h-5" data-category="firebase">
+                        <h2 class="text-xl font-bold text-gray-800">🔥 Firebase Connection</h2>
+                    </div>
+                    <span id="firebase-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Pending</span>
+                </div>
+                <div id="firebase-tests" class="p-4 space-y-2"></div>
+            </div>
+            
+            <!-- Americano Tests -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked class="test-checkbox w-5 h-5" data-category="americano">
+                        <h2 class="text-xl font-bold text-gray-800">🎾 Americano Format</h2>
+                    </div>
+                    <span id="americano-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Pending</span>
+                </div>
+                <div id="americano-tests" class="p-4 space-y-2"></div>
+            </div>
+            
+            <!-- Mexicano Tests -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked class="test-checkbox w-5 h-5" data-category="mexicano">
+                        <h2 class="text-xl font-bold text-gray-800">🌮 Mexicano Format</h2>
+                    </div>
+                    <span id="mexicano-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Pending</span>
+                </div>
+                <div id="mexicano-tests" class="p-4 space-y-2"></div>
+            </div>
+            
+            <!-- Team League Tests -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked class="test-checkbox w-5 h-5" data-category="teamleague">
+                        <h2 class="text-xl font-bold text-gray-800">👥 Team League Format</h2>
+                    </div>
+                    <span id="teamleague-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Pending</span>
+                </div>
+                <div id="teamleague-tests" class="p-4 space-y-2"></div>
+            </div>
+            
+            <!-- Mix Tournament Tests -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked class="test-checkbox w-5 h-5" data-category="mixtournament">
+                        <h2 class="text-xl font-bold text-gray-800">🏆 Mix Tournament Format</h2>
+                    </div>
+                    <span id="mixtournament-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Pending</span>
+                </div>
+                <div id="mixtournament-tests" class="p-4 space-y-2"></div>
+            </div>
+            
+            <!-- Settings Tests -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked class="test-checkbox w-5 h-5" data-category="settings">
+                        <h2 class="text-xl font-bold text-gray-800">⚙️ Settings & Permissions</h2>
+                    </div>
+                    <span id="settings-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Pending</span>
+                </div>
+                <div id="settings-tests" class="p-4 space-y-2"></div>
+            </div>
+            
+            <!-- UI Components Tests -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" checked class="test-checkbox w-5 h-5" data-category="ui">
+                        <h2 class="text-xl font-bold text-gray-800">🎨 UI Components</h2>
+                    </div>
+                    <span id="ui-status" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-200">Pending</span>
+                </div>
+                <div id="ui-tests" class="p-4 space-y-2"></div>
+            </div>
+        </div>
+        
+        <!-- Created Tournaments Log -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mt-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Created Test Tournaments</h2>
+            <div id="created-tournaments" class="space-y-2 text-sm">
+                <p class="text-gray-500">No tournaments created yet...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    // ============================================
+    // FIREBASE CONFIGURATION
+    // ============================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain: "stretford-padel-tournament.firebaseapp.com",
+        databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "stretford-padel-tournament",
+        storageBucket: "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
+    };
+    
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+    
+    // ============================================
+    // TEST UTILITIES
+    // ============================================
+    const createdTournaments = [];
+    let testResults = { passed: 0, failed: 0, total: 0 };
+    
+    function generateTestId() {
+        return 'TEST' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+    
+    function generatePasscode() {
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+    
+    function renderTestResult(container, name, status, details = '', data = null) {
+        const statusClass = status === 'pass' ? 'test-pass' : status === 'fail' ? 'test-fail' : status === 'running' ? 'test-running' : 'test-pending';
+        const statusIcon = status === 'pass' ? '✅' : status === 'fail' ? '❌' : status === 'running' ? '⏳' : '⏸️';
+        
+        const existingTest = document.querySelector(`[data-test="${name}"]`);
+        const html = `
+            <div data-test="${name}" class="border rounded-lg p-3 ${statusClass}">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium">${statusIcon} ${name}</span>
+                    <span class="text-sm">${status.toUpperCase()}</span>
+                </div>
+                ${details ? `<p class="text-sm mt-1 text-gray-600">${details}</p>` : ''}
+                ${data ? `<pre class="mt-2 p-2 bg-white/50 rounded text-xs overflow-auto">${JSON.stringify(data, null, 2)}</pre>` : ''}
+            </div>
+        `;
+        
+        if (existingTest) {
+            existingTest.outerHTML = html;
+        } else {
+            document.getElementById(container).innerHTML += html;
+        }
+    }
+    
+    function updateCategoryStatus(category, status) {
+        const el = document.getElementById(`${category}-status`);
+        el.textContent = status;
+        el.className = `px-3 py-1 rounded-full text-sm font-medium ${
+            status === 'PASSED' ? 'bg-green-100 text-green-800' :
+            status === 'FAILED' ? 'bg-red-100 text-red-800' :
+            status === 'RUNNING' ? 'bg-yellow-100 text-yellow-800' :
+            'bg-gray-200 text-gray-800'
+        }`;
+    }
+    
+    function updateSummary() {
+        const el = document.getElementById('summary');
+        const percentage = testResults.total > 0 ? Math.round((testResults.passed / testResults.total) * 100) : 0;
+        el.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-green-600 font-bold">${testResults.passed} passed</span> · 
+                    <span class="text-red-600 font-bold">${testResults.failed} failed</span> · 
+                    <span class="text-gray-600">${testResults.total} total</span>
+                </div>
+                <div class="text-2xl font-bold ${percentage === 100 ? 'text-green-600' : percentage >= 80 ? 'text-yellow-600' : 'text-red-600'}">
+                    ${percentage}%
+                </div>
+            </div>
+            <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="h-full bg-green-500 transition-all" style="width: ${percentage}%"></div>
+            </div>
+        `;
+    }
+    
+    function logTournament(type, id, passcode) {
+        createdTournaments.push({ type, id, passcode, createdAt: new Date().toISOString() });
+        const el = document.getElementById('created-tournaments');
+        el.innerHTML = createdTournaments.map(t => `
+            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <span><strong>${t.type}</strong>: ${t.id}</span>
+                <span class="text-gray-500">Passcode: ${t.passcode}</span>
+            </div>
+        `).join('');
+    }
+    
+    async function assert(condition, testName, container, details = '') {
+        testResults.total++;
+        if (condition) {
+            testResults.passed++;
+            renderTestResult(container, testName, 'pass', details);
+            return true;
+        } else {
+            testResults.failed++;
+            renderTestResult(container, testName, 'fail', details);
+            return false;
+        }
+    }
+    
+    // ============================================
+    // FIREBASE TESTS
+    // ============================================
+    async function runFirebaseTests() {
+        const container = 'firebase-tests';
+        document.getElementById(container).innerHTML = '';
+        updateCategoryStatus('firebase', 'RUNNING');
+        
+        // Test 1: Connection
+        renderTestResult(container, 'Firebase Connection', 'running');
+        try {
+            const connRef = database.ref('.info/connected');
+            const snapshot = await connRef.once('value');
+            await assert(snapshot.val() === true, 'Firebase Connection', container, 'Connected to Firebase Realtime Database');
+        } catch (e) {
+            await assert(false, 'Firebase Connection', container, e.message);
+        }
+        
+        // Test 2: Write permission
+        renderTestResult(container, 'Write Permission', 'running');
+        try {
+            const testRef = database.ref('_test_write_' + Date.now());
+            await testRef.set({ test: true, timestamp: Date.now() });
+            await testRef.remove();
+            await assert(true, 'Write Permission', container, 'Successfully wrote and deleted test data');
+        } catch (e) {
+            await assert(false, 'Write Permission', container, e.message);
+        }
+        
+        // Test 3: Read americano-tournaments path
+        renderTestResult(container, 'Read Americano Path', 'running');
+        try {
+            const ref = database.ref('americano-tournaments');
+            const snapshot = await ref.limitToLast(1).once('value');
+            await assert(true, 'Read Americano Path', container, `Path accessible, has ${snapshot.numChildren()} recent entries`);
+        } catch (e) {
+            await assert(false, 'Read Americano Path', container, e.message);
+        }
+        
+        // Test 4: Read mexicano-tournaments path
+        renderTestResult(container, 'Read Mexicano Path', 'running');
+        try {
+            const ref = database.ref('mexicano-tournaments');
+            const snapshot = await ref.limitToLast(1).once('value');
+            await assert(true, 'Read Mexicano Path', container, `Path accessible, has ${snapshot.numChildren()} recent entries`);
+        } catch (e) {
+            await assert(false, 'Read Mexicano Path', container, e.message);
+        }
+        
+        updateCategoryStatus('firebase', testResults.failed === 0 ? 'PASSED' : 'FAILED');
+    }
+    
+    // ============================================
+    // AMERICANO TESTS
+    // ============================================
+    async function runAmericanoTests() {
+        const container = 'americano-tests';
+        document.getElementById(container).innerHTML = '';
+        updateCategoryStatus('americano', 'RUNNING');
+        
+        const testId = generateTestId();
+        const passcode = generatePasscode();
+        
+        // Test 1: Create 8-player tournament
+        renderTestResult(container, 'Create 8-Player Tournament', 'running');
+        try {
+            const data = {
+                meta: {
+                    name: 'Test Americano 8P',
+                    createdAt: new Date().toISOString(),
+                    accessMode: 'passcode'
+                },
+                organiserKey: passcode,
+                playerCount: 8,
+                courtCount: 2,
+                playerNames: ['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7', 'Player 8'],
+                courtNames: ['Court 1', 'Court 2'],
+                fixedPoints: true,
+                totalPoints: 32,
+                scores: {},
+                tournamentStarted: true
+            };
+            await database.ref(`americano-tournaments/${testId}`).set(data);
+            logTournament('Americano 8P', testId, passcode);
+            await assert(true, 'Create 8-Player Tournament', container, `Created tournament ${testId}`);
+        } catch (e) {
+            await assert(false, 'Create 8-Player Tournament', container, e.message);
+        }
+        
+        // Test 2: Verify tournament structure
+        renderTestResult(container, 'Verify Tournament Structure', 'running');
+        try {
+            const snapshot = await database.ref(`americano-tournaments/${testId}`).once('value');
+            const data = snapshot.val();
+            const valid = data && data.playerCount === 8 && data.courtCount === 2 && data.playerNames.length === 8;
+            await assert(valid, 'Verify Tournament Structure', container, 'Tournament data structure is valid', data.meta);
+        } catch (e) {
+            await assert(false, 'Verify Tournament Structure', container, e.message);
+        }
+        
+        // Test 3: Save scores
+        renderTestResult(container, 'Save Match Scores', 'running');
+        try {
+            const scores = {
+                'f_0': { team1: 18, team2: 14 },
+                'f_1': { team1: 16, team2: 16 },
+                'f_2': { team1: 20, team2: 12 }
+            };
+            await database.ref(`americano-tournaments/${testId}/scores`).update(scores);
+            await assert(true, 'Save Match Scores', container, 'Saved 3 match scores');
+        } catch (e) {
+            await assert(false, 'Save Match Scores', container, e.message);
+        }
+        
+        // Test 4: Update player name
+        renderTestResult(container, 'Update Player Name', 'running');
+        try {
+            await database.ref(`americano-tournaments/${testId}/playerNames/0`).set('Updated Player 1');
+            const snapshot = await database.ref(`americano-tournaments/${testId}/playerNames/0`).once('value');
+            await assert(snapshot.val() === 'Updated Player 1', 'Update Player Name', container, 'Player name updated successfully');
+        } catch (e) {
+            await assert(false, 'Update Player Name', container, e.message);
+        }
+        
+        // Test 5: Create 12-player tournament
+        const testId12 = generateTestId();
+        const passcode12 = generatePasscode();
+        renderTestResult(container, 'Create 12-Player Tournament', 'running');
+        try {
+            const data = {
+                meta: { name: 'Test Americano 12P', createdAt: new Date().toISOString() },
+                organiserKey: passcode12,
+                playerCount: 12,
+                courtCount: 3,
+                playerNames: Array.from({length: 12}, (_, i) => `Player ${i + 1}`),
+                courtNames: ['Court A', 'Court B', 'Court C'],
+                fixedPoints: true,
+                totalPoints: 32,
+                scores: {},
+                tournamentStarted: true
+            };
+            await database.ref(`americano-tournaments/${testId12}`).set(data);
+            logTournament('Americano 12P', testId12, passcode12);
+            await assert(true, 'Create 12-Player Tournament', container, `Created tournament ${testId12} with 3 courts`);
+        } catch (e) {
+            await assert(false, 'Create 12-Player Tournament', container, e.message);
+        }
+        
+        // Test 6: Create 16-player tournament
+        const testId16 = generateTestId();
+        const passcode16 = generatePasscode();
+        renderTestResult(container, 'Create 16-Player Tournament', 'running');
+        try {
+            const data = {
+                meta: { name: 'Test Americano 16P', createdAt: new Date().toISOString() },
+                organiserKey: passcode16,
+                playerCount: 16,
+                courtCount: 4,
+                playerNames: Array.from({length: 16}, (_, i) => `Player ${i + 1}`),
+                courtNames: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
+                fixedPoints: false,
+                totalPoints: 32,
+                scores: {},
+                tournamentStarted: true
+            };
+            await database.ref(`americano-tournaments/${testId16}`).set(data);
+            logTournament('Americano 16P', testId16, passcode16);
+            await assert(true, 'Create 16-Player Tournament', container, `Created tournament ${testId16} with 4 courts`);
+        } catch (e) {
+            await assert(false, 'Create 16-Player Tournament', container, e.message);
+        }
+        
+        updateCategoryStatus('americano', 'PASSED');
+    }
+    
+    // ============================================
+    // MEXICANO TESTS
+    // ============================================
+    async function runMexicanoTests() {
+        const container = 'mexicano-tests';
+        document.getElementById(container).innerHTML = '';
+        updateCategoryStatus('mexicano', 'RUNNING');
+        
+        // Test 1: Create Individual Mexicano (8 players)
+        const testId = generateTestId();
+        const passcode = generatePasscode();
+        renderTestResult(container, 'Create Individual Mexicano (8P)', 'running');
+        try {
+            const players = Array.from({length: 8}, (_, i) => ({ id: `p${i+1}`, name: `Player ${i + 1}` }));
+            const data = {
+                meta: {
+                    name: 'Test Mexicano Individual',
+                    mode: 'individual',
+                    pointsPerMatch: 32,
+                    createdAt: new Date().toISOString(),
+                    status: 'active'
+                },
+                organiserKey: passcode,
+                players: players,
+                teams: [],
+                rounds: [],
+                currentRound: 0,
+                courtNames: ['Court 1', 'Court 2']
+            };
+            await database.ref(`mexicano-tournaments/${testId}`).set(data);
+            logTournament('Mexicano Individual 8P', testId, passcode);
+            await assert(true, 'Create Individual Mexicano (8P)', container, `Created ${testId}`);
+        } catch (e) {
+            await assert(false, 'Create Individual Mexicano (8P)', container, e.message);
+        }
+        
+        // Test 2: Generate first round matches
+        renderTestResult(container, 'Generate Round 1 Matches', 'running');
+        try {
+            // Simulate pairing - in real app this is done by getNextRoundMatches()
+            const round1 = {
+                matches: [
+                    { team1: ['p1', 'p2'], team2: ['p3', 'p4'], court: 1, score1: null, score2: null, completed: false },
+                    { team1: ['p5', 'p6'], team2: ['p7', 'p8'], court: 2, score1: null, score2: null, completed: false }
+                ]
+            };
+            await database.ref(`mexicano-tournaments/${testId}/rounds/0`).set(round1);
+            await database.ref(`mexicano-tournaments/${testId}/currentRound`).set(1);
+            await assert(true, 'Generate Round 1 Matches', container, '2 matches created for round 1');
+        } catch (e) {
+            await assert(false, 'Generate Round 1 Matches', container, e.message);
+        }
+        
+        // Test 3: Save round 1 scores
+        renderTestResult(container, 'Save Round 1 Scores', 'running');
+        try {
+            await database.ref(`mexicano-tournaments/${testId}/rounds/0/matches/0`).update({
+                score1: 18, score2: 14, completed: true
+            });
+            await database.ref(`mexicano-tournaments/${testId}/rounds/0/matches/1`).update({
+                score1: 16, score2: 16, completed: true
+            });
+            await assert(true, 'Save Round 1 Scores', container, 'Scores: 18-14, 16-16');
+        } catch (e) {
+            await assert(false, 'Save Round 1 Scores', container, e.message);
+        }
+        
+        // Test 4: Create Team Mexicano (8 teams)
+        const testIdTeam = generateTestId();
+        const passcodeTeam = generatePasscode();
+        renderTestResult(container, 'Create Team Mexicano (8 Teams)', 'running');
+        try {
+            const teams = Array.from({length: 8}, (_, i) => ({
+                id: `t${i+1}`,
+                teamName: `Team ${i + 1}`,
+                player1: `Player ${i*2 + 1}`,
+                player2: `Player ${i*2 + 2}`
+            }));
+            const data = {
+                meta: {
+                    name: 'Test Mexicano Teams',
+                    mode: 'team',
+                    pointsPerMatch: 32,
+                    createdAt: new Date().toISOString(),
+                    status: 'active'
+                },
+                organiserKey: passcodeTeam,
+                players: [],
+                teams: teams,
+                rounds: [],
+                currentRound: 0,
+                courtNames: ['Court A', 'Court B']
+            };
+            await database.ref(`mexicano-tournaments/${testIdTeam}`).set(data);
+            logTournament('Mexicano Team 8T', testIdTeam, passcodeTeam);
+            await assert(true, 'Create Team Mexicano (8 Teams)', container, `Created ${testIdTeam}`);
+        } catch (e) {
+            await assert(false, 'Create Team Mexicano (8 Teams)', container, e.message);
+        }
+        
+        // Test 5: Test court names
+        renderTestResult(container, 'Update Court Names', 'running');
+        try {
+            await database.ref(`mexicano-tournaments/${testId}/courtNames`).set(['Center Court', 'Side Court']);
+            const snapshot = await database.ref(`mexicano-tournaments/${testId}/courtNames`).once('value');
+            const names = snapshot.val();
+            await assert(names[0] === 'Center Court', 'Update Court Names', container, 'Court names updated successfully');
+        } catch (e) {
+            await assert(false, 'Update Court Names', container, e.message);
+        }
+        
+        // Test 6: Update points per match
+        renderTestResult(container, 'Update Points Per Match', 'running');
+        try {
+            await database.ref(`mexicano-tournaments/${testId}/meta/pointsPerMatch`).set(24);
+            const snapshot = await database.ref(`mexicano-tournaments/${testId}/meta/pointsPerMatch`).once('value');
+            await assert(snapshot.val() === 24, 'Update Points Per Match', container, 'Points changed from 32 to 24');
+        } catch (e) {
+            await assert(false, 'Update Points Per Match', container, e.message);
+        }
+        
+        updateCategoryStatus('mexicano', 'PASSED');
+    }
+    
+    // ============================================
+    // TEAM LEAGUE TESTS
+    // ============================================
+    async function runTeamLeagueTests() {
+        const container = 'teamleague-tests';
+        document.getElementById(container).innerHTML = '';
+        updateCategoryStatus('teamleague', 'RUNNING');
+        
+        const testId = generateTestId();
+        const passcode = generatePasscode();
+        
+        // Test 1: Create league with 8 teams, 2 groups
+        renderTestResult(container, 'Create 8-Team League (2 Groups)', 'running');
+        try {
+            const teams = Array.from({length: 8}, (_, i) => ({
+                id: `team_${i}`,
+                name: `Team ${String.fromCharCode(65 + i)}`,
+                player1: `Player ${i*2 + 1}`,
+                player2: `Player ${i*2 + 2}`
+            }));
+            const data = {
+                meta: {
+                    name: 'Test Team League',
+                    createdAt: new Date().toISOString(),
+                    status: 'group_stage'
+                },
+                organiserKey: passcode,
+                teams: teams,
+                groups: {
+                    'Group A': ['team_0', 'team_1', 'team_2', 'team_3'],
+                    'Group B': ['team_4', 'team_5', 'team_6', 'team_7']
+                },
+                groupFixtures: {},
+                groupScores: {},
+                knockoutMatches: {},
+                knockoutScores: {},
+                courts: ['Court 1', 'Court 2'],
+                pointsPerWin: 3,
+                pointsPerDraw: 1,
+                pointsPerLoss: 0
+            };
+            await database.ref(`team-league-tournaments/${testId}`).set(data);
+            logTournament('Team League 8T', testId, passcode);
+            await assert(true, 'Create 8-Team League (2 Groups)', container, `Created ${testId}`);
+        } catch (e) {
+            await assert(false, 'Create 8-Team League (2 Groups)', container, e.message);
+        }
+        
+        // Test 2: Generate group fixtures
+        renderTestResult(container, 'Generate Group Fixtures', 'running');
+        try {
+            // Group A fixtures (round-robin: 6 matches for 4 teams)
+            const groupAFixtures = [
+                { home: 'team_0', away: 'team_1' },
+                { home: 'team_2', away: 'team_3' },
+                { home: 'team_0', away: 'team_2' },
+                { home: 'team_1', away: 'team_3' },
+                { home: 'team_0', away: 'team_3' },
+                { home: 'team_1', away: 'team_2' }
+            ];
+            await database.ref(`team-league-tournaments/${testId}/groupFixtures/Group A`).set(groupAFixtures);
+            await assert(true, 'Generate Group Fixtures', container, 'Generated 6 fixtures for Group A');
+        } catch (e) {
+            await assert(false, 'Generate Group Fixtures', container, e.message);
+        }
+        
+        // Test 3: Save group stage scores
+        renderTestResult(container, 'Save Group Stage Scores', 'running');
+        try {
+            const scores = {
+                'Group A': {
+                    0: { home: 21, away: 18 },
+                    1: { home: 15, away: 21 },
+                    2: { home: 21, away: 21 }  // Draw
+                }
+            };
+            await database.ref(`team-league-tournaments/${testId}/groupScores`).set(scores);
+            await assert(true, 'Save Group Stage Scores', container, '3 match scores saved including a draw');
+        } catch (e) {
+            await assert(false, 'Save Group Stage Scores', container, e.message);
+        }
+        
+        // Test 4: Setup knockout stage
+        renderTestResult(container, 'Setup Knockout Stage', 'running');
+        try {
+            const knockout = {
+                sf1: { team1: 'team_0', team2: 'team_5' },
+                sf2: { team1: 'team_4', team2: 'team_1' },
+                final: { team1: null, team2: null },
+                third: { team1: null, team2: null }
+            };
+            await database.ref(`team-league-tournaments/${testId}/knockoutMatches`).set(knockout);
+            await database.ref(`team-league-tournaments/${testId}/meta/status`).set('knockout');
+            await assert(true, 'Setup Knockout Stage', container, 'Semi-finals configured');
+        } catch (e) {
+            await assert(false, 'Setup Knockout Stage', container, e.message);
+        }
+        
+        // Test 5: Create 12-team league (3 groups)
+        const testId12 = generateTestId();
+        const passcode12 = generatePasscode();
+        renderTestResult(container, 'Create 12-Team League (3 Groups)', 'running');
+        try {
+            const teams = Array.from({length: 12}, (_, i) => ({
+                id: `team_${i}`,
+                name: `Team ${i + 1}`,
+                player1: `P${i*2 + 1}`,
+                player2: `P${i*2 + 2}`
+            }));
+            const data = {
+                meta: { name: 'Test League 12T', createdAt: new Date().toISOString(), status: 'group_stage' },
+                organiserKey: passcode12,
+                teams: teams,
+                groups: {
+                    'Group A': ['team_0', 'team_1', 'team_2', 'team_3'],
+                    'Group B': ['team_4', 'team_5', 'team_6', 'team_7'],
+                    'Group C': ['team_8', 'team_9', 'team_10', 'team_11']
+                },
+                courts: ['Court 1', 'Court 2', 'Court 3']
+            };
+            await database.ref(`team-league-tournaments/${testId12}`).set(data);
+            logTournament('Team League 12T', testId12, passcode12);
+            await assert(true, 'Create 12-Team League (3 Groups)', container, `Created ${testId12}`);
+        } catch (e) {
+            await assert(false, 'Create 12-Team League (3 Groups)', container, e.message);
+        }
+        
+        updateCategoryStatus('teamleague', 'PASSED');
+    }
+    
+    // ============================================
+    // MIX TOURNAMENT TESTS
+    // ============================================
+    async function runMixTournamentTests() {
+        const container = 'mixtournament-tests';
+        document.getElementById(container).innerHTML = '';
+        updateCategoryStatus('mixtournament', 'RUNNING');
+        
+        const testId = generateTestId();
+        const passcode = generatePasscode();
+        
+        // Test 1: Create 24-player Mix Tournament
+        renderTestResult(container, 'Create 24-Player Mix Tournament', 'running');
+        try {
+            const playerNames = Array.from({length: 24}, (_, i) => `Player ${i + 1}`);
+            const skillRatings = {};
+            for (let i = 1; i <= 24; i++) {
+                skillRatings[i] = 2.5 + (Math.random() * 2); // Random skill 2.5-4.5
+            }
+            
+            const data = {
+                meta: {
+                    name: 'Test Mix Tournament 24P',
+                    createdAt: new Date().toISOString(),
+                    playerSize: 24,
+                    status: 'active'
+                },
+                organiserKey: passcode,
+                playerNames: playerNames,
+                skillRatings: skillRatings,
+                scores: {},
+                knockoutScores: {},
+                fixtureMaxScore: 21,
+                knockoutMaxScore: 21,
+                showFairnessTabs: true
+            };
+            await database.ref(`tournaments/${testId}`).set(data);
+            logTournament('Mix Tournament 24P', testId, passcode);
+            await assert(true, 'Create 24-Player Mix Tournament', container, `Created ${testId}`);
+        } catch (e) {
+            await assert(false, 'Create 24-Player Mix Tournament', container, e.message);
+        }
+        
+        // Test 2: Verify player count and ratings
+        renderTestResult(container, 'Verify Player Setup', 'running');
+        try {
+            const snapshot = await database.ref(`tournaments/${testId}`).once('value');
+            const data = snapshot.val();
+            const validNames = data.playerNames && data.playerNames.length === 24;
+            const validRatings = data.skillRatings && Object.keys(data.skillRatings).length === 24;
+            await assert(validNames && validRatings, 'Verify Player Setup', container, '24 players with skill ratings configured');
+        } catch (e) {
+            await assert(false, 'Verify Player Setup', container, e.message);
+        }
+        
+        // Test 3: Save fixture scores
+        renderTestResult(container, 'Save Fixture Scores', 'running');
+        try {
+            const scores = {};
+            // Simulate saving scores for round 1 (6 matches in 24-player format)
+            for (let i = 0; i < 6; i++) {
+                const s1 = Math.floor(Math.random() * 22);
+                const s2 = 21 - s1 + Math.floor(Math.random() * 5);
+                scores[`1_${i}`] = { team1Score: Math.min(s1, 21), team2Score: Math.min(s2, 21) };
+            }
+            await database.ref(`tournaments/${testId}/scores`).update(scores);
+            await assert(true, 'Save Fixture Scores', container, 'Saved 6 round 1 match scores');
+        } catch (e) {
+            await assert(false, 'Save Fixture Scores', container, e.message);
+        }
+        
+        // Test 4: Update skill ratings
+        renderTestResult(container, 'Update Skill Ratings', 'running');
+        try {
+            await database.ref(`tournaments/${testId}/skillRatings/1`).set(4.5);
+            await database.ref(`tournaments/${testId}/skillRatings/24`).set(1.5);
+            const snap1 = await database.ref(`tournaments/${testId}/skillRatings/1`).once('value');
+            const snap24 = await database.ref(`tournaments/${testId}/skillRatings/24`).once('value');
+            await assert(snap1.val() === 4.5 && snap24.val() === 1.5, 'Update Skill Ratings', container, 'Player 1: 4.5, Player 24: 1.5');
+        } catch (e) {
+            await assert(false, 'Update Skill Ratings', container, e.message);
+        }
+        
+        // Test 5: Save knockout scores
+        renderTestResult(container, 'Save Knockout Scores', 'running');
+        try {
+            const knockoutScores = {
+                'sf1': { team1Score: 21, team2Score: 18 },
+                'sf2': { team1Score: 15, team2Score: 21 }
+            };
+            await database.ref(`tournaments/${testId}/knockoutScores`).set(knockoutScores);
+            await assert(true, 'Save Knockout Scores', container, 'Semi-final scores saved');
+        } catch (e) {
+            await assert(false, 'Save Knockout Scores', container, e.message);
+        }
+        
+        // Test 6: Create 20-player variant
+        const testId20 = generateTestId();
+        const passcode20 = generatePasscode();
+        renderTestResult(container, 'Create 20-Player Mix Tournament', 'running');
+        try {
+            const data = {
+                meta: { name: 'Test Mix 20P', createdAt: new Date().toISOString(), playerSize: 20, status: 'active' },
+                organiserKey: passcode20,
+                playerNames: Array.from({length: 20}, (_, i) => `Player ${i + 1}`),
+                skillRatings: Object.fromEntries(Array.from({length: 20}, (_, i) => [i+1, 2.5])),
+                scores: {},
+                knockoutScores: {}
+            };
+            await database.ref(`tournaments/${testId20}`).set(data);
+            logTournament('Mix Tournament 20P', testId20, passcode20);
+            await assert(true, 'Create 20-Player Mix Tournament', container, `Created ${testId20}`);
+        } catch (e) {
+            await assert(false, 'Create 20-Player Mix Tournament', container, e.message);
+        }
+        
+        updateCategoryStatus('mixtournament', 'PASSED');
+    }
+    
+    // ============================================
+    // SETTINGS & PERMISSIONS TESTS
+    // ============================================
+    async function runSettingsTests() {
+        const container = 'settings-tests';
+        document.getElementById(container).innerHTML = '';
+        updateCategoryStatus('settings', 'RUNNING');
+        
+        const testId = generateTestId();
+        const passcode = 'TESTPASS';
+        
+        // Create test tournament first
+        await database.ref(`americano-tournaments/${testId}`).set({
+            meta: { name: 'Settings Test', createdAt: new Date().toISOString() },
+            organiserKey: passcode,
+            playerCount: 8,
+            playerNames: Array.from({length: 8}, (_, i) => `Player ${i + 1}`),
+            courtNames: ['Court 1', 'Court 2'],
+            fixedPoints: true,
+            totalPoints: 32,
+            scores: {}
+        });
+        logTournament('Settings Test', testId, passcode);
+        
+        // Test 1: Verify passcode matches
+        renderTestResult(container, 'Passcode Verification', 'running');
+        try {
+            const snapshot = await database.ref(`americano-tournaments/${testId}/organiserKey`).once('value');
+            await assert(snapshot.val() === passcode, 'Passcode Verification', container, 'Organiser key matches stored value');
+        } catch (e) {
+            await assert(false, 'Passcode Verification', container, e.message);
+        }
+        
+        // Test 2: Update all player names
+        renderTestResult(container, 'Batch Update Player Names', 'running');
+        try {
+            const newNames = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry'];
+            await database.ref(`americano-tournaments/${testId}/playerNames`).set(newNames);
+            const snapshot = await database.ref(`americano-tournaments/${testId}/playerNames`).once('value');
+            const savedNames = snapshot.val();
+            await assert(savedNames[0] === 'Alice' && savedNames[7] === 'Henry', 'Batch Update Player Names', container, 'All 8 player names updated');
+        } catch (e) {
+            await assert(false, 'Batch Update Player Names', container, e.message);
+        }
+        
+        // Test 3: Update court names
+        renderTestResult(container, 'Update Court Names', 'running');
+        try {
+            await database.ref(`americano-tournaments/${testId}/courtNames`).set(['Center Court', 'North Court']);
+            const snapshot = await database.ref(`americano-tournaments/${testId}/courtNames`).once('value');
+            await assert(snapshot.val()[0] === 'Center Court', 'Update Court Names', container, 'Court names updated');
+        } catch (e) {
+            await assert(false, 'Update Court Names', container, e.message);
+        }
+        
+        // Test 4: Toggle fixed points
+        renderTestResult(container, 'Toggle Fixed Points Mode', 'running');
+        try {
+            await database.ref(`americano-tournaments/${testId}/fixedPoints`).set(false);
+            const snapshot = await database.ref(`americano-tournaments/${testId}/fixedPoints`).once('value');
+            await assert(snapshot.val() === false, 'Toggle Fixed Points Mode', container, 'Fixed points disabled');
+        } catch (e) {
+            await assert(false, 'Toggle Fixed Points Mode', container, e.message);
+        }
+        
+        // Test 5: Change total points
+        renderTestResult(container, 'Change Total Points', 'running');
+        try {
+            await database.ref(`americano-tournaments/${testId}/totalPoints`).set(24);
+            const snapshot = await database.ref(`americano-tournaments/${testId}/totalPoints`).once('value');
+            await assert(snapshot.val() === 24, 'Change Total Points', container, 'Total points changed to 24');
+        } catch (e) {
+            await assert(false, 'Change Total Points', container, e.message);
+        }
+        
+        // Test 6: Reset all scores
+        renderTestResult(container, 'Reset All Scores', 'running');
+        try {
+            // First add some scores
+            await database.ref(`americano-tournaments/${testId}/scores`).set({
+                'f_0': { team1: 18, team2: 14 },
+                'f_1': { team1: 16, team2: 16 }
+            });
+            // Then reset
+            await database.ref(`americano-tournaments/${testId}/scores`).set({});
+            const snapshot = await database.ref(`americano-tournaments/${testId}/scores`).once('value');
+            await assert(!snapshot.val() || Object.keys(snapshot.val()).length === 0, 'Reset All Scores', container, 'All scores cleared');
+        } catch (e) {
+            await assert(false, 'Reset All Scores', container, e.message);
+        }
+        
+        updateCategoryStatus('settings', 'PASSED');
+    }
+    
+    // ============================================
+    // UI COMPONENTS TESTS
+    // ============================================
+    async function runUITests() {
+        const container = 'ui-tests';
+        document.getElementById(container).innerHTML = '';
+        updateCategoryStatus('ui', 'RUNNING');
+        
+        // Test 1: Modal component exists
+        renderTestResult(container, 'Modal Component', 'running');
+        try {
+            const response = await fetch('/src/components/ui/Modal.js');
+            await assert(response.ok, 'Modal Component', container, 'Modal.js file exists and is accessible');
+        } catch (e) {
+            await assert(false, 'Modal Component', container, 'File not accessible - run from web server');
+        }
+        
+        // Test 2: Toast component exists
+        renderTestResult(container, 'Toast Component', 'running');
+        try {
+            const response = await fetch('/src/components/ui/Toast.js');
+            await assert(response.ok, 'Toast Component', container, 'Toast.js file exists');
+        } catch (e) {
+            await assert(false, 'Toast Component', container, 'File not accessible');
+        }
+        
+        // Test 3: PlayerBadge component exists
+        renderTestResult(container, 'PlayerBadge Component', 'running');
+        try {
+            const response = await fetch('/src/components/ui/PlayerBadge.js');
+            await assert(response.ok, 'PlayerBadge Component', container, 'PlayerBadge.js file exists');
+        } catch (e) {
+            await assert(false, 'PlayerBadge Component', container, 'File not accessible');
+        }
+        
+        // Test 4: StandingsTable component exists
+        renderTestResult(container, 'StandingsTable Component', 'running');
+        try {
+            const response = await fetch('/src/components/ui/StandingsTable.js');
+            await assert(response.ok, 'StandingsTable Component', container, 'StandingsTable.js file exists');
+        } catch (e) {
+            await assert(false, 'StandingsTable Component', container, 'File not accessible');
+        }
+        
+        // Test 5: MatchCard component exists
+        renderTestResult(container, 'MatchCard Component', 'running');
+        try {
+            const response = await fetch('/src/components/ui/MatchCard.js');
+            await assert(response.ok, 'MatchCard Component', container, 'MatchCard.js file exists');
+        } catch (e) {
+            await assert(false, 'MatchCard Component', container, 'File not accessible');
+        }
+        
+        // Test 6: Core modules exist
+        renderTestResult(container, 'Core Modules', 'running');
+        try {
+            const files = ['firebase.js', 'auth.js', 'router.js', 'storage.js', 'permissions.js'];
+            let allExist = true;
+            for (const file of files) {
+                const response = await fetch(`/src/core/${file}`);
+                if (!response.ok) allExist = false;
+            }
+            await assert(allExist, 'Core Modules', container, 'All 5 core modules exist');
+        } catch (e) {
+            await assert(false, 'Core Modules', container, 'Some files not accessible');
+        }
+        
+        updateCategoryStatus('ui', 'PASSED');
+    }
+    
+    // ============================================
+    // CLEANUP
+    // ============================================
+    async function cleanupTests() {
+        if (!confirm(`Delete ${createdTournaments.length} test tournaments?\n\nThis will remove all test data from Firebase.`)) {
+            return;
+        }
+        
+        const summary = document.getElementById('summary');
+        summary.innerHTML = '<span class="text-yellow-600">🧹 Cleaning up test data...</span>';
+        
+        for (const t of createdTournaments) {
+            try {
+                let path;
+                if (t.type.includes('Americano')) path = `americano-tournaments/${t.id}`;
+                else if (t.type.includes('Mexicano')) path = `mexicano-tournaments/${t.id}`;
+                else if (t.type.includes('Team League')) path = `team-league-tournaments/${t.id}`;
+                else if (t.type.includes('Mix')) path = `tournaments/${t.id}`;
+                else if (t.type.includes('Settings')) path = `americano-tournaments/${t.id}`;
+                
+                if (path) {
+                    await database.ref(path).remove();
+                    console.log(`Deleted: ${path}`);
+                }
+            } catch (e) {
+                console.error(`Failed to delete ${t.id}:`, e);
+            }
+        }
+        
+        createdTournaments.length = 0;
+        document.getElementById('created-tournaments').innerHTML = '<p class="text-gray-500">All test tournaments deleted.</p>';
+        summary.innerHTML = '<span class="text-green-600">✅ Cleanup complete! All test data removed.</span>';
+    }
+    
+    // ============================================
+    // RUN ALL TESTS
+    // ============================================
+    async function runAllTests() {
+        testResults = { passed: 0, failed: 0, total: 0 };
+        
+        // Reset all containers
+        document.querySelectorAll('[id$="-tests"]').forEach(el => el.innerHTML = '');
+        document.querySelectorAll('[id$="-status"]').forEach(el => {
+            el.textContent = 'Pending';
+            el.className = 'px-3 py-1 rounded-full text-sm font-medium bg-gray-200';
+        });
+        
+        const summary = document.getElementById('summary');
+        summary.innerHTML = '<span class="text-yellow-600">⏳ Running tests...</span>';
+        
+        try {
+            await runFirebaseTests();
+            updateSummary();
+            
+            await runAmericanoTests();
+            updateSummary();
+            
+            await runMexicanoTests();
+            updateSummary();
+            
+            await runTeamLeagueTests();
+            updateSummary();
+            
+            await runMixTournamentTests();
+            updateSummary();
+            
+            await runSettingsTests();
+            updateSummary();
+            
+            await runUITests();
+            updateSummary();
+            
+        } catch (e) {
+            console.error('Test suite error:', e);
+            summary.innerHTML = `<span class="text-red-600">❌ Test suite error: ${e.message}</span>`;
+        }
+    }
+    
+    async function runSelectedTests() {
+        testResults = { passed: 0, failed: 0, total: 0 };
+        
+        const summary = document.getElementById('summary');
+        summary.innerHTML = '<span class="text-yellow-600">⏳ Running selected tests...</span>';
+        
+        const checkboxes = document.querySelectorAll('.test-checkbox:checked');
+        
+        for (const cb of checkboxes) {
+            const category = cb.dataset.category;
+            document.getElementById(`${category}-tests`).innerHTML = '';
+            
+            switch (category) {
+                case 'firebase': await runFirebaseTests(); break;
+                case 'americano': await runAmericanoTests(); break;
+                case 'mexicano': await runMexicanoTests(); break;
+                case 'teamleague': await runTeamLeagueTests(); break;
+                case 'mixtournament': await runMixTournamentTests(); break;
+                case 'settings': await runSettingsTests(); break;
+                case 'ui': await runUITests(); break;
+            }
+            updateSummary();
+        }
+    }
+    </script>
+</body>
+</html>

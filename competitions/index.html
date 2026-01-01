@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Competitions - UberPadel</title>
+    <meta name="description" content="Browse and join scheduled padel competitions. Find tournaments near you, filter by format and level, and register online.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <link rel="icon" type="image/png" sizes="512x512" href="/uberpadel-icon-512.png">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --secondary: #0ea5e9;
+            --secondary-dark: #0284c7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --text-muted: #9ca3af;
+            --bg: #ffffff;
+            --bg-light: #f9fafb;
+            --bg-dark: #f3f4f6;
+            --border: #e5e7eb;
+            --border-dark: #d1d5db;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            color: var(--text);
+            background: var(--bg-light);
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+            color: white;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .logo-icon { width: 36px; height: 36px; }
+        .logo-text { font-size: 1.25rem; font-weight: 700; }
+        
+        @media (max-width: 640px) { .logo-text { display: none; } }
+        
+        .header-actions { display: flex; gap: 0.5rem; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .btn-white { background: white; color: var(--secondary); }
+        .btn-white:hover { background: var(--bg-light); }
+        .btn-ghost { background: rgba(255,255,255,0.1); color: white; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.2); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: var(--secondary-dark); }
+        .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--text); background: var(--bg-light); }
+        
+        /* Main Layout */
+        .main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
+        
+        /* Page Header */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .page-title { font-size: 1.5rem; font-weight: 700; }
+        .page-subtitle { color: var(--text-light); font-size: 0.9rem; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-dark);
+            padding: 0.25rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .tab {
+            flex: 1;
+            padding: 0.625rem 1rem;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: white;
+            color: var(--text);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--bg-dark);
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 0.375rem;
+        }
+        .tab.active .tab-count { background: var(--secondary); color: white; }
+        
+        /* Filters */
+        .filters-section {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+        .search-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { outline: none; border-color: var(--secondary); }
+        .filter-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .filter-group { display: flex; flex-direction: column; gap: 0.25rem; min-width: 140px; }
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .filter-select {
+            padding: 0.5rem 0.75rem;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            background: white;
+            cursor: pointer;
+        }
+        .filter-select:focus { outline: none; border-color: var(--secondary); }
+        
+        /* Results Header */
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .results-count { font-size: 0.9rem; color: var(--text-light); }
+        .view-toggle {
+            display: flex;
+            gap: 0.25rem;
+            background: var(--bg-dark);
+            padding: 0.25rem;
+            border-radius: 6px;
+        }
+        .view-btn {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            background: transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+        .view-btn.active {
+            background: white;
+            color: var(--text);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        /* Competition Cards */
+        .competitions-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        @media (min-width: 768px) { .competitions-grid.grid-view { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 1024px) { .competitions-grid.grid-view { grid-template-columns: repeat(3, 1fr); } }
+        
+        .competition-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .competition-card:hover {
+            border-color: var(--secondary);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+            transform: translateY(-2px);
+        }
+        .card-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .card-format { display: flex; align-items: center; gap: 0.5rem; }
+        .format-emoji { font-size: 1.5rem; }
+        .format-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .card-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-registration { background: #dcfce7; color: #166534; }
+        .status-live { background: #fef3c7; color: #92400e; }
+        .status-completed { background: #f3f4f6; color: #6b7280; }
+        .status-closed { background: #fee2e2; color: #991b1b; }
+        
+        .card-body { padding: 1rem; }
+        .card-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; line-height: 1.3; }
+        .card-meta { display: flex; flex-direction: column; gap: 0.375rem; font-size: 0.875rem; color: var(--text-light); }
+        .card-meta-item { display: flex; align-items: center; gap: 0.5rem; }
+        .card-meta-icon { width: 16px; text-align: center; }
+        
+        .card-footer {
+            padding: 0.75rem 1rem;
+            background: var(--bg-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .player-count { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+        .player-count-bar { width: 60px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .player-count-fill { height: 100%; background: var(--success); border-radius: 3px; }
+        .player-count-text { color: var(--text-light); font-size: 0.8rem; }
+        .card-action { font-size: 0.875rem; font-weight: 500; color: var(--secondary); }
+        
+        .level-badge {
+            display: inline-flex;
+            padding: 0.125rem 0.5rem;
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--bg);
+            border-radius: 12px;
+            border: 2px dashed var(--border);
+        }
+        .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .empty-title { font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .empty-text { color: var(--text-light); margin-bottom: 1.5rem; }
+        
+        /* Loading */
+        .loading-state { text-align: center; padding: 3rem; }
+        .loading-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .user-avatar {
+            width: 28px; height: 28px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo-container">
+                <img src="/uberpadel-icon.svg" alt="UberPadel" class="logo-icon">
+                <span class="logo-text">UberPadel</span>
+            </a>
+            <div class="header-actions" id="header-actions">
+                <a href="/login.html" class="btn btn-ghost">Login</a>
+                <a href="/competitions/create.html" class="btn btn-white">+ Create</a>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main -->
+    <main class="main">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🏆 Browse Competitions</h1>
+                <p class="page-subtitle">Find and join padel tournaments near you</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="/competitions/rankings.html" class="btn btn-outline">📊 Rankings</a>
+                <a href="/quick-play/" class="btn btn-outline">🎮 Quick Play</a>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="upcoming">Upcoming <span class="tab-count" id="upcoming-count">0</span></button>
+            <button class="tab" data-tab="live">Live <span class="tab-count" id="live-count">0</span></button>
+            <button class="tab" data-tab="completed">Completed <span class="tab-count" id="completed-count">0</span></button>
+        </div>
+        
+        <!-- Filters -->
+        <div class="filters-section">
+            <div class="search-row">
+                <input type="text" class="search-input" id="search-input" placeholder="Search competitions...">
+                <button class="btn btn-secondary" onclick="applyFilters()">Search</button>
+            </div>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Format</label>
+                    <select class="filter-select" id="filter-format">
+                        <option value="">All Formats</option>
+                        <option value="americano">🔄 Americano</option>
+                        <option value="mexicano">🎯 Mexicano</option>
+                        <option value="mix">🏓 Mix Tournament</option>
+                        <option value="team-league">👥 Team League</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Date</label>
+                    <select class="filter-select" id="filter-date">
+                        <option value="">Any Date</option>
+                        <option value="today">Today</option>
+                        <option value="tomorrow">Tomorrow</option>
+                        <option value="this-week">This Week</option>
+                        <option value="this-month">This Month</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Level</label>
+                    <select class="filter-select" id="filter-level">
+                        <option value="">All Levels</option>
+                        <option value="1-2">Beginner (1.0-2.0)</option>
+                        <option value="2-3">Intermediate (2.0-3.0)</option>
+                        <option value="3-4">Advanced (3.0-4.0)</option>
+                        <option value="4-5">Expert (4.0-5.0)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Availability</label>
+                    <select class="filter-select" id="filter-availability">
+                        <option value="">Any</option>
+                        <option value="available">Spots Available</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results -->
+        <div class="results-header">
+            <span class="results-count" id="results-count">Loading...</span>
+            <div class="view-toggle">
+                <button class="view-btn active" data-view="grid" onclick="setView('grid')">Grid</button>
+                <button class="view-btn" data-view="list" onclick="setView('list')">List</button>
+            </div>
+        </div>
+        
+        <div class="competitions-grid grid-view" id="competitions-grid">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading competitions...</p>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHnMaQMwH9R3yEVQPV1M_RPWz9gF3IBJI",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.appspot.com",
+            messagingSenderId: "802492722498",
+            appId: "1:802492722498:web:ea2c0cd65ea2c0f40df9ee"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        // State
+        let allCompetitions = [];
+        let currentTab = 'upcoming';
+        let currentFilters = {};
+        
+        const formats = {
+            'americano': { emoji: '🔄', name: 'Americano' },
+            'mexicano': { emoji: '🎯', name: 'Mexicano' },
+            'mix': { emoji: '🏓', name: 'Mix' },
+            'team-league': { emoji: '👥', name: 'Team League' }
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCompetitions();
+            setupEventListeners();
+            checkAuth();
+        });
+        
+        async function loadCompetitions() {
+            try {
+                const snapshot = await database.ref('competitions').once('value');
+                const data = snapshot.val();
+                allCompetitions = data ? Object.entries(data).map(([id, c]) => ({ id, ...c })) : [];
+                if (allCompetitions.length === 0) allCompetitions = getSampleData();
+                updateTabCounts();
+                renderCompetitions();
+            } catch (e) {
+                console.error(e);
+                allCompetitions = getSampleData();
+                updateTabCounts();
+                renderCompetitions();
+            }
+        }
+        
+        function getSampleData() {
+            const today = new Date();
+            const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+            const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 7);
+            return [
+                { id: 'demo-1', name: 'Sunday Social Americano', format: 'americano', status: 'registration',
+                  schedule: { date: tomorrow.toISOString().split('T')[0], time: '10:00' },
+                  location: { name: 'Padel Club Manchester' }, players: { current: 12, max: 16 },
+                  registration: { levelMin: 2.0, levelMax: 4.0 } },
+                { id: 'demo-2', name: 'Mexicano Madness', format: 'mexicano', status: 'registration',
+                  schedule: { date: nextWeek.toISOString().split('T')[0], time: '14:00' },
+                  location: { name: 'Padel Point Leeds' }, players: { current: 8, max: 12 } },
+                { id: 'demo-3', name: 'Team League Championship', format: 'team-league', status: 'live',
+                  schedule: { date: today.toISOString().split('T')[0], time: '09:00' },
+                  location: { name: 'Urban Padel Birmingham' }, players: { current: 16, max: 16 },
+                  registration: { levelMin: 3.0, levelMax: 5.0 } },
+                { id: 'demo-4', name: 'Friday Mix Tournament', format: 'mix', status: 'completed',
+                  schedule: { date: new Date(today - 7*24*60*60*1000).toISOString().split('T')[0], time: '18:00' },
+                  location: { name: 'Padel UK London' }, players: { current: 24, max: 24 } }
+            ];
+        }
+        
+        function setupEventListeners() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentTab = tab.dataset.tab;
+                    renderCompetitions();
+                });
+            });
+            ['filter-format', 'filter-date', 'filter-level', 'filter-availability'].forEach(id => {
+                document.getElementById(id).addEventListener('change', applyFilters);
+            });
+            document.getElementById('search-input').addEventListener('keypress', e => {
+                if (e.key === 'Enter') applyFilters();
+            });
+        }
+        
+        function applyFilters() {
+            currentFilters = {
+                search: document.getElementById('search-input').value.toLowerCase(),
+                format: document.getElementById('filter-format').value,
+                date: document.getElementById('filter-date').value,
+                level: document.getElementById('filter-level').value,
+                availability: document.getElementById('filter-availability').value
+            };
+            renderCompetitions();
+        }
+        
+        function setView(view) {
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+            const grid = document.getElementById('competitions-grid');
+            grid.className = `competitions-grid ${view}-view`;
+        }
+        
+        function updateTabCounts() {
+            const counts = { upcoming: 0, live: 0, completed: 0 };
+            allCompetitions.forEach(c => {
+                if (c.status === 'registration' || c.status === 'closed') counts.upcoming++;
+                else if (c.status === 'live') counts.live++;
+                else if (c.status === 'completed') counts.completed++;
+            });
+            document.getElementById('upcoming-count').textContent = counts.upcoming;
+            document.getElementById('live-count').textContent = counts.live;
+            document.getElementById('completed-count').textContent = counts.completed;
+        }
+        
+        function getFiltered() {
+            return allCompetitions.filter(c => {
+                if (currentTab === 'upcoming' && c.status !== 'registration' && c.status !== 'closed') return false;
+                if (currentTab === 'live' && c.status !== 'live') return false;
+                if (currentTab === 'completed' && c.status !== 'completed') return false;
+                if (currentFilters.search) {
+                    const s = (c.name + ' ' + c.location?.name).toLowerCase();
+                    if (!s.includes(currentFilters.search)) return false;
+                }
+                if (currentFilters.format && c.format !== currentFilters.format) return false;
+                if (currentFilters.availability === 'available' && c.players?.current >= c.players?.max) return false;
+                return true;
+            });
+        }
+        
+        function renderCompetitions() {
+            const filtered = getFiltered();
+            const grid = document.getElementById('competitions-grid');
+            document.getElementById('results-count').textContent = `${filtered.length} competition${filtered.length !== 1 ? 's' : ''} found`;
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3 class="empty-title">No competitions found</h3><p class="empty-text">Try adjusting your filters or check back later</p><a href="/competitions/create.html" class="btn btn-primary">Create Competition</a></div>`;
+                return;
+            }
+            grid.innerHTML = filtered.map(renderCard).join('');
+        }
+        
+        function renderCard(c) {
+            const f = formats[c.format] || { emoji: '🎾', name: c.format };
+            const pct = c.players?.max ? (c.players.current / c.players.max) * 100 : 0;
+            const statusCls = { 'registration': 'status-registration', 'live': 'status-live', 'completed': 'status-completed', 'closed': 'status-closed' }[c.status] || '';
+            const statusTxt = { 'registration': 'Open', 'live': 'Live', 'completed': 'Completed', 'closed': 'Closed' }[c.status] || c.status;
+            const dateStr = formatDate(c.schedule?.date);
+            const level = c.registration?.levelMin ? `${c.registration.levelMin}-${c.registration.levelMax || '?'}` : 'Open';
+            
+            return `<a href="/competitions/detail.html?id=${c.id}" class="competition-card">
+                <div class="card-header">
+                    <div class="card-format"><span class="format-emoji">${f.emoji}</span><span class="format-badge">${f.name}</span></div>
+                    <span class="card-status ${statusCls}">${statusTxt}</span>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title">${esc(c.name)}</h3>
+                    <div class="card-meta">
+                        <div class="card-meta-item"><span class="card-meta-icon">📅</span><span>${dateStr} at ${c.schedule?.time || 'TBD'}</span></div>
+                        <div class="card-meta-item"><span class="card-meta-icon">📍</span><span>${esc(c.location?.name || 'TBD')}</span></div>
+                        <div class="card-meta-item"><span class="card-meta-icon">🎯</span><span class="level-badge">Level ${level}</span></div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="player-count">
+                        <div class="player-count-bar"><div class="player-count-fill" style="width:${pct}%"></div></div>
+                        <span class="player-count-text">${c.players?.current || 0}/${c.players?.max || '?'}</span>
+                    </div>
+                    <span class="card-action">${c.status === 'registration' ? 'Register →' : 'View →'}</span>
+                </div>
+            </a>`;
+        }
+        
+        function formatDate(d) {
+            if (!d) return 'TBD';
+            const date = new Date(d);
+            const today = new Date();
+            const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+            if (date.toDateString() === today.toDateString()) return 'Today';
+            if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+            return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+        
+        function esc(s) { return s ? s.replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''; }
+        
+        function checkAuth() {
+            auth.onAuthStateChanged(user => {
+                const actions = document.getElementById('header-actions');
+                if (user) {
+                    const i = (user.displayName || user.email || 'U')[0].toUpperCase();
+                    actions.innerHTML = `<a href="/competitions/my-competitions.html" class="btn btn-ghost">My Comps</a><a href="/competitions/create.html" class="btn btn-white">+ Create</a>`;
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Competition - UberPadel</title>
+    <meta name="description" content="Edit your padel competition details.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #f97316;
+            --primary-dark: #ea580c;
+            --secondary: #0ea5e9;
+            --secondary-dark: #0284c7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #ffffff;
+            --bg-light: #f9fafb;
+            --bg-dark: #f3f4f6;
+            --border: #e5e7eb;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background: var(--bg-light);
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+            color: white;
+            padding: 1rem;
+        }
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: white;
+        }
+        .logo-icon { width: 36px; height: 36px; }
+        .logo-text { font-size: 1.25rem; font-weight: 700; }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-ghost { background: rgba(255,255,255,0.1); color: white; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.2); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: var(--secondary-dark); }
+        .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+        .btn-outline:hover { border-color: var(--text-light); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-lg { padding: 0.875rem 2rem; font-size: 1rem; }
+        
+        /* Main */
+        .main { max-width: 700px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-light);
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .back-link:hover { color: var(--secondary); }
+        
+        /* Page Header */
+        .page-header { margin-bottom: 1.5rem; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .page-subtitle { color: var(--text-light); font-size: 0.9rem; }
+        
+        /* Form Card */
+        .form-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .form-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        /* Form Elements */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .form-label .required { color: var(--danger); }
+        .form-hint {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            margin-top: 0.375rem;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        .form-textarea { min-height: 100px; resize: vertical; }
+        .form-input.error, .form-select.error { border-color: var(--danger); }
+        .form-error {
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 0.375rem;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 500px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+        
+        /* Format Display */
+        .format-display {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-light);
+            border-radius: 8px;
+        }
+        .format-emoji { font-size: 1.5rem; }
+        .format-name { font-weight: 600; }
+        .format-note { font-size: 0.8rem; color: var(--text-light); }
+        
+        /* Registration Type */
+        .reg-type-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+        .reg-type-option {
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .reg-type-option:hover { border-color: var(--secondary); }
+        .reg-type-option.selected {
+            border-color: var(--secondary);
+            background: rgba(14, 165, 233, 0.05);
+        }
+        .reg-type-option input { display: none; }
+        .reg-type-icon { font-size: 1.5rem; }
+        .reg-type-content { flex: 1; }
+        .reg-type-name { font-weight: 600; margin-bottom: 0.25rem; }
+        .reg-type-desc { font-size: 0.8rem; color: var(--text-light); }
+        
+        /* Level Restriction */
+        .level-range {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .level-input {
+            width: 80px;
+            text-align: center;
+        }
+        .level-separator { color: var(--text-light); }
+        
+        /* Toggle */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .toggle-group:last-child { border-bottom: none; }
+        .toggle-info { flex: 1; }
+        .toggle-label { font-weight: 500; }
+        .toggle-desc { font-size: 0.8rem; color: var(--text-light); margin-top: 0.25rem; }
+        .toggle {
+            width: 48px;
+            height: 26px;
+            background: var(--border);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .toggle.active { background: var(--success); }
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .toggle.active::after { transform: translateX(22px); }
+        
+        /* Actions */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .action-group { display: flex; gap: 0.75rem; }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+        .error-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+        .error-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .error-text { color: var(--text-light); margin-bottom: 1.5rem; }
+        
+        /* Registration Warning */
+        .warning-banner {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 0.875rem 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .warning-icon { font-size: 1.25rem; }
+        .warning-text { font-size: 0.875rem; color: #92400e; }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--text);
+            color: white;
+            padding: 0.875rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 1001;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { background: var(--danger); }
+        .toast.success { background: var(--success); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="logo-container">
+                <img src="/uberpadel-icon.svg" alt="UberPadel" class="logo-icon">
+                <span class="logo-text">UberPadel</span>
+            </a>
+            <a href="/competitions/my-competitions.html" class="btn btn-ghost">My Competitions</a>
+        </div>
+    </header>
+    
+    <main class="main">
+        <a href="/competitions/my-competitions.html" class="back-link">← Back to My Competitions</a>
+        
+        <!-- Loading State -->
+        <div id="loading">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading competition...</p>
+            </div>
+        </div>
+        
+        <!-- Error State -->
+        <div id="error-state" style="display: none;">
+            <div class="form-card">
+                <div class="error-state">
+                    <div class="error-icon">😕</div>
+                    <h2 class="error-title">Competition Not Found</h2>
+                    <p class="error-text">This competition doesn't exist or you don't have permission to edit it.</p>
+                    <a href="/competitions/my-competitions.html" class="btn btn-primary">Back to My Competitions</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Edit Form -->
+        <div id="edit-form" style="display: none;">
+            <div class="page-header">
+                <h1 class="page-title">Edit Competition</h1>
+                <p class="page-subtitle">Update your competition details</p>
+            </div>
+            
+            <!-- Warning if has registrations -->
+            <div class="warning-banner" id="reg-warning" style="display: none;">
+                <span class="warning-icon">⚠️</span>
+                <span class="warning-text">
+                    <strong id="reg-count">0</strong> players have registered. 
+                    Some changes may affect their registration. Consider notifying participants of any significant changes.
+                </span>
+            </div>
+            
+            <!-- Basic Details -->
+            <div class="form-card">
+                <h3 class="form-section-title">📋 Basic Details</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">Competition Name <span class="required">*</span></label>
+                    <input type="text" class="form-input" id="comp-name" placeholder="e.g., Sunday Social Americano" maxlength="100">
+                    <div class="form-error" id="name-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Format</label>
+                    <div class="format-display">
+                        <span class="format-emoji" id="format-emoji">🎾</span>
+                        <div>
+                            <div class="format-name" id="format-name">-</div>
+                            <div class="format-note">Format cannot be changed after creation</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-textarea" id="comp-description" placeholder="Describe your competition, rules, what to bring, etc."></textarea>
+                </div>
+            </div>
+            
+            <!-- Schedule & Location -->
+            <div class="form-card">
+                <h3 class="form-section-title">📅 Schedule & Location</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Date <span class="required">*</span></label>
+                        <input type="date" class="form-input" id="comp-date">
+                        <div class="form-error" id="date-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Time <span class="required">*</span></label>
+                        <input type="time" class="form-input" id="comp-time">
+                        <div class="form-error" id="time-error"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Venue Name <span class="required">*</span></label>
+                    <input type="text" class="form-input" id="comp-venue" placeholder="e.g., Padel Club Manchester">
+                    <div class="form-error" id="venue-error"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <input type="text" class="form-input" id="comp-address" placeholder="e.g., 123 Sports Lane, Manchester">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Number of Courts</label>
+                    <select class="form-select" id="comp-courts">
+                        <option value="1">1 Court</option>
+                        <option value="2">2 Courts</option>
+                        <option value="3">3 Courts</option>
+                        <option value="4">4 Courts</option>
+                        <option value="5">5 Courts</option>
+                        <option value="6">6 Courts</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Player Settings -->
+            <div class="form-card">
+                <h3 class="form-section-title">👥 Player Settings</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Minimum Players <span class="required">*</span></label>
+                        <input type="number" class="form-input" id="comp-min-players" value="8" min="4" max="50">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Maximum Players <span class="required">*</span></label>
+                        <input type="number" class="form-input" id="comp-max-players" value="16" min="4" max="50">
+                        <div class="form-error" id="players-error"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Registration Type</label>
+                    <div class="reg-type-grid">
+                        <label class="reg-type-option" data-type="open">
+                            <input type="radio" name="reg-type" value="open">
+                            <span class="reg-type-icon">🌐</span>
+                            <div class="reg-type-content">
+                                <div class="reg-type-name">Open Registration</div>
+                                <div class="reg-type-desc">Anyone can register instantly</div>
+                            </div>
+                        </label>
+                        <label class="reg-type-option" data-type="approval">
+                            <input type="radio" name="reg-type" value="approval">
+                            <span class="reg-type-icon">✅</span>
+                            <div class="reg-type-content">
+                                <div class="reg-type-name">Approval Required</div>
+                                <div class="reg-type-desc">You approve each registration</div>
+                            </div>
+                        </label>
+                        <label class="reg-type-option" data-type="level-restricted">
+                            <input type="radio" name="reg-type" value="level-restricted">
+                            <span class="reg-type-icon">🎯</span>
+                            <div class="reg-type-content">
+                                <div class="reg-type-name">Level Restricted</div>
+                                <div class="reg-type-desc">Only players within level range</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="level-range-group" style="display: none;">
+                    <label class="form-label">Level Range</label>
+                    <div class="level-range">
+                        <input type="number" class="form-input level-input" id="comp-level-min" value="2.0" min="1" max="5" step="0.5">
+                        <span class="level-separator">to</span>
+                        <input type="number" class="form-input level-input" id="comp-level-max" value="4.0" min="1" max="5" step="0.5">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Additional Options</label>
+                    <div class="toggle-group">
+                        <div class="toggle-info">
+                            <div class="toggle-label">Enable Waitlist</div>
+                            <div class="toggle-desc">Allow players to join waitlist when full</div>
+                        </div>
+                        <div class="toggle" id="toggle-waitlist" onclick="toggleOption(this)"></div>
+                    </div>
+                    <div class="toggle-group">
+                        <div class="toggle-info">
+                            <div class="toggle-label">Registration Deadline</div>
+                            <div class="toggle-desc">Close registration 24 hours before start</div>
+                        </div>
+                        <div class="toggle" id="toggle-deadline" onclick="toggleOption(this)"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="form-actions">
+                <button class="btn btn-outline" onclick="cancelEdit()">Cancel</button>
+                <div class="action-group">
+                    <a href="#" class="btn btn-outline" id="view-btn">View Page</a>
+                    <button class="btn btn-success" onclick="saveChanges()" id="save-btn">💾 Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHnMaQMwH9R3yEVQPV1M_RPWz9gF3IBJI",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.appspot.com",
+            messagingSenderId: "802492722498",
+            appId: "1:802492722498:web:ea2c0cd65ea2c0f40df9ee"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        let currentUser = null;
+        let compId = null;
+        let competition = null;
+        
+        const formats = {
+            'americano': { emoji: '🔄', name: 'Americano' },
+            'mexicano': { emoji: '🎯', name: 'Mexicano' },
+            'mix': { emoji: '🏓', name: 'Mix Tournament' },
+            'team-league': { emoji: '👥', name: 'Team League' }
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            compId = params.get('id');
+            
+            if (!compId) {
+                showError();
+                return;
+            }
+            
+            setupRegTypeSelection();
+            
+            auth.onAuthStateChanged(user => {
+                currentUser = user;
+                if (user) {
+                    loadCompetition();
+                } else {
+                    window.location.href = `/login.html?redirect=/competitions/edit.html?id=${compId}`;
+                }
+            });
+        });
+        
+        function setupRegTypeSelection() {
+            document.querySelectorAll('.reg-type-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    document.querySelectorAll('.reg-type-option').forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    opt.querySelector('input').checked = true;
+                    
+                    const type = opt.dataset.type;
+                    document.getElementById('level-range-group').style.display = 
+                        type === 'level-restricted' ? 'block' : 'none';
+                });
+            });
+        }
+        
+        function toggleOption(el) {
+            el.classList.toggle('active');
+        }
+        
+        async function loadCompetition() {
+            try {
+                const snapshot = await database.ref(`competitions/${compId}`).once('value');
+                competition = snapshot.val();
+                
+                if (!competition) {
+                    showError();
+                    return;
+                }
+                
+                // Check ownership
+                if (competition.organizer?.userId !== currentUser.uid) {
+                    showError();
+                    return;
+                }
+                
+                populateForm();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('edit-form').style.display = 'block';
+            } catch (e) {
+                console.error('Error loading competition:', e);
+                showError();
+            }
+        }
+        
+        function populateForm() {
+            // Basic details
+            document.getElementById('comp-name').value = competition.name || '';
+            document.getElementById('comp-description').value = competition.description || '';
+            
+            // Format (read-only display)
+            const formatInfo = formats[competition.format] || { emoji: '🎾', name: competition.format };
+            document.getElementById('format-emoji').textContent = formatInfo.emoji;
+            document.getElementById('format-name').textContent = formatInfo.name;
+            
+            // Schedule
+            document.getElementById('comp-date').value = competition.schedule?.date || '';
+            document.getElementById('comp-time').value = competition.schedule?.time || '';
+            
+            // Location
+            document.getElementById('comp-venue').value = competition.location?.name || '';
+            document.getElementById('comp-address').value = competition.location?.address || '';
+            document.getElementById('comp-courts').value = competition.courts || 2;
+            
+            // Players
+            document.getElementById('comp-min-players').value = competition.players?.min || 8;
+            document.getElementById('comp-max-players').value = competition.players?.max || 16;
+            
+            // Registration type
+            const regType = competition.registration?.type || 'open';
+            document.querySelectorAll('.reg-type-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.type === regType);
+                opt.querySelector('input').checked = opt.dataset.type === regType;
+            });
+            
+            if (regType === 'level-restricted') {
+                document.getElementById('level-range-group').style.display = 'block';
+                document.getElementById('comp-level-min').value = competition.registration?.levelMin || 2.0;
+                document.getElementById('comp-level-max').value = competition.registration?.levelMax || 4.0;
+            }
+            
+            // Toggles
+            if (competition.registration?.waitlistEnabled) {
+                document.getElementById('toggle-waitlist').classList.add('active');
+            }
+            if (competition.registration?.deadlineEnabled) {
+                document.getElementById('toggle-deadline').classList.add('active');
+            }
+            
+            // View button
+            document.getElementById('view-btn').href = `/competitions/detail.html?id=${compId}`;
+            
+            // Show warning if has registrations
+            const regCount = competition.players?.current || 0;
+            if (regCount > 0) {
+                document.getElementById('reg-warning').style.display = 'flex';
+                document.getElementById('reg-count').textContent = regCount;
+            }
+        }
+        
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+        }
+        
+        function validateForm() {
+            let valid = true;
+            clearErrors();
+            
+            const name = document.getElementById('comp-name').value.trim();
+            const date = document.getElementById('comp-date').value;
+            const time = document.getElementById('comp-time').value;
+            const venue = document.getElementById('comp-venue').value.trim();
+            const min = parseInt(document.getElementById('comp-min-players').value);
+            const max = parseInt(document.getElementById('comp-max-players').value);
+            
+            if (!name) {
+                document.getElementById('name-error').textContent = 'Please enter a competition name';
+                valid = false;
+            }
+            if (!date) {
+                document.getElementById('date-error').textContent = 'Please select a date';
+                valid = false;
+            }
+            if (!time) {
+                document.getElementById('time-error').textContent = 'Please select a time';
+                valid = false;
+            }
+            if (!venue) {
+                document.getElementById('venue-error').textContent = 'Please enter a venue name';
+                valid = false;
+            }
+            if (min > max) {
+                document.getElementById('players-error').textContent = 'Maximum must be greater than minimum';
+                valid = false;
+            }
+            
+            // Check if max is being reduced below current registrations
+            const currentReg = competition.players?.current || 0;
+            if (max < currentReg) {
+                document.getElementById('players-error').textContent = `Cannot reduce max below current registrations (${currentReg})`;
+                valid = false;
+            }
+            
+            return valid;
+        }
+        
+        function clearErrors() {
+            document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+        }
+        
+        async function saveChanges() {
+            if (!validateForm()) return;
+            
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            
+            try {
+                const regType = document.querySelector('input[name="reg-type"]:checked').value;
+                
+                const updates = {
+                    name: document.getElementById('comp-name').value.trim(),
+                    description: document.getElementById('comp-description').value.trim(),
+                    schedule: {
+                        date: document.getElementById('comp-date').value,
+                        time: document.getElementById('comp-time').value
+                    },
+                    location: {
+                        name: document.getElementById('comp-venue').value.trim(),
+                        address: document.getElementById('comp-address').value.trim()
+                    },
+                    courts: parseInt(document.getElementById('comp-courts').value),
+                    'players/min': parseInt(document.getElementById('comp-min-players').value),
+                    'players/max': parseInt(document.getElementById('comp-max-players').value),
+                    registration: {
+                        type: regType,
+                        levelMin: regType === 'level-restricted' ? parseFloat(document.getElementById('comp-level-min').value) : null,
+                        levelMax: regType === 'level-restricted' ? parseFloat(document.getElementById('comp-level-max').value) : null,
+                        waitlistEnabled: document.getElementById('toggle-waitlist').classList.contains('active'),
+                        deadlineEnabled: document.getElementById('toggle-deadline').classList.contains('active')
+                    },
+                    updatedAt: new Date().toISOString()
+                };
+                
+                await database.ref(`competitions/${compId}`).update(updates);
+                
+                showToast('Changes saved successfully!', 'success');
+                
+                // Update local competition object
+                Object.assign(competition, updates);
+                
+            } catch (e) {
+                console.error('Error saving:', e);
+                showToast('Failed to save changes', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💾 Save Changes';
+            }
+        }
+        
+        function cancelEdit() {
+            window.location.href = '/competitions/my-competitions.html';
+        }
+        
+        function showToast(msg, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>

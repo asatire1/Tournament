@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGJ6CZ4DZ0"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-TGJ6CZ4DZ0');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Padel Tournament</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8">
+    <h1 class="text-2xl font-bold mb-4">Debug Loading</h1>
+    <div id="log" class="space-y-2 font-mono text-sm"></div>
+    
+    <script>
+        function log(msg, isError = false) {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            div.className = isError ? 'text-red-600' : 'text-green-600';
+            document.getElementById('log').appendChild(div);
+            console.log(msg);
+        }
+        
+        window.onerror = function(msg, url, line, col, error) {
+            log(`ERROR: ${msg} at ${url}:${line}:${col}`, true);
+            return false;
+        };
+    </script>
+    
+    <script>log('1. Starting...');</script>
+    
+    <script src="./js/config.js"></script>
+    <script>log('2. config.js loaded - CONFIG exists: ' + (typeof CONFIG !== 'undefined'));</script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script>log('3. Firebase app SDK loaded');</script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>log('4. Firebase database SDK loaded');</script>
+    
+    <script src="./js/firebase-config.js"></script>
+    <script>log('5. firebase-config.js loaded - database exists: ' + (typeof database !== 'undefined'));</script>
+    
+    <script src="./js/router.js"></script>
+    <script>log('6. router.js loaded - Router exists: ' + (typeof Router !== 'undefined'));</script>
+    
+    <script src="./js/state.js"></script>
+    <script>log('7. state.js loaded - TournamentState exists: ' + (typeof TournamentState !== 'undefined'));</script>
+    
+    <script src="./js/components.js"></script>
+    <script>log('8. components.js loaded');</script>
+    
+    <script src="./js/handlers.js"></script>
+    <script>log('9. handlers.js loaded');</script>
+    
+    <script src="./js/landing.js"></script>
+    <script>log('10. landing.js loaded - renderLandingPage exists: ' + (typeof renderLandingPage !== 'undefined'));</script>
+    
+    <script src="./js/main.js"></script>
+    <script>log('11. main.js loaded - initializeApp exists: ' + (typeof initializeApp !== 'undefined'));</script>
+    
+    <script>
+        log('12. All scripts loaded successfully!');
+        log('Testing renderLandingPage...');
+        try {
+            const html = renderLandingPage();
+            log('13. renderLandingPage returned ' + html.length + ' characters');
+        } catch(e) {
+            log('ERROR in renderLandingPage: ' + e.message, true);
+        }
+    </script>
+</body>
+</html>

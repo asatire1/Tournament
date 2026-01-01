@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGJ6CZ4DZ0"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-TGJ6CZ4DZ0');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Community Moderation | Uber Padel</title>
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+            <div class="text-center mb-6">
+                <span class="text-5xl">🛡️</span>
+                <h1 class="text-2xl font-bold text-gray-800 mt-4">Admin Access</h1>
+                <p class="text-gray-500 mt-2">Enter the admin password to continue</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="password" id="admin-password" placeholder="Admin password"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                    onkeypress="if(event.key==='Enter') attemptLogin()" />
+                
+                <button onclick="attemptLogin()" 
+                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                    Login
+                </button>
+                
+                <p id="login-error" class="text-red-500 text-center text-sm hidden">
+                    Incorrect password
+                </p>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <a href="about.html" class="text-gray-400 hover:text-gray-600 text-sm">← Back to site</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin Dashboard -->
+    <div id="admin-dashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🛡️</span>
+                    <span class="font-bold text-xl text-gray-800">Community Moderation</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="about.html" class="text-gray-500 hover:text-gray-700">View Site</a>
+                    <button onclick="logout()" class="text-red-500 hover:text-red-700 font-medium">Logout</button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Stats Bar -->
+        <div class="bg-white border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4 py-4">
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <div id="stat-total" class="text-2xl font-bold text-gray-800">-</div>
+                        <div class="text-sm text-gray-500">Total Messages</div>
+                    </div>
+                    <div>
+                        <div id="stat-reported" class="text-2xl font-bold text-amber-500">-</div>
+                        <div class="text-sm text-gray-500">Reported</div>
+                    </div>
+                    <div>
+                        <div id="stat-hidden" class="text-2xl font-bold text-red-500">-</div>
+                        <div class="text-sm text-gray-500">Auto-Hidden (2+ reports)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="setTab('players')" id="tab-players" 
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-green-100 text-green-700">
+                    👥 Player Verification
+                </button>
+                <button onclick="setTab('competitions')" id="tab-competitions"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    🏆 Competitions
+                </button>
+                <button onclick="setTab('reported')" id="tab-reported" 
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    🚩 Reported Messages
+                </button>
+                <button onclick="setTab('all')" id="tab-all"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    📋 All Messages
+                </button>
+                <button onclick="setTab('tournament')" id="tab-tournament"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    ⚙️ Tournament Reset
+                </button>
+            </div>
+        </div>
+        
+        <!-- Player Verification Panel -->
+        <div id="players-panel" class="max-w-6xl mx-auto px-4 pb-8">
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-pending-players" class="text-2xl font-bold text-amber-500">-</div>
+                    <div class="text-sm text-gray-500">Pending Verification</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-verified-players" class="text-2xl font-bold text-green-500">-</div>
+                    <div class="text-sm text-gray-500">Verified Players</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-total-players" class="text-2xl font-bold text-gray-700">-</div>
+                    <div class="text-sm text-gray-500">Total Players</div>
+                </div>
+            </div>
+            
+            <!-- Player Filters -->
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
+                <div class="flex flex-wrap gap-4 items-center">
+                    <select id="player-status-filter" onchange="renderPlayersList()" class="px-3 py-2 border border-gray-200 rounded-lg">
+                        <option value="pending">Pending</option>
+                        <option value="verified">Verified</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="all">All</option>
+                    </select>
+                    <input type="text" id="player-search" onkeyup="renderPlayersList()" placeholder="Search by name or email..." 
+                        class="flex-1 min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                </div>
+            </div>
+            
+            <!-- Players List -->
+            <div id="players-list" class="space-y-3">
+                <div class="text-center py-8 text-gray-400">Loading players...</div>
+            </div>
+        </div>
+        
+        <!-- Competitions Management Panel -->
+        <div id="competitions-panel" class="hidden max-w-6xl mx-auto px-4 pb-8">
+            <!-- Create Competition Button -->
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Manage Competitions</h2>
+                <button onclick="showCreateCompetitionModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
+                    + Create Competition
+                </button>
+            </div>
+            
+            <!-- Competitions List -->
+            <div id="competitions-list" class="space-y-4">
+                <div class="text-center py-8 text-gray-400">Loading competitions...</div>
+            </div>
+        </div>
+        
+        <!-- Tournament Admin Panel (hidden by default) -->
+        <div id="tournament-panel" class="hidden max-w-6xl mx-auto px-4 pb-8">
+            <!-- Format Default Templates Section -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <span>📋</span> Format Default Templates
+                </h2>
+                <p class="text-gray-600 mb-6">Upload default player data for each format. New tournaments will use these templates.</p>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Americano Template -->
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">🎾</span>
+                            <h3 class="font-semibold text-gray-800">Americano</h3>
+                        </div>
+                        <div id="americano-template-status" class="text-sm text-gray-500 mb-3">No custom template</div>
+                        <input type="file" id="americano-template-upload" accept=".json" 
+                            onchange="uploadFormatTemplate('americano', this.files[0])"
+                            class="block w-full text-sm text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    
+                    <!-- Mexicano Template -->
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">🌮</span>
+                            <h3 class="font-semibold text-gray-800">Mexicano</h3>
+                        </div>
+                        <div id="mexicano-template-status" class="text-sm text-gray-500 mb-3">No custom template</div>
+                        <input type="file" id="mexicano-template-upload" accept=".json"
+                            onchange="uploadFormatTemplate('mexicano', this.files[0])"
+                            class="block w-full text-sm text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    
+                    <!-- Mix Tournament Template -->
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">🏆</span>
+                            <h3 class="font-semibold text-gray-800">Mix Tournament</h3>
+                        </div>
+                        <div id="mix-template-status" class="text-sm text-gray-500 mb-3">No custom template</div>
+                        <input type="file" id="mix-template-upload" accept=".json"
+                            onchange="uploadFormatTemplate('mix', this.files[0])"
+                            class="block w-full text-sm text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                    
+                    <!-- Team League Template -->
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">👥</span>
+                            <h3 class="font-semibold text-gray-800">Team League</h3>
+                        </div>
+                        <div id="team-league-template-status" class="text-sm text-gray-500 mb-3">No custom template</div>
+                        <input type="file" id="team-league-template-upload" accept=".json"
+                            onchange="uploadFormatTemplate('team-league', this.files[0])"
+                            class="block w-full text-sm text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                    </div>
+                </div>
+                
+                <!-- Info Box -->
+                <div class="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                    <p class="text-sm text-amber-800">
+                        <strong>💡 How it works:</strong> Upload a JSON file with player names. When anyone creates a new tournament of that format, 
+                        it will use these default player names instead of "Player 1, Player 2, etc."
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Reset Specific Tournament Section -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <span>🔄</span> Reset Specific Tournament
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- Format Type Selector -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament Format</label>
+                        <select id="reset-format-type" 
+                            onchange="updateResetUI()"
+                            class="w-full max-w-md px-4 py-3 border border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none">
+                            <option value="americano">🎾 Americano</option>
+                            <option value="mexicano">🌮 Mexicano</option>
+                            <option value="mix">🏆 Mix Tournament</option>
+                            <option value="team-league">👥 Team League</option>
+                            <option value="tournament">🏓 Tournament (Fixed Fixtures)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Tournament ID Input -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament ID</label>
+                        <input type="text" id="reset-tournament-id" 
+                            class="w-full max-w-md px-4 py-3 border border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none font-mono uppercase"
+                            placeholder="e.g. ABC123" maxlength="10" />
+                        <p class="text-sm text-gray-500 mt-2">Enter the Tournament ID to reset</p>
+                    </div>
+                    
+                    <!-- JSON Upload Option -->
+                    <div class="bg-blue-50 rounded-xl p-4">
+                        <h3 class="font-semibold text-blue-800 mb-3">📂 Upload JSON Data (Optional)</h3>
+                        <p class="text-sm text-blue-600 mb-3">Upload a JSON file with player data, or leave empty to use the format's default template.</p>
+                        <input type="file" id="reset-json-upload" accept=".json"
+                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200" />
+                        <div id="json-preview" class="hidden mt-3 p-3 bg-white rounded-lg border border-blue-200 text-sm"></div>
+                    </div>
+                    
+                    <!-- What it does -->
+                    <div class="bg-purple-50 rounded-xl p-4">
+                        <h3 class="font-semibold text-purple-800 mb-2">What this does:</h3>
+                        <ul class="text-sm text-purple-700 space-y-1" id="reset-actions-list">
+                            <li>✓ Creates an automatic backup first</li>
+                            <li>✓ Loads player names from uploaded JSON or format template</li>
+                            <li>✓ Clears all existing scores</li>
+                            <li>✓ Preserves tournament settings (courts, points, etc.)</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Reset Buttons -->
+                    <div class="flex gap-3 flex-wrap">
+                        <button onclick="resetTournamentFromJSON()" 
+                            class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-colors">
+                            🔄 Reset from JSON
+                        </button>
+                        <button onclick="resetScoresOnly()" 
+                            class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors">
+                            🗑️ Clear Scores Only
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Messages List -->
+        <main class="max-w-6xl mx-auto px-4 pb-8">
+            <div id="messages-list" class="space-y-3">
+                <div class="text-center py-12 text-gray-400">
+                    <div class="animate-spin inline-block w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full mb-4"></div>
+                    <p>Loading messages...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+    
+    <!-- Confirm Delete Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Delete Message?</h3>
+            <p class="text-gray-600 mb-4">This action cannot be undone.</p>
+            <div id="delete-preview" class="bg-gray-50 rounded-xl p-3 mb-4 text-sm text-gray-600"></div>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-2 border border-gray-200 rounded-xl font-medium hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="confirmDelete()" class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDI_UR_krpPwfogdCSVlWPwl7zMde4jhng",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.firebasestorage.app",
+            messagingSenderId: "564215582230",
+            appId: "1:564215582230:web:31564ab8d3d9f37bb5587b"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Admin password (in production, use proper authentication!)
+        // This is a simple hash - change "uberpadel2024" to your desired password
+        const ADMIN_HASH = 'dWJlcnBhZGVsMjAyNA=='; // base64 of password
+        
+        const COMMENTS_PATH = 'community/messages';
+        let currentTab = 'reported';
+        let allMessages = [];
+        let deleteTargetKey = null;
+        
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('adminAuth') === ADMIN_HASH) {
+                showDashboard();
+            }
+        });
+        
+        // Login attempt
+        function attemptLogin() {
+            const password = document.getElementById('admin-password').value;
+            const hash = btoa(password);
+            
+            if (hash === ADMIN_HASH) {
+                sessionStorage.setItem('adminAuth', ADMIN_HASH);
+                showDashboard();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+                document.getElementById('admin-password').value = '';
+            }
+        }
+        
+        // Show dashboard
+        function showDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.remove('hidden');
+            loadAllMessages();
+            loadFormatTemplates(); // Load format templates
+            setTab('players'); // Default to players verification tab
+        }
+        
+        // Logout
+        function logout() {
+            sessionStorage.removeItem('adminAuth');
+            location.reload();
+        }
+        
+        // Load all messages
+        function loadAllMessages() {
+            database.ref(COMMENTS_PATH).orderByChild('timestamp').once('value')
+                .then(snapshot => {
+                    allMessages = [];
+                    snapshot.forEach(child => {
+                        allMessages.push({ key: child.key, ...child.val() });
+                    });
+                    allMessages.reverse(); // Newest first
+                    
+                    updateStats();
+                    renderMessages();
+                });
+        }
+        
+        // Update stats
+        function updateStats() {
+            const total = allMessages.length;
+            const reported = allMessages.filter(m => m.reported).length;
+            const hidden = allMessages.filter(m => m.reportCount >= 2).length;
+            
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-reported').textContent = reported;
+            document.getElementById('stat-hidden').textContent = hidden;
+        }
+        
+        // Set tab
+        function setTab(tab) {
+            currentTab = tab;
+            
+            // Update tab styles
+            const tabConfigs = {
+                'players': { color: 'green' },
+                'competitions': { color: 'blue' },
+                'reported': { color: 'amber' },
+                'all': { color: 'blue' },
+                'tournament': { color: 'purple' }
+            };
+            
+            Object.keys(tabConfigs).forEach(t => {
+                const tabEl = document.getElementById(`tab-${t}`);
+                if (tabEl) {
+                    const config = tabConfigs[t];
+                    tabEl.className = tab === t 
+                        ? `px-4 py-2 rounded-lg font-medium transition-colors bg-${config.color}-100 text-${config.color}-700`
+                        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200';
+                }
+            });
+            
+            // Show/hide panels
+            const messagesPanel = document.getElementById('messages-list').parentElement;
+            const tournamentPanel = document.getElementById('tournament-panel');
+            const playersPanel = document.getElementById('players-panel');
+            const competitionsPanel = document.getElementById('competitions-panel');
+            
+            messagesPanel.classList.add('hidden');
+            tournamentPanel.classList.add('hidden');
+            playersPanel.classList.add('hidden');
+            competitionsPanel.classList.add('hidden');
+            
+            if (tab === 'tournament') {
+                tournamentPanel.classList.remove('hidden');
+            } else if (tab === 'players') {
+                playersPanel.classList.remove('hidden');
+                loadPlayers();
+            } else if (tab === 'competitions') {
+                competitionsPanel.classList.remove('hidden');
+                loadCompetitions();
+            } else {
+                messagesPanel.classList.remove('hidden');
+                renderMessages();
+            }
+        }
+        
+        // Render messages
+        function renderMessages() {
+            const container = document.getElementById('messages-list');
+            
+            let filtered = currentTab === 'reported' 
+                ? allMessages.filter(m => m.reported)
+                : allMessages;
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <p class="text-4xl mb-2">${currentTab === 'reported' ? '✅' : '📭'}</p>
+                        <p>${currentTab === 'reported' ? 'No reported messages!' : 'No messages yet'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filtered.map(message => createMessageHTML(message)).join('');
+        }
+        
+        // Create message HTML for admin
+        function createMessageHTML(message) {
+            const date = new Date(message.timestamp);
+            const timeStr = date.toLocaleDateString('en-GB', { 
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+            
+            const initial = (message.name || 'A')[0].toUpperCase();
+            const bgColors = ['bg-blue-500', 'bg-purple-500', 'bg-teal-500', 'bg-orange-500', 'bg-pink-500'];
+            const bgColor = bgColors[message.name.length % bgColors.length];
+            
+            const reportBadge = message.reported 
+                ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${message.reportCount >= 2 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">
+                    🚩 ${message.reportCount || 1} report${(message.reportCount || 1) > 1 ? 's' : ''}
+                   </span>`
+                : '';
+            
+            const hiddenBadge = message.reportCount >= 2
+                ? `<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Hidden from users</span>`
+                : '';
+            
+            return `
+                <div class="bg-white rounded-xl p-4 shadow-sm border ${message.reportCount >= 2 ? 'border-red-200' : 'border-gray-100'}" data-key="${message.key}">
+                    <div class="flex gap-3">
+                        <div class="w-10 h-10 ${bgColor} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                            ${initial}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <span class="font-semibold text-gray-800">${escapeHtml(message.name)}</span>
+                                <span class="text-xs text-gray-400">${timeStr}</span>
+                                ${reportBadge}
+                                ${hiddenBadge}
+                            </div>
+                            <p class="text-gray-600 break-words mb-3">${escapeHtml(message.text)}</p>
+                            <div class="flex gap-2">
+                                ${message.reported ? `
+                                    <button onclick="clearReports('${message.key}')" 
+                                        class="px-3 py-1.5 text-sm bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors">
+                                        ✓ Clear Reports
+                                    </button>
+                                ` : ''}
+                                <button onclick="showDeleteModal('${message.key}', '${escapeHtml(message.text).substring(0, 50)}')" 
+                                    class="px-3 py-1.5 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Clear reports on a message
+        function clearReports(key) {
+            database.ref(`${COMMENTS_PATH}/${key}`).update({
+                reported: false,
+                reportCount: 0
+            }).then(() => {
+                showToast('✅ Reports cleared');
+                
+                // Update local data
+                const msg = allMessages.find(m => m.key === key);
+                if (msg) {
+                    msg.reported = false;
+                    msg.reportCount = 0;
+                }
+                
+                updateStats();
+                renderMessages();
+            }).catch(error => {
+                console.error('Error clearing reports:', error);
+                showToast('❌ Failed to clear reports');
+            });
+        }
+        
+        // Show delete confirmation modal
+        function showDeleteModal(key, preview) {
+            deleteTargetKey = key;
+            document.getElementById('delete-preview').textContent = preview + (preview.length >= 50 ? '...' : '');
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+        
+        // Close delete modal
+        function closeDeleteModal() {
+            deleteTargetKey = null;
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+        
+        // Confirm delete
+        function confirmDelete() {
+            if (!deleteTargetKey) return;
+            
+            database.ref(`${COMMENTS_PATH}/${deleteTargetKey}`).remove()
+                .then(() => {
+                    showToast('✅ Message deleted');
+                    
+                    // Remove from local data
+                    allMessages = allMessages.filter(m => m.key !== deleteTargetKey);
+                    
+                    closeDeleteModal();
+                    updateStats();
+                    renderMessages();
+                }).catch(error => {
+                    console.error('Error deleting:', error);
+                    showToast('❌ Failed to delete');
+                });
+        }
+        
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Show toast
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-800 text-white px-4 py-3 rounded-xl shadow-lg mb-2';
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // ===== TOURNAMENT ADMIN FUNCTIONS =====
+        
+        // Format-specific Firebase paths
+        const FORMAT_PATHS = {
+            'americano': 'americano-sessions',
+            'mexicano': 'mexicano-sessions',
+            'mix': 'mix-sessions',
+            'team-league': 'team-league-sessions',
+            'tournament': 'tournaments'
+        };
+        
+        // Path for format templates
+        const TEMPLATES_PATH = 'format-templates';
+        
+        // Uploaded JSON data storage
+        let uploadedJsonData = null;
+        
+        // Load format templates on page load
+        async function loadFormatTemplates() {
+            const formats = ['americano', 'mexicano', 'mix', 'team-league'];
+            
+            for (const format of formats) {
+                try {
+                    const snapshot = await database.ref(`${TEMPLATES_PATH}/${format}`).once('value');
+                    const template = snapshot.val();
+                    const statusEl = document.getElementById(`${format}-template-status`);
+                    
+                    if (template && statusEl) {
+                        const playerCount = template.playerNames?.length || template.players?.length || 0;
+                        statusEl.innerHTML = `<span class="text-green-600 font-medium">✓ Template set</span> (${playerCount} players)
+                            <button onclick="clearFormatTemplate('${format}')" class="ml-2 text-red-500 hover:text-red-700 text-xs underline">Clear</button>`;
+                    }
+                } catch (err) {
+                    console.error(`Error loading ${format} template:`, err);
+                }
+            }
+        }
+        
+        // Upload format template
+        async function uploadFormatTemplate(format, file) {
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                // Validate the JSON has player data
+                const playerNames = data.playerNames || (data.players ? data.players.map(p => p.name || `Player ${p.id}`) : null);
+                
+                if (!playerNames || playerNames.length === 0) {
+                    showToast('❌ JSON must contain playerNames or players array');
+                    return;
+                }
+                
+                // Save to Firebase
+                await database.ref(`${TEMPLATES_PATH}/${format}`).set({
+                    playerNames: playerNames,
+                    uploadedAt: new Date().toISOString(),
+                    playerCount: playerNames.length
+                });
+                
+                showToast(`✅ ${format} template saved with ${playerNames.length} players`);
+                
+                // Update UI
+                const statusEl = document.getElementById(`${format}-template-status`);
+                if (statusEl) {
+                    statusEl.innerHTML = `<span class="text-green-600 font-medium">✓ Template set</span> (${playerNames.length} players)
+                        <button onclick="clearFormatTemplate('${format}')" class="ml-2 text-red-500 hover:text-red-700 text-xs underline">Clear</button>`;
+                }
+                
+            } catch (err) {
+                console.error('Error uploading template:', err);
+                showToast('❌ Invalid JSON file');
+            }
+        }
+        
+        // Clear format template
+        async function clearFormatTemplate(format) {
+            if (!confirm(`Clear the ${format} template? New tournaments will use default player names.`)) return;
+            
+            try {
+                await database.ref(`${TEMPLATES_PATH}/${format}`).remove();
+                showToast(`✅ ${format} template cleared`);
+                
+                const statusEl = document.getElementById(`${format}-template-status`);
+                if (statusEl) {
+                    statusEl.textContent = 'No custom template';
+                }
+                
+                // Clear file input
+                const fileInput = document.getElementById(`${format}-template-upload`);
+                if (fileInput) fileInput.value = '';
+                
+            } catch (err) {
+                console.error('Error clearing template:', err);
+                showToast('❌ Failed to clear template');
+            }
+        }
+        
+        // Get format template from Firebase
+        async function getFormatTemplate(format) {
+            try {
+                const snapshot = await database.ref(`${TEMPLATES_PATH}/${format}`).once('value');
+                return snapshot.val();
+            } catch (err) {
+                console.error('Error getting template:', err);
+                return null;
+            }
+        }
+        
+        // Update UI based on format selection
+        function updateResetUI() {
+            const format = document.getElementById('reset-format-type').value;
+            const actionsList = document.getElementById('reset-actions-list');
+            
+            if (format === 'tournament') {
+                actionsList.innerHTML = `
+                    <li>✓ Creates an automatic backup first</li>
+                    <li>✓ Loads player names/ratings from uploaded/default JSON</li>
+                    <li>✓ Loads fixtures from default JSON (if not uploaded)</li>
+                    <li>✓ Loads match names from default JSON (if not uploaded)</li>
+                    <li>✓ Clears all existing scores</li>
+                `;
+            } else {
+                actionsList.innerHTML = `
+                    <li>✓ Creates an automatic backup first</li>
+                    <li>✓ Loads player names from uploaded JSON or format template</li>
+                    <li>✓ Clears all existing scores</li>
+                    <li>✓ Preserves tournament settings (courts, points, etc.)</li>
+                `;
+            }
+        }
+        
+        // Handle JSON file upload
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('reset-json-upload');
+            if (fileInput) {
+                fileInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) {
+                        uploadedJsonData = null;
+                        document.getElementById('json-preview').classList.add('hidden');
+                        return;
+                    }
+                    
+                    try {
+                        const text = await file.text();
+                        uploadedJsonData = JSON.parse(text);
+                        
+                        // Show preview
+                        const preview = document.getElementById('json-preview');
+                        const playerCount = uploadedJsonData.players?.length || 
+                                          uploadedJsonData.playerNames?.length || 0;
+                        preview.innerHTML = `
+                            <div class="font-semibold text-green-700">✅ Valid JSON loaded</div>
+                            <div class="text-gray-600 mt-1">
+                                ${playerCount ? `Players: ${playerCount}` : ''}
+                                ${uploadedJsonData.fixtures ? ` | Fixtures: ${Object.keys(uploadedJsonData.fixtures).length} rounds` : ''}
+                            </div>
+                        `;
+                        preview.classList.remove('hidden');
+                    } catch (err) {
+                        uploadedJsonData = null;
+                        const preview = document.getElementById('json-preview');
+                        preview.innerHTML = `<div class="font-semibold text-red-700">❌ Invalid JSON: ${err.message}</div>`;
+                        preview.classList.remove('hidden');
+                    }
+                });
+            }
+        });
+        
+        async function resetTournamentFromJSON() {
+            const format = document.getElementById('reset-format-type').value;
+            const tournamentId = document.getElementById('reset-tournament-id').value.trim().toLowerCase();
+            
+            if (!tournamentId) {
+                showToast('❌ Please enter a Tournament ID');
+                return;
+            }
+            
+            const basePath = FORMAT_PATHS[format];
+            if (!basePath) {
+                showToast('❌ Invalid format selected');
+                return;
+            }
+            
+            // Check if tournament exists
+            const snapshot = await database.ref(`${basePath}/${tournamentId}`).once('value');
+            if (!snapshot.exists()) {
+                showToast(`❌ ${format} session not found with ID: ${tournamentId.toUpperCase()}`);
+                return;
+            }
+            
+            const formatName = format.charAt(0).toUpperCase() + format.slice(1).replace('-', ' ');
+            if (!confirm(`Reset ${formatName} "${tournamentId.toUpperCase()}" from JSON?\n\nThis will:\n✓ Create an automatic backup\n✓ Load player data from JSON or format template\n✓ Clear all scores\n\nContinue?`)) {
+                return;
+            }
+            
+            try {
+                // Get data from: 1) uploaded file, 2) format template, 3) default files
+                let jsonData = uploadedJsonData;
+                
+                // If no uploaded file, try format template
+                if (!jsonData && format !== 'tournament') {
+                    const template = await getFormatTemplate(format);
+                    if (template && template.playerNames) {
+                        jsonData = { playerNames: template.playerNames };
+                        console.log(`Using ${format} template with ${template.playerNames.length} players`);
+                    }
+                }
+                
+                // For tournament format, try to load default files
+                if (!jsonData && format === 'tournament') {
+                    const [playersRes, fixturesRes, matchNamesRes] = await Promise.all([
+                        fetch('tournament/data/players.json'),
+                        fetch('tournament/data/fixtures.json'),
+                        fetch('tournament/data/match-names.json')
+                    ]);
+                    
+                    if (!playersRes.ok) {
+                        throw new Error('Could not load default players.json');
+                    }
+                    
+                    const players = await playersRes.json();
+                    const fixtures = fixturesRes.ok ? await fixturesRes.json() : null;
+                    const matchNames = matchNamesRes.ok ? await matchNamesRes.json() : null;
+                    
+                    jsonData = {
+                        players: players.players,
+                        fixtures: fixtures?.fixtures,
+                        matchNames: matchNames?.names
+                    };
+                }
+                
+                if (!jsonData) {
+                    showToast('❌ No template found. Please upload a JSON file or set a format template first.');
+                    return;
+                }
+                
+                // Create backup first
+                const currentData = snapshot.val();
+                await createBackup(basePath, tournamentId, currentData, format);
+                
+                // Build update based on format
+                const updates = {};
+                updates[`${basePath}/${tournamentId}/meta/updatedAt`] = new Date().toISOString();
+                
+                // Handle player names based on format
+                if (jsonData.players) {
+                    if (format === 'tournament') {
+                        updates[`${basePath}/${tournamentId}/players`] = jsonData.players;
+                    } else {
+                        // For other formats, extract names array
+                        const names = jsonData.players.map(p => p.name || `Player ${p.id}`);
+                        updates[`${basePath}/${tournamentId}/playerNames`] = names;
+                    }
+                } else if (jsonData.playerNames) {
+                    updates[`${basePath}/${tournamentId}/playerNames`] = jsonData.playerNames;
+                }
+                
+                // Handle fixtures (only for tournament format)
+                if (format === 'tournament' && jsonData.fixtures) {
+                    updates[`${basePath}/${tournamentId}/fixtures`] = jsonData.fixtures;
+                }
+                
+                // Handle match names (only for tournament format)
+                if (format === 'tournament' && jsonData.matchNames) {
+                    updates[`${basePath}/${tournamentId}/matchNames`] = jsonData.matchNames;
+                }
+                
+                // Clear scores based on format
+                if (format === 'tournament') {
+                    updates[`${basePath}/${tournamentId}/matchScores`] = null;
+                    updates[`${basePath}/${tournamentId}/knockoutScores`] = null;
+                } else {
+                    updates[`${basePath}/${tournamentId}/scores`] = null;
+                    if (format === 'americano') {
+                        updates[`${basePath}/${tournamentId}/groupScores`] = null;
+                        updates[`${basePath}/${tournamentId}/knockoutScores`] = null;
+                    }
+                }
+                
+                await database.ref().update(updates);
+                
+                showToast(`✅ ${formatName} reset from JSON!`);
+                document.getElementById('reset-tournament-id').value = '';
+                document.getElementById('reset-json-upload').value = '';
+                uploadedJsonData = null;
+                document.getElementById('json-preview').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('Error resetting tournament:', error);
+                showToast('❌ Failed to reset. Check console for details.');
+            }
+        }
+        
+        async function createBackup(basePath, tournamentId, currentData, format) {
+            if (!currentData) return;
+            
+            const backups = currentData.backups || [];
+            const backupData = {
+                name: 'Auto-backup before JSON reset',
+                timestamp: new Date().toISOString(),
+                data: {}
+            };
+            
+            // Save format-specific data
+            if (format === 'tournament') {
+                backupData.data = {
+                    players: currentData.players,
+                    matchScores: currentData.matchScores,
+                    knockoutScores: currentData.knockoutScores
+                };
+            } else {
+                backupData.data = {
+                    playerNames: currentData.playerNames,
+                    scores: currentData.scores
+                };
+                if (format === 'americano') {
+                    backupData.data.groupScores = currentData.groupScores;
+                    backupData.data.knockoutScores = currentData.knockoutScores;
+                }
+            }
+            
+            backups.unshift(backupData);
+            if (backups.length > 10) backups.pop();
+            
+            await database.ref(`${basePath}/${tournamentId}/backups`).set(backups);
+        }
+        
+        async function resetScoresOnly() {
+            const format = document.getElementById('reset-format-type').value;
+            const tournamentId = document.getElementById('reset-tournament-id').value.trim().toLowerCase();
+            
+            if (!tournamentId) {
+                showToast('❌ Please enter a Tournament ID');
+                return;
+            }
+            
+            const basePath = FORMAT_PATHS[format];
+            const snapshot = await database.ref(`${basePath}/${tournamentId}`).once('value');
+            
+            if (!snapshot.exists()) {
+                showToast(`❌ Session not found with ID: ${tournamentId.toUpperCase()}`);
+                return;
+            }
+            
+            if (!confirm(`Clear ALL scores for "${tournamentId.toUpperCase()}"?\n\nThis will:\n✓ Create a backup first\n✓ Clear all match scores\n\nThis cannot be undone. Continue?`)) {
+                return;
+            }
+            
+            try {
+                await createBackup(basePath, tournamentId, snapshot.val(), format);
+                
+                const updates = {};
+                updates[`${basePath}/${tournamentId}/meta/updatedAt`] = new Date().toISOString();
+                
+                if (format === 'tournament') {
+                    updates[`${basePath}/${tournamentId}/matchScores`] = null;
+                    updates[`${basePath}/${tournamentId}/knockoutScores`] = null;
+                } else {
+                    updates[`${basePath}/${tournamentId}/scores`] = null;
+                    if (format === 'americano') {
+                        updates[`${basePath}/${tournamentId}/groupScores`] = null;
+                        updates[`${basePath}/${tournamentId}/knockoutScores`] = null;
+                    }
+                }
+                
+                await database.ref().update(updates);
+                showToast('✅ All scores cleared!');
+                
+            } catch (error) {
+                console.error('Error clearing scores:', error);
+                showToast('❌ Failed to clear scores');
+            }
+        }
+        
+        // ===== PLAYER VERIFICATION FUNCTIONS =====
+        
+        const PLAYERS_DB_PATH = 'users';  // Changed from 'players' to match new auth system
+        const COMPETITIONS_DB_PATH = 'competitions';
+        let allPlayers = [];
+        let allCompetitions = [];
+        
+        async function loadPlayers() {
+            try {
+                const snapshot = await database.ref(PLAYERS_DB_PATH).once('value');
+                allPlayers = [];
+                
+                snapshot.forEach((child) => {
+                    const player = child.val();
+                    player.id = child.key;
+                    // Only include registered users, not guests
+                    if (player.type !== 'guest') {
+                        allPlayers.push(player);
+                    }
+                });
+                
+                // Sort by registration date (newest first)
+                allPlayers.sort((a, b) => new Date(b.registeredAt || 0) - new Date(a.registeredAt || 0));
+                
+                updatePlayerStats();
+                renderPlayersList();
+                
+            } catch (error) {
+                console.error('Error loading players:', error);
+                document.getElementById('players-list').innerHTML = `
+                    <div class="text-center py-8 text-red-500">Error loading players. Check console.</div>
+                `;
+            }
+        }
+        
+        function updatePlayerStats() {
+            const pending = allPlayers.filter(p => p.status === 'pending').length;
+            const verified = allPlayers.filter(p => p.status === 'verified').length;
+            
+            document.getElementById('stat-pending-players').textContent = pending;
+            document.getElementById('stat-verified-players').textContent = verified;
+            document.getElementById('stat-total-players').textContent = allPlayers.length;
+        }
+        
+        function renderPlayersList() {
+            const container = document.getElementById('players-list');
+            const statusFilter = document.getElementById('player-status-filter').value;
+            const search = document.getElementById('player-search').value.toLowerCase();
+            
+            let filtered = [...allPlayers];
+            
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(p => p.status === statusFilter);
+            }
+            
+            // Filter by search
+            if (search) {
+                filtered = filtered.filter(p => 
+                    (p.name && p.name.toLowerCase().includes(search)) ||
+                    (p.email && p.email.toLowerCase().includes(search)) ||
+                    (p.playtomicUsername && p.playtomicUsername.toLowerCase().includes(search))
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <div class="text-4xl mb-2">👥</div>
+                        <p>No players found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filtered.map(player => {
+                const statusColors = {
+                    'pending': 'bg-amber-100 text-amber-700',
+                    'verified': 'bg-green-100 text-green-700',
+                    'rejected': 'bg-red-100 text-red-700'
+                };
+                
+                const typeLabel = player.type === 'registered' ? '🔵 Google' : '👤 Legacy';
+                
+                return `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                        <div class="flex flex-col md:flex-row md:items-center gap-4">
+                            <!-- Player Info -->
+                            <div class="flex items-center gap-4 flex-1">
+                                ${player.photoURL ? 
+                                    `<img src="${player.photoURL}" alt="${escapeHtml(player.name)}" class="w-12 h-12 rounded-full flex-shrink-0 border-2 border-gray-200">` :
+                                    `<div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                                        ${player.name ? player.name.charAt(0).toUpperCase() : '?'}
+                                    </div>`
+                                }
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                        <h3 class="font-semibold text-gray-800">${escapeHtml(player.name || 'Unknown')}</h3>
+                                        <span class="text-xs px-2 py-0.5 rounded-full ${statusColors[player.status] || 'bg-gray-100 text-gray-600'}">${player.status}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">${typeLabel}</span>
+                                        ${player.isOrganiser ? '<span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">👑 Organiser</span>' : ''}
+                                    </div>
+                                    <div class="text-sm text-gray-500 space-y-1">
+                                        <div>📧 ${escapeHtml(player.email || '-')}</div>
+                                        <div class="flex items-center gap-2">
+                                            <span>🎾 @${escapeHtml(player.playtomicUsername || '-')}</span>
+                                            ${player.playtomicUsername ? `<a href="https://www.playtomic.io/user/${encodeURIComponent(player.playtomicUsername)}" target="_blank" 
+                                                class="text-blue-600 hover:underline text-xs">[View Profile]</a>` : ''}
+                                        </div>
+                                        ${player.phone ? `<div>📱 ${escapeHtml(player.phone)}</div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Level & Actions -->
+                            <div class="flex items-center gap-3">
+                                ${player.status === 'verified' ? `
+                                    <div class="text-center">
+                                        <div class="text-xs text-gray-400">Level</div>
+                                        <div class="text-xl font-bold text-blue-600">${formatLevel(player.playtomicLevel)}</div>
+                                    </div>
+                                    <button onclick="toggleOrganiser('${player.id}', ${!player.isOrganiser})" 
+                                        class="px-3 py-2 ${player.isOrganiser ? 'bg-purple-100 hover:bg-purple-200 text-purple-700' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} rounded-lg text-sm font-medium transition-colors"
+                                        title="${player.isOrganiser ? 'Remove organiser role' : 'Make organiser'}">
+                                        ${player.isOrganiser ? '👑 Organiser' : '☆ Make Organiser'}
+                                    </button>
+                                    <button onclick="showEditLevelModal('${player.id}', '${escapeHtml(player.name)}', ${player.playtomicLevel || 0})" 
+                                        class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+                                        ✏️ Edit
+                                    </button>
+                                    <button onclick="deletePlayer('${player.id}', '${escapeHtml(player.name)}')" 
+                                        class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                                        title="Delete player">
+                                        🗑️
+                                    </button>
+                                ` : player.status === 'pending' ? `
+                                    <button onclick="showVerifyModal('${player.id}', '${escapeHtml(player.name)}', '${escapeHtml(player.playtomicUsername)}')" 
+                                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+                                        ✓ Verify
+                                    </button>
+                                    <button onclick="rejectPlayer('${player.id}')" 
+                                        class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-medium transition-colors">
+                                        ✗ Reject
+                                    </button>
+                                    <button onclick="deletePlayer('${player.id}', '${escapeHtml(player.name)}')" 
+                                        class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                                        title="Delete player">
+                                        🗑️
+                                    </button>
+                                ` : `
+                                    <button onclick="reinstatePlayer('${player.id}')" 
+                                        class="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-medium transition-colors">
+                                        Reinstate
+                                    </button>
+                                    <button onclick="deletePlayer('${player.id}', '${escapeHtml(player.name)}')" 
+                                        class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                                        title="Delete player">
+                                        🗑️
+                                    </button>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <!-- Meta Info -->
+                        <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-4 text-xs text-gray-400">
+                            <span>ID: ${player.id}</span>
+                            <span>Registered: ${formatDate(player.registeredAt)}</span>
+                            ${player.verifiedAt ? `<span>Verified: ${formatDate(player.verifiedAt)}</span>` : ''}
+                            ${player.googleUid ? `<span class="text-blue-500">Google linked</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function toggleOrganiser(playerId, makeOrganiser) {
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    isOrganiser: makeOrganiser,
+                    organiserUpdatedAt: new Date().toISOString()
+                });
+                
+                showToast(makeOrganiser ? '⭐ Player is now an organiser!' : 'Organiser role removed');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error updating organiser status:', error);
+                showToast('❌ Failed to update');
+            }
+        }
+        
+        async function deletePlayer(playerId, playerName) {
+            if (!confirm(`⚠️ Delete "${playerName}"?\n\nThis will permanently remove this user from the system. This action cannot be undone.`)) {
+                return;
+            }
+            
+            // Double confirm for safety
+            if (!confirm(`Are you absolutely sure you want to delete "${playerName}"?`)) {
+                return;
+            }
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).remove();
+                
+                showToast('🗑️ Player deleted');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error deleting player:', error);
+                showToast('❌ Failed to delete player');
+            }
+        }
+        
+        function showVerifyModal(playerId, playerName, playtomicUsername) {
+            const modal = document.createElement('div');
+            modal.id = 'verify-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">✓ Verify Player</h3>
+                    
+                    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div class="font-semibold text-gray-800 mb-1">${playerName}</div>
+                        <div class="text-sm text-gray-500">
+                            <a href="https://www.playtomic.io/user/${encodeURIComponent(playtomicUsername)}" target="_blank" 
+                                class="text-blue-600 hover:underline">@${playtomicUsername} ↗</a>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Playtomic Level (0.00 - 10.00)</label>
+                        <input type="number" id="verify-level-input" step="0.01" min="0" max="10" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none text-lg text-center"
+                            placeholder="e.g., 4.25" />
+                        <p class="text-xs text-gray-500 mt-1">Check the player's Playtomic profile to find their level</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeVerifyModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="confirmVerify('${playerId}')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold">
+                            Verify Player
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeVerifyModal();
+            });
+            
+            setTimeout(() => document.getElementById('verify-level-input').focus(), 100);
+        }
+        
+        function closeVerifyModal() {
+            const modal = document.getElementById('verify-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function confirmVerify(playerId) {
+            const levelInput = document.getElementById('verify-level-input');
+            const level = parseFloat(levelInput.value);
+            
+            if (isNaN(level) || level < 0 || level > 10) {
+                showToast('❌ Please enter a valid level (0.00 - 10.00)');
+                return;
+            }
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    status: 'verified',
+                    playtomicLevel: level,
+                    verifiedAt: new Date().toISOString(),
+                    verifiedBy: 'admin'
+                });
+                
+                closeVerifyModal();
+                showToast('✅ Player verified!');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error verifying player:', error);
+                showToast('❌ Failed to verify player');
+            }
+        }
+        
+        function showEditLevelModal(playerId, playerName, currentLevel) {
+            const modal = document.createElement('div');
+            modal.id = 'edit-level-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">✏️ Edit Level</h3>
+                    
+                    <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                        <div class="font-semibold text-gray-800">${playerName}</div>
+                        <div class="text-sm text-gray-500">Current level: ${formatLevel(currentLevel)}</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">New Level (0.00 - 10.00)</label>
+                        <input type="number" id="edit-level-input" step="0.01" min="0" max="10" value="${currentLevel || ''}"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-lg text-center" />
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeEditLevelModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="confirmEditLevel('${playerId}')" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeEditLevelModal();
+            });
+        }
+        
+        function closeEditLevelModal() {
+            const modal = document.getElementById('edit-level-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function confirmEditLevel(playerId) {
+            const levelInput = document.getElementById('edit-level-input');
+            const level = parseFloat(levelInput.value);
+            
+            if (isNaN(level) || level < 0 || level > 10) {
+                showToast('❌ Please enter a valid level (0.00 - 10.00)');
+                return;
+            }
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    playtomicLevel: level,
+                    levelUpdatedAt: new Date().toISOString()
+                });
+                
+                closeEditLevelModal();
+                showToast('✅ Level updated!');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error updating level:', error);
+                showToast('❌ Failed to update level');
+            }
+        }
+        
+        async function rejectPlayer(playerId) {
+            if (!confirm('Are you sure you want to reject this player?')) return;
+            
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    status: 'rejected',
+                    rejectedAt: new Date().toISOString()
+                });
+                
+                showToast('Player rejected');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error rejecting player:', error);
+                showToast('❌ Failed to reject player');
+            }
+        }
+        
+        async function reinstatePlayer(playerId) {
+            try {
+                await database.ref(`${PLAYERS_DB_PATH}/${playerId}`).update({
+                    status: 'pending'
+                });
+                
+                showToast('Player reinstated to pending');
+                loadPlayers();
+                
+            } catch (error) {
+                console.error('Error reinstating player:', error);
+                showToast('❌ Failed to reinstate player');
+            }
+        }
+        
+        // ===== COMPETITION MANAGEMENT FUNCTIONS =====
+        
+        async function loadCompetitions() {
+            try {
+                const snapshot = await database.ref(COMPETITIONS_DB_PATH).once('value');
+                allCompetitions = [];
+                
+                snapshot.forEach((child) => {
+                    const comp = child.val();
+                    comp.id = child.key;
+                    if (comp.meta) {
+                        allCompetitions.push(comp);
+                    }
+                });
+                
+                // Sort by creation date (newest first)
+                allCompetitions.sort((a, b) => new Date(b.meta.createdAt || 0) - new Date(a.meta.createdAt || 0));
+                
+                renderCompetitionsList();
+                
+            } catch (error) {
+                console.error('Error loading competitions:', error);
+                document.getElementById('competitions-list').innerHTML = `
+                    <div class="text-center py-8 text-red-500">Error loading competitions</div>
+                `;
+            }
+        }
+        
+        function renderCompetitionsList() {
+            const container = document.getElementById('competitions-list');
+            
+            if (allCompetitions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-gray-200">
+                        <div class="text-4xl mb-2">🏆</div>
+                        <p class="text-gray-500 mb-4">No competitions yet</p>
+                        <button onclick="showCreateCompetitionModal()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                            Create First Competition
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = allCompetitions.map(comp => {
+                const meta = comp.meta;
+                const registeredCount = Object.keys(comp.registeredPlayers || {}).length;
+                const statusColors = {
+                    'registration': 'bg-green-100 text-green-700',
+                    'closed': 'bg-amber-100 text-amber-700',
+                    'active': 'bg-blue-100 text-blue-700',
+                    'completed': 'bg-gray-100 text-gray-600'
+                };
+                
+                // Determine minimum players for each format
+                const minPlayersForFormat = {
+                    'americano': 4,
+                    'mexicano': 4,
+                    'mix': 20,
+                    'team-league': 8
+                };
+                const minPlayers = minPlayersForFormat[meta.format] || 4;
+                const canStartTournament = registeredCount >= minPlayers && meta.status !== 'active' && meta.status !== 'completed';
+                
+                return `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                        <div class="flex flex-col md:flex-row md:items-center gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="font-bold text-gray-800">${escapeHtml(meta.name)}</h3>
+                                    <span class="text-xs px-2 py-1 rounded-lg ${statusColors[meta.status] || 'bg-gray-100'}">${meta.status}</span>
+                                </div>
+                                <div class="flex flex-wrap gap-3 text-sm text-gray-500">
+                                    <span>📅 ${formatDate(meta.startDate)}</span>
+                                    <span>⭐ Level ${formatLevel(meta.minLevel)}-${formatLevel(meta.maxLevel)}</span>
+                                    <span>👥 ${registeredCount}/${meta.maxPlayers}</span>
+                                    <span class="uppercase">${meta.format || 'tournament'}</span>
+                                </div>
+                                ${meta.tournamentId ? `
+                                    <div class="mt-2">
+                                        <a href="${getTournamentUrl(meta.format, meta.tournamentId, meta.organiserKey)}" target="_blank" 
+                                            class="text-blue-600 hover:underline text-sm font-medium">
+                                            🔗 View Tournament →
+                                        </a>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="viewCompetitionPlayers('${comp.id}')" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">
+                                    👥 Players
+                                </button>
+                                ${canStartTournament ? `
+                                    <button onclick="showStartTournamentModal('${comp.id}')" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
+                                        🚀 Start Tournament
+                                    </button>
+                                ` : registeredCount < minPlayers && meta.status !== 'active' && meta.status !== 'completed' ? `
+                                    <span class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm" title="Need at least ${minPlayers} players">
+                                        🚀 Need ${minPlayers - registeredCount} more
+                                    </span>
+                                ` : ''}
+                                <select onchange="updateCompetitionStatus('${comp.id}', this.value)" class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                    <option value="registration" ${meta.status === 'registration' ? 'selected' : ''}>Open</option>
+                                    <option value="closed" ${meta.status === 'closed' ? 'selected' : ''}>Closed</option>
+                                    <option value="active" ${meta.status === 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="completed" ${meta.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                </select>
+                                <button onclick="deleteCompetition('${comp.id}')" class="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium">
+                                    🗑️
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showCreateCompetitionModal() {
+            const modal = document.createElement('div');
+            modal.id = 'create-competition-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 my-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🏆 Create Competition</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Competition Name *</label>
+                            <input type="text" id="comp-name" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="e.g., Winter League 2024" maxlength="100" />
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                            <textarea id="comp-description" rows="2" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none resize-none" placeholder="Optional description..."></textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Format *</label>
+                                <select id="comp-format" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none">
+                                    <option value="americano">Americano</option>
+                                    <option value="mexicano">Mexicano</option>
+                                    <option value="mix">Mix Tournament</option>
+                                    <option value="team-league">Team League</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Max Players *</label>
+                                <input type="number" id="comp-max-players" value="16" min="4" max="100" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Min Level *</label>
+                                <input type="number" id="comp-min-level" step="0.01" min="0" max="10" value="0.00" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Max Level *</label>
+                                <input type="number" id="comp-max-level" step="0.01" min="0" max="10" value="10.00" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Start Date *</label>
+                                <input type="date" id="comp-start-date" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-1">Registration Deadline</label>
+                                <input type="date" id="comp-deadline" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3 mt-6">
+                        <button onclick="closeCreateCompetitionModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                            Cancel
+                        </button>
+                        <button onclick="createCompetition()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold">
+                            Create
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeCreateCompetitionModal();
+            });
+        }
+        
+        function closeCreateCompetitionModal() {
+            const modal = document.getElementById('create-competition-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function createCompetition() {
+            const name = document.getElementById('comp-name').value.trim();
+            const description = document.getElementById('comp-description').value.trim();
+            const format = document.getElementById('comp-format').value;
+            const maxPlayers = parseInt(document.getElementById('comp-max-players').value);
+            const minLevel = parseFloat(document.getElementById('comp-min-level').value);
+            const maxLevel = parseFloat(document.getElementById('comp-max-level').value);
+            const startDate = document.getElementById('comp-start-date').value;
+            const deadline = document.getElementById('comp-deadline').value;
+            
+            if (!name || !startDate) {
+                showToast('❌ Please fill in required fields');
+                return;
+            }
+            
+            if (minLevel >= maxLevel) {
+                showToast('❌ Max level must be greater than min level');
+                return;
+            }
+            
+            try {
+                const competitionId = generateCompetitionId();
+                
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}`).set({
+                    meta: {
+                        name: name,
+                        description: description || null,
+                        format: format,
+                        maxPlayers: maxPlayers,
+                        minLevel: minLevel,
+                        maxLevel: maxLevel,
+                        startDate: startDate,
+                        registrationDeadline: deadline || null,
+                        status: 'registration',
+                        createdAt: new Date().toISOString(),
+                        createdBy: 'admin'
+                    },
+                    registeredPlayers: {}
+                });
+                
+                closeCreateCompetitionModal();
+                showToast('✅ Competition created!');
+                loadCompetitions();
+                
+            } catch (error) {
+                console.error('Error creating competition:', error);
+                showToast('❌ Failed to create competition');
+            }
+        }
+        
+        function generateCompetitionId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let id = 'comp_';
+            for (let i = 0; i < 8; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+        
+        async function updateCompetitionStatus(competitionId, status) {
+            try {
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/meta/status`).set(status);
+                showToast('✅ Status updated');
+                loadCompetitions();
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast('❌ Failed to update status');
+            }
+        }
+        
+        async function deleteCompetition(competitionId) {
+            if (!confirm('Are you sure you want to delete this competition? This cannot be undone.')) return;
+            
+            try {
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}`).remove();
+                showToast('Competition deleted');
+                loadCompetitions();
+            } catch (error) {
+                console.error('Error deleting competition:', error);
+                showToast('❌ Failed to delete competition');
+            }
+        }
+        
+        function viewCompetitionPlayers(competitionId) {
+            const comp = allCompetitions.find(c => c.id === competitionId);
+            if (!comp) return;
+            
+            const players = comp.registeredPlayers || {};
+            const playerList = Object.entries(players);
+            
+            const modal = document.createElement('div');
+            modal.id = 'players-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white">${escapeHtml(comp.meta.name)} - Players (${playerList.length})</h3>
+                    </div>
+                    <div class="p-4 overflow-y-auto max-h-[60vh]">
+                        ${playerList.length === 0 ? `
+                            <div class="text-center py-8 text-gray-400">No players registered yet</div>
+                        ` : `
+                            <div class="space-y-2">
+                                ${playerList.map(([id, data], index) => `
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div class="flex items-center gap-3">
+                                            <span class="w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-bold">${index + 1}</span>
+                                            <div>
+                                                <div class="font-medium text-gray-800">${escapeHtml(data.name || 'Unknown')}</div>
+                                                <div class="text-xs text-gray-500">Level: ${formatLevel(data.level)}</div>
+                                            </div>
+                                        </div>
+                                        <button onclick="removePlayerFromCompetition('${competitionId}', '${id}')" class="text-red-500 hover:text-red-700 text-sm">Remove</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                    <div class="px-6 py-4 border-t border-gray-100">
+                        <button onclick="closePlayersModal()" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closePlayersModal();
+            });
+        }
+        
+        function closePlayersModal() {
+            const modal = document.getElementById('players-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function removePlayerFromCompetition(competitionId, playerId) {
+            if (!confirm('Remove this player from the competition?')) return;
+            
+            try {
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/registeredPlayers/${playerId}`).remove();
+                closePlayersModal();
+                showToast('Player removed');
+                loadCompetitions();
+                viewCompetitionPlayers(competitionId);
+            } catch (error) {
+                console.error('Error removing player:', error);
+                showToast('❌ Failed to remove player');
+            }
+        }
+        
+        // ===== TOURNAMENT CREATION FUNCTIONS =====
+        
+        const TOURNAMENT_PATHS = {
+            'americano': 'americano-tournaments',
+            'mexicano': 'mexicano-tournaments',
+            'mix': 'tournaments',
+            'team-league': 'team-tournaments'
+        };
+        
+        const TOURNAMENT_URLS = {
+            'americano': '/americano/',
+            'mexicano': '/mexicano/',
+            'mix': '/tournament/',
+            'team-league': '/team-league/'
+        };
+        
+        function getTournamentUrl(format, tournamentId, organiserKey) {
+            const baseUrl = TOURNAMENT_URLS[format] || '/';
+            if (organiserKey) {
+                return `${baseUrl}?id=${tournamentId}&key=${organiserKey}`;
+            }
+            return `${baseUrl}?id=${tournamentId}`;
+        }
+        
+        function generateTournamentId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let id = '';
+            for (let i = 0; i < 6; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+        
+        function generateOrganiserKey() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let key = '';
+            for (let i = 0; i < 12; i++) {
+                key += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return key;
+        }
+        
+        function showStartTournamentModal(competitionId) {
+            const comp = allCompetitions.find(c => c.id === competitionId);
+            if (!comp) return;
+            
+            const players = comp.registeredPlayers || {};
+            const playerList = Object.entries(players);
+            const format = comp.meta.format;
+            
+            const formatInfo = {
+                'americano': { name: 'Americano', minPlayers: 4, maxPlayers: 24, courts: true },
+                'mexicano': { name: 'Mexicano', minPlayers: 4, maxPlayers: 24, courts: false },
+                'mix': { name: 'Mix Tournament', minPlayers: 20, maxPlayers: 28, courts: false },
+                'team-league': { name: 'Team League', minPlayers: 8, maxPlayers: 32, courts: false }
+            };
+            
+            const info = formatInfo[format] || formatInfo['americano'];
+            
+            const modal = document.createElement('div');
+            modal.id = 'start-tournament-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8">
+                    <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 rounded-t-2xl">
+                        <h3 class="text-xl font-bold text-white">🚀 Start ${info.name}</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                            <div class="font-semibold text-gray-800 mb-1">${escapeHtml(comp.meta.name)}</div>
+                            <div class="text-sm text-gray-500">${playerList.length} players registered</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Tournament Passcode *</label>
+                            <input type="text" id="tournament-passcode" 
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none"
+                                placeholder="Enter passcode for organisers" maxlength="20" />
+                            <p class="text-xs text-gray-500 mt-1">Organisers will need this to manage the tournament</p>
+                        </div>
+                        
+                        ${info.courts ? `
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Number of Courts</label>
+                                <select id="tournament-courts" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500 focus:outline-none">
+                                    <option value="1">1 Court</option>
+                                    <option value="2" selected>2 Courts</option>
+                                    <option value="3">3 Courts</option>
+                                    <option value="4">4 Courts</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                            <div class="flex gap-3">
+                                <span class="text-xl">ℹ️</span>
+                                <div class="text-sm text-blue-800">
+                                    <p class="font-semibold mb-1">What happens next:</p>
+                                    <ol class="list-decimal list-inside space-y-1 text-blue-700">
+                                        <li>A new ${info.name} tournament will be created</li>
+                                        <li>All ${playerList.length} registered players will be added</li>
+                                        <li>You'll get organiser and player links to share</li>
+                                        <li>Competition status will change to "Active"</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Players (${playerList.length})</label>
+                            <div class="max-h-40 overflow-y-auto bg-gray-50 rounded-xl p-3">
+                                ${playerList.map(([id, data], i) => `
+                                    <div class="flex items-center gap-2 py-1 ${i > 0 ? 'border-t border-gray-200' : ''}">
+                                        <span class="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">${i + 1}</span>
+                                        <span class="text-sm text-gray-700">${escapeHtml(data.name)}</span>
+                                        <span class="text-xs text-gray-400 ml-auto">Lvl ${formatLevel(data.level)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button onclick="closeStartTournamentModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                                Cancel
+                            </button>
+                            <button onclick="createTournamentFromCompetition('${competitionId}')" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold">
+                                Create Tournament
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeStartTournamentModal();
+            });
+            
+            setTimeout(() => document.getElementById('tournament-passcode')?.focus(), 100);
+        }
+        
+        function closeStartTournamentModal() {
+            const modal = document.getElementById('start-tournament-modal');
+            if (modal) modal.remove();
+        }
+        
+        async function createTournamentFromCompetition(competitionId) {
+            const passcode = document.getElementById('tournament-passcode')?.value.trim();
+            if (!passcode) {
+                showToast('❌ Please enter a passcode');
+                return;
+            }
+            
+            const comp = allCompetitions.find(c => c.id === competitionId);
+            if (!comp) {
+                showToast('❌ Competition not found');
+                return;
+            }
+            
+            const format = comp.meta.format;
+            const players = comp.registeredPlayers || {};
+            const playerList = Object.entries(players);
+            const courtCount = parseInt(document.getElementById('tournament-courts')?.value || '2');
+            
+            try {
+                let result;
+                
+                switch (format) {
+                    case 'americano':
+                        result = await createAmericanoTournament(comp, playerList, passcode, courtCount);
+                        break;
+                    case 'mexicano':
+                        result = await createMexicanoTournament(comp, playerList, passcode);
+                        break;
+                    case 'mix':
+                        result = await createMixTournament(comp, playerList, passcode);
+                        break;
+                    case 'team-league':
+                        result = await createTeamLeagueTournament(comp, playerList, passcode);
+                        break;
+                    default:
+                        showToast('❌ Unknown format');
+                        return;
+                }
+                
+                // Update competition with tournament link
+                await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/meta`).update({
+                    status: 'active',
+                    tournamentId: result.tournamentId,
+                    organiserKey: result.organiserKey,
+                    tournamentCreatedAt: new Date().toISOString()
+                });
+                
+                closeStartTournamentModal();
+                showTournamentSuccessModal(format, result.tournamentId, result.organiserKey, comp.meta.name);
+                loadCompetitions();
+                
+            } catch (error) {
+                console.error('Error creating tournament:', error);
+                showToast('❌ Failed to create tournament');
+            }
+        }
+        
+        async function createAmericanoTournament(comp, playerList, passcode, courtCount) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            const playerCount = playerList.length;
+            
+            // Generate player names object
+            const playerNames = {};
+            playerList.forEach(([id, data], index) => {
+                playerNames[index] = data.name;
+            });
+            
+            // Generate court names
+            const courtNames = {};
+            for (let i = 0; i < courtCount; i++) {
+                courtNames[i] = `Court ${i + 1}`;
+            }
+            
+            // Initialize empty scores
+            const scores = {};
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    createdFromCompetition: comp.id
+                },
+                playerCount,
+                playerNames,
+                courtCount,
+                courtNames,
+                fixedPoints: false,
+                totalPoints: 32,
+                scores,
+                tournamentStarted: true
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['americano']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        async function createMexicanoTournament(comp, playerList, passcode) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            
+            // Generate players array
+            const players = playerList.map(([id, data]) => ({
+                name: data.name,
+                points: 0,
+                wins: 0,
+                losses: 0,
+                gamesWon: 0,
+                gamesLost: 0
+            }));
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    mode: 'individual',
+                    pointsPerMatch: 32,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    status: 'active',
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdFromCompetition: comp.id
+                },
+                currentRound: 0,
+                playerCount: players.length,
+                players,
+                rounds: []
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['mexicano']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        async function createMixTournament(comp, playerList, passcode) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            
+            // Generate players object (Mix format uses different structure)
+            const players = {};
+            playerList.forEach(([id, data], index) => {
+                players[index + 1] = { name: data.name };
+            });
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    createdFromCompetition: comp.id
+                },
+                players
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['mix']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        async function createTeamLeagueTournament(comp, playerList, passcode) {
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+            
+            // For team league, we need to pair players into teams
+            // For now, we'll create placeholder teams
+            const teams = [];
+            for (let i = 0; i < playerList.length; i += 2) {
+                const player1 = playerList[i]?.[1]?.name || `Player ${i + 1}`;
+                const player2 = playerList[i + 1]?.[1]?.name || `Player ${i + 2}`;
+                teams.push({
+                    name: `Team ${Math.floor(i / 2) + 1}`,
+                    player1,
+                    player2,
+                    points: 0,
+                    gamesWon: 0,
+                    gamesLost: 0
+                });
+            }
+            
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    createdFromCompetition: comp.id
+                },
+                teams,
+                currentWeek: 1,
+                status: 'setup'
+            };
+            
+            await database.ref(`${TOURNAMENT_PATHS['team-league']}/${tournamentId}`).set(data);
+            return { tournamentId, organiserKey };
+        }
+        
+        function showTournamentSuccessModal(format, tournamentId, organiserKey, competitionName) {
+            const playerLink = window.location.origin + getTournamentUrl(format, tournamentId, null);
+            const organiserLink = window.location.origin + getTournamentUrl(format, tournamentId, organiserKey);
+            
+            const modal = document.createElement('div');
+            modal.id = 'tournament-success-modal';
+            modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4 rounded-t-2xl">
+                        <h3 class="text-xl font-bold text-white">🎉 Tournament Created!</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="text-center mb-6">
+                            <div class="text-6xl mb-4">✅</div>
+                            <p class="text-gray-600">${escapeHtml(competitionName)} is ready!</p>
+                        </div>
+                        
+                        <div class="space-y-4 mb-6">
+                            <div class="bg-blue-50 rounded-xl p-4">
+                                <div class="text-sm font-semibold text-blue-800 mb-2">📋 Tournament Code</div>
+                                <div class="font-mono text-2xl font-bold text-blue-600 tracking-wider">${tournamentId.toUpperCase()}</div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <div class="text-sm font-semibold text-gray-700 mb-2">👥 Player Link (share with players)</div>
+                                <div class="flex gap-2">
+                                    <input type="text" readonly value="${playerLink}" 
+                                        class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm" id="player-link-input" />
+                                    <button onclick="copyToClipboard('${playerLink}', 'Player link copied!')" 
+                                        class="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-amber-50 rounded-xl p-4">
+                                <div class="text-sm font-semibold text-amber-700 mb-2">🔑 Organiser Link (keep private)</div>
+                                <div class="flex gap-2">
+                                    <input type="text" readonly value="${organiserLink}" 
+                                        class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm" id="organiser-link-input" />
+                                    <button onclick="copyToClipboard('${organiserLink}', 'Organiser link copied!')" 
+                                        class="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button onclick="closeTournamentSuccessModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium">
+                                Close
+                            </button>
+                            <a href="${organiserLink}" target="_blank" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-center">
+                                Open Tournament →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function closeTournamentSuccessModal() {
+            const modal = document.getElementById('tournament-success-modal');
+            if (modal) modal.remove();
+        }
+        
+        function copyToClipboard(text, message) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(message || 'Copied!');
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                showToast('❌ Failed to copy');
+            });
+        }
+        
+        // ===== UTILITY FUNCTIONS =====
+        
+        function formatLevel(level) {
+            if (level === null || level === undefined) return '-';
+            return parseFloat(level).toFixed(2);
+        }
+        
+        function formatDate(isoString) {
+            if (!isoString) return '-';
+            const date = new Date(isoString);
+            return date.toLocaleDateString('en-GB', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+        }
+    </script>
+</body>
+</html>

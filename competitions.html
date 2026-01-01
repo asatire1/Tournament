@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Redirect to new location -->
+    <title>Redirecting... | Uber Padel</title>
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="https://uberpadel.com/competitions/browse.html">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <!-- Instant redirect -->
+    <script>
+        window.location.replace('competitions/browse.html' + window.location.search + window.location.hash);
+    </script>
+    
+    <!-- Fallback meta redirect -->
+    <noscript>
+        <meta http-equiv="refresh" content="0;url=competitions/browse.html">
+    </noscript>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f8fafc, #e0e7ff);
+        }
+        .redirect-message {
+            text-align: center;
+            padding: 2rem;
+        }
+        .redirect-message p {
+            color: #64748b;
+            margin-bottom: 1rem;
+        }
+        .redirect-message a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .redirect-message a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-message">
+        <p>Redirecting to competitions...</p>
+        <p><a href="competitions/browse.html">Click here if not redirected</a></p>
+    </div>
+</body>
+</html>

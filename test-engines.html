@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engine Tests - Phase 3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔧 Shared Engines Test (Phase 3)</h1>
+        
+        <div id="results" class="space-y-4"></div>
+    </div>
+
+    <!-- Load Engines -->
+    <script src="src/engines/BaseEngine.js"></script>
+    <script src="src/engines/AmericanoEngine.js"></script>
+    <script src="src/engines/MexicanoEngine.js"></script>
+    <script src="src/engines/TournamentEngine.js"></script>
+    <script src="src/engines/TeamLeagueEngine.js"></script>
+
+    <script>
+        const results = document.getElementById('results');
+        let passed = 0;
+        let failed = 0;
+
+        function test(name, fn) {
+            try {
+                const result = fn();
+                if (result === true) {
+                    passed++;
+                    results.innerHTML += `
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                            ✅ ${name}
+                        </div>
+                    `;
+                } else {
+                    failed++;
+                    results.innerHTML += `
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            ❌ ${name}: Expected true, got ${result}
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                failed++;
+                results.innerHTML += `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        ❌ ${name}: ${e.message}
+                    </div>
+                `;
+            }
+        }
+
+        // BaseEngine Tests
+        test('BaseEngine exists', () => typeof BaseEngine !== 'undefined');
+        
+        test('BaseEngine.validateScore - valid number', () => {
+            return BaseEngine.validateScore(10) === 10;
+        });
+        
+        test('BaseEngine.validateScore - null', () => {
+            return BaseEngine.validateScore(null) === null;
+        });
+        
+        test('BaseEngine.validateScore - min bound', () => {
+            return BaseEngine.validateScore(-5, { min: 0 }) === 0;
+        });
+        
+        test('BaseEngine.validateScore - max bound', () => {
+            return BaseEngine.validateScore(100, { max: 21 }) === 21;
+        });
+        
+        test('BaseEngine.calculateComplementScore', () => {
+            return BaseEngine.calculateComplementScore(10, 21) === 11;
+        });
+        
+        test('BaseEngine.getMatchResult - team1 wins', () => {
+            return BaseEngine.getMatchResult(21, 15) === 'team1';
+        });
+        
+        test('BaseEngine.getMatchResult - team2 wins', () => {
+            return BaseEngine.getMatchResult(15, 21) === 'team2';
+        });
+        
+        test('BaseEngine.getMatchResult - draw', () => {
+            return BaseEngine.getMatchResult(15, 15) === 'draw';
+        });
+        
+        test('BaseEngine.generatePlayerNames', () => {
+            const names = BaseEngine.generatePlayerNames(4);
+            return names.length === 4 && names[0] === 'Player 1';
+        });
+        
+        test('BaseEngine.generateCourtNames', () => {
+            const names = BaseEngine.generateCourtNames(2);
+            return names.length === 2 && names[0] === 'Court 1';
+        });
+        
+        test('BaseEngine.shuffle', () => {
+            const arr = [1, 2, 3, 4, 5];
+            const shuffled = BaseEngine.shuffle(arr);
+            return shuffled.length === 5 && arr.toString() === '1,2,3,4,5'; // Original unchanged
+        });
+        
+        test('BaseEngine.generateTournamentId', () => {
+            const id = BaseEngine.generateTournamentId();
+            return id.length === 6 && /^[a-z0-9]+$/.test(id);
+        });
+        
+        test('BaseEngine.generateOrganiserKey', () => {
+            const key = BaseEngine.generateOrganiserKey();
+            return key.length === 16;
+        });
+        
+        test('BaseEngine.hashPasscode', () => {
+            const hash = BaseEngine.hashPasscode('test123');
+            return typeof hash === 'string' && hash.length > 0;
+        });
+
+        // AmericanoEngine Tests
+        test('AmericanoEngine exists', () => typeof AmericanoEngine !== 'undefined');
+        
+        test('AmericanoEngine.validatePlayerCount - valid', () => {
+            return AmericanoEngine.validatePlayerCount(8) === true;
+        });
+        
+        test('AmericanoEngine.validatePlayerCount - too few', () => {
+            return AmericanoEngine.validatePlayerCount(3) === false;
+        });
+        
+        test('AmericanoEngine.validatePlayerCount - too many', () => {
+            return AmericanoEngine.validatePlayerCount(30) === false;
+        });
+        
+        test('AmericanoEngine.getOptimalCourtCount', () => {
+            return AmericanoEngine.getOptimalCourtCount(12) === 3;
+        });
+
+        // MexicanoEngine Tests
+        test('MexicanoEngine exists', () => typeof MexicanoEngine !== 'undefined');
+        
+        test('MexicanoEngine.validatePlayerCount - valid', () => {
+            return MexicanoEngine.validatePlayerCount(16) === true;
+        });
+        
+        test('MexicanoEngine.validatePlayerCount - not divisible by 4', () => {
+            return MexicanoEngine.validatePlayerCount(14) === false;
+        });
+        
+        test('MexicanoEngine.getCourtCount', () => {
+            return MexicanoEngine.getCourtCount(16) === 4;
+        });
+        
+        test('MexicanoEngine.getDefaultRoundCount - small', () => {
+            return MexicanoEngine.getDefaultRoundCount(12) === 6;
+        });
+        
+        test('MexicanoEngine.getDefaultRoundCount - medium', () => {
+            return MexicanoEngine.getDefaultRoundCount(20) === 8;
+        });
+        
+        test('MexicanoEngine.generateRandomPairings', () => {
+            const pairings = MexicanoEngine.generateRandomPairings(8);
+            return pairings.length === 2 && pairings[0].team1.length === 2;
+        });
+
+        // TournamentEngine Tests
+        test('TournamentEngine exists', () => typeof TournamentEngine !== 'undefined');
+        
+        test('TournamentEngine.validatePlayerCount - 24', () => {
+            return TournamentEngine.validatePlayerCount(24) === true;
+        });
+        
+        test('TournamentEngine.validatePlayerCount - 15', () => {
+            return TournamentEngine.validatePlayerCount(15) === false;
+        });
+        
+        test('TournamentEngine.getKnockoutBracket - semi', () => {
+            const bracket = TournamentEngine.getKnockoutBracket('semi');
+            return bracket.rounds === 2 && 'semi1' in bracket.matches;
+        });
+        
+        test('TournamentEngine.getKnockoutBracket - quarter', () => {
+            const bracket = TournamentEngine.getKnockoutBracket('quarter');
+            return bracket.rounds === 3 && 'quarter1' in bracket.matches;
+        });
+
+        // TeamLeagueEngine Tests
+        test('TeamLeagueEngine exists', () => typeof TeamLeagueEngine !== 'undefined');
+        
+        test('TeamLeagueEngine.validateTeamCount - valid', () => {
+            return TeamLeagueEngine.validateTeamCount(6) === true;
+        });
+        
+        test('TeamLeagueEngine.validateTeamCount - too few', () => {
+            return TeamLeagueEngine.validateTeamCount(2) === false;
+        });
+        
+        test('TeamLeagueEngine.generateRoundRobinFixtures - 4 teams', () => {
+            const rounds = TeamLeagueEngine.generateRoundRobinFixtures(4);
+            return rounds.length === 3 && rounds[0].matches.length === 2;
+        });
+        
+        test('TeamLeagueEngine.generateRoundRobinFixtures - 5 teams (odd)', () => {
+            const rounds = TeamLeagueEngine.generateRoundRobinFixtures(5);
+            return rounds.length === 4; // 5 teams = 4 rounds with one bye per round
+        });
+
+        // Summary
+        results.innerHTML += `
+            <div class="mt-8 p-4 bg-white rounded shadow">
+                <h2 class="text-xl font-bold mb-2">Summary</h2>
+                <p class="text-green-600 font-bold">Passed: ${passed}</p>
+                <p class="text-red-600 font-bold">Failed: ${failed}</p>
+                <p class="text-gray-600">Total: ${passed + failed}</p>
+            </div>
+        `;
+    </script>
+</body>
+</html>
