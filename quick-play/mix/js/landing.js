@@ -401,7 +401,7 @@ function showCreateTournamentModal() {
                                 <ul class="space-y-1 text-blue-700">
                                     <li>• You get a <strong>player link</strong> to share (view-only)</li>
                                     <li>• Use your <strong>passcode</strong> to access organiser mode</li>
-                                    <li>• <span id="player-info-text">24 players & 13 rounds</span> ready to go</li>
+                                    <li>• <span id="player-info-text">24 players & 14 rounds</span> ready to go</li>
                                 </ul>
                             </div>
                         </div>

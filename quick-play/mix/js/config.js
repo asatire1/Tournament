@@ -3,7 +3,7 @@
 const CONFIG = {
     // Tournament Settings - defaults (can be overridden by tournament metadata)
     TOTAL_PLAYERS: 24,
-    TOTAL_ROUNDS: 13,
+    TOTAL_ROUNDS: 14,
     MATCHES_PER_ROUND: 6,
     DEFAULT_MAX_SCORE: 16,
     FIXTURE_MAX_SCORE: 16, // Default max score for fixture matches
@@ -23,7 +23,7 @@ const CONFIG = {
         },
         24: {
             totalPlayers: 24,
-            totalRounds: 13,
+            totalRounds: 14,
             matchesPerRound: 6,
             tierCount: 6,
             fixturesFile: './data/fixtures.json',
