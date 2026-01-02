@@ -1,18 +1,15 @@
 // ===== APPLICATION CONFIGURATION =====
 
-// Get limits from shared config (falls back to defaults if not loaded)
-const _sharedMixConfig = typeof FORMAT_CONFIG !== 'undefined' ? FORMAT_CONFIG.mix : null;
-
 const CONFIG = {
     // Tournament Settings - defaults (can be overridden by tournament metadata)
     TOTAL_PLAYERS: 24,
-    TOTAL_ROUNDS: 13,
+    TOTAL_ROUNDS: 14,
     MATCHES_PER_ROUND: 6,
-    DEFAULT_MAX_SCORE: _sharedMixConfig?.defaults?.pointsPerMatch ?? 16,
+    DEFAULT_MAX_SCORE: 16,
     FIXTURE_MAX_SCORE: 16, // Default max score for fixture matches
     
-    // Supported Player Counts (from shared config)
-    SUPPORTED_PLAYER_COUNTS: _sharedMixConfig?.validOptions ?? [20, 24, 28],
+    // Supported Player Counts
+    SUPPORTED_PLAYER_COUNTS: [20, 24, 28],
     
     // Player Count Configurations
     PLAYER_CONFIGS: {
@@ -26,7 +23,7 @@ const CONFIG = {
         },
         24: {
             totalPlayers: 24,
-            totalRounds: 13,
+            totalRounds: 14,
             matchesPerRound: 6,
             tierCount: 6,
             fixturesFile: './data/fixtures.json',
