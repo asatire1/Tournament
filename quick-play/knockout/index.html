@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGJ6CZ4DZ0"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-TGJ6CZ4DZ0');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Primary Meta Tags -->
+    <title>Knockout Tournament - Uber Padel | Group Stage + Knockout</title>
+    <meta name="title" content="Knockout Tournament - Uber Padel | Group Stage + Knockout">
+    <meta name="description" content="Run group stage and knockout padel tournaments. 3 groups with fixed pairs, top teams advance to quarter finals, semi finals, and final. Professional tournament format.">
+    <meta name="keywords" content="knockout tournament, padel knockout, group stage, padel tournament, quarter finals, semi finals, final, padel competition">
+    <meta name="author" content="Uber Padel">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://uberpadel.com/quick-play/knockout/">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://uberpadel.com/quick-play/knockout/">
+    <meta property="og:title" content="Knockout Tournament - Uber Padel">
+    <meta property="og:description" content="Run group stage and knockout padel tournaments with real-time scoring and live brackets.">
+    <meta property="og:image" content="https://uberpadel.com/og-image-knockout.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Uber Padel">
+    <meta property="og:locale" content="en_GB">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://uberpadel.com/quick-play/knockout/">
+    <meta name="twitter:title" content="Knockout Tournament - Uber Padel">
+    <meta name="twitter:description" content="Group stage and knockout padel tournaments with live brackets.">
+    <meta name="twitter:image" content="https://uberpadel.com/og-image-knockout.png">
+
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content="#F97316">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Knockout">
+    <meta name="application-name" content="Knockout Tournament">
+
+    <!-- Structured Data - WebApplication -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Knockout Tournament - Uber Padel",
+        "description": "Group stage and knockout padel tournament manager with 3 groups, qualification rounds, and knockout brackets.",
+        "url": "https://uberpadel.com/quick-play/knockout/",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "Any",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "GBP"
+        },
+        "featureList": [
+            "3 group format",
+            "Fixed team pairs",
+            "Group stage standings",
+            "Knockout brackets",
+            "Progressive match points",
+            "Real-time score sync"
+        ],
+        "parent": {
+            "@type": "WebApplication",
+            "name": "Uber Padel Tournament Manager",
+            "url": "https://uberpadel.com/"
+        }
+    }
+    </script>
+
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./css/styles.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-orange-50 via-white to-amber-50 min-h-screen">
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- Loading state -->
+        <div class="min-h-screen flex items-center justify-center">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- JavaScript Files - Load in correct order -->
+    <script src="../../src/engines/BaseEngine.js"></script>
+    <script src="../../src/engines/GroupKnockoutEngine.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/firebase-config.js"></script>
+    <script src="./js/state.js"></script>
+    <script src="./js/components.js"></script>
+    <script src="./js/handlers.js"></script>
+    <script src="./js/router.js"></script>
+    <script src="./js/main.js"></script>
+</body>
+</html>

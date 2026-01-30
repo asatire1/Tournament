@@ -267,11 +267,19 @@
         .format-card-teal:hover {
             border-color: rgba(20, 184, 166, 0.3);
         }
-        
+
         .format-card-teal:hover::before {
             background: linear-gradient(135deg, #14B8A6, #06B6D4);
         }
-        
+
+        .format-card-orange:hover {
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+
+        .format-card-orange:hover::before {
+            background: linear-gradient(135deg, #F97316, #F59E0B);
+        }
+
         /* Tournament Cards */
         .tournament-card {
             background: white;
@@ -543,8 +551,8 @@
                 <p class="text-gray-600 max-w-xl mx-auto">Select a tournament format to start playing immediately. No account required.</p>
             </div>
             
-            <!-- Format Selection Cards - 2x2 grid -->
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <!-- Format Selection Cards - 5 columns -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-5 max-w-7xl mx-auto">
                 
                 <!-- Mix Tournament Card -->
                 <a href="./quick-play/tournament/" class="format-card format-card-blue group text-left cursor-pointer block">
@@ -685,6 +693,41 @@
                         </span>
                     </div>
                 </a>
+
+                <!-- Knockout Format Card -->
+                <a href="./quick-play/knockout/" class="format-card format-card-orange group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                            🏆
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Knockout</h3>
+                            <p class="text-sm text-gray-500">18-36 players (3 groups)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                            <span>3 groups, fixed pairs</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                            <span>Top teams to knockouts</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                            <span>QF, SF, Final bracket</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-orange-600 group-hover:gap-3 transition-all">
+                            Start Knockout
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
@@ -757,8 +800,8 @@
             </button>
         </div>
         
-        <!-- Tournament Lists - 4 columns -->
-        <div class="grid lg:grid-cols-4 gap-8">
+        <!-- Tournament Lists - 5 columns -->
+        <div class="grid lg:grid-cols-5 gap-6">
             
             <!-- Mix Tournaments -->
             <div>
@@ -835,6 +878,28 @@
                     <h3 class="font-semibold text-gray-800">Mexicano</h3>
                 </div>
                 <div id="tournament-list-mexicano" class="space-y-2">
+                    <!-- Loading skeleton -->
+                    <div class="tournament-card">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl skeleton"></div>
+                            <div class="flex-1">
+                                <div class="h-4 w-24 skeleton rounded mb-1.5"></div>
+                                <div class="h-3 w-20 skeleton rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Knockout Tournaments -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                        <span class="text-sm">🏆</span>
+                    </div>
+                    <h3 class="font-semibold text-gray-800">Knockout</h3>
+                </div>
+                <div id="tournament-list-knockout" class="space-y-2">
                     <!-- Loading skeleton -->
                     <div class="tournament-card">
                         <div class="flex items-center gap-3">
@@ -1111,7 +1176,7 @@
                     .orderByChild('meta/updatedAt')
                     .limitToLast(5)
                     .once('value');
-                
+
                 const tournaments = [];
                 snapshot.forEach(child => {
                     const data = child.val();
@@ -1125,12 +1190,40 @@
                         });
                     }
                 });
-                
+
                 tournaments.reverse(); // Newest first
                 renderMexicanoTournaments(tournaments);
             } catch (error) {
                 console.error('Error loading mexicano tournaments:', error);
                 renderMexicanoTournaments([]);
+            }
+
+            // Load Knockout Tournaments
+            try {
+                const snapshot = await database.ref('knockout-tournaments')
+                    .orderByChild('meta/updatedAt')
+                    .limitToLast(5)
+                    .once('value');
+
+                const tournaments = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data && data.meta) {
+                        tournaments.push({
+                            id: child.key,
+                            name: data.meta.name || 'Unnamed Tournament',
+                            updatedAt: data.meta.updatedAt || data.meta.createdAt,
+                            groupCount: data.groups ? data.groups.length : 3,
+                            type: 'knockout'
+                        });
+                    }
+                });
+
+                tournaments.reverse(); // Newest first
+                renderKnockoutTournaments(tournaments);
+            } catch (error) {
+                console.error('Error loading knockout tournaments:', error);
+                renderKnockoutTournaments([]);
             }
         }
         
@@ -1283,7 +1376,45 @@
                 </a>
             `).join('');
         }
-        
+
+        function renderKnockoutTournaments(tournaments) {
+            const container = document.getElementById('tournament-list-knockout');
+
+            if (tournaments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="text-4xl mb-3 opacity-50">🏆</div>
+                        <p class="text-gray-500 text-sm">No tournaments yet</p>
+                        <a href="./quick-play/knockout/" class="text-orange-600 text-sm font-medium hover:underline">Start your first →</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tournaments.map(t => `
+                <a href="./quick-play/knockout/#/t/${t.id}" class="tournament-card block group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0">
+                            ${t.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate text-sm">${t.name}</h4>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                <span class="font-mono font-medium text-orange-600">${t.id.toUpperCase()}</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${t.groupCount} groups</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${formatTimeAgo(t.updatedAt)}</span>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-orange-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
+            `).join('');
+        }
+
         // ===== UTILITY FUNCTIONS =====
         
         function formatTimeAgo(isoString) {
@@ -1386,7 +1517,18 @@
             } catch (e) {
                 console.error('Error checking mexicano:', e);
             }
-            
+
+            // Check if it's a Knockout tournament
+            try {
+                const snapshotKnockout = await database.ref(`knockout-tournaments/${code}/meta`).once('value');
+                if (snapshotKnockout.exists()) {
+                    window.location.href = `./quick-play/knockout/#/t/${code}`;
+                    return;
+                }
+            } catch (e) {
+                console.error('Error checking knockout:', e);
+            }
+
             // Not found
             showToast('❌ Tournament not found. Check the code and try again.');
         }
