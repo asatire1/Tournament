@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Inter Masjid Tournament</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">Inter Masjid Tournament Jan 26</h1>
+        <p class="text-gray-600 mb-6">Click the button below to create the tournament with all 27 teams across 3 groups.</p>
+
+        <div class="bg-orange-50 rounded-xl p-4 mb-6">
+            <h3 class="font-semibold text-gray-900 mb-2">Tournament Structure</h3>
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <div class="font-medium text-orange-600">Group A (9 teams)</div>
+                    <ul class="text-gray-600 mt-1 space-y-0.5">
+                        <li>Hidaya</li>
+                        <li>Masjid Umar Ibn Khattab</li>
+                        <li>Salahadeen Al-Ayubi</li>
+                        <li>Stanley House</li>
+                        <li>Masjid Ibrahim</li>
+                        <li>Cheadle Masjid CMA</li>
+                        <li>Mawlawi Kurdish Cultural Centre</li>
+                        <li>Assalaam Centre</li>
+                        <li>Dar-us-Salam Longsight</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="font-medium text-orange-600">Group B (9 teams)</div>
+                    <ul class="text-gray-600 mt-1 space-y-0.5">
+                        <li>Masjid Bilal</li>
+                        <li>Al Marifah Foundation</li>
+                        <li>Khanka Naqshbandia</li>
+                        <li>Mcdougalls Prayer Hall</li>
+                        <li>Khanka Youth</li>
+                        <li>Stockport Muslims</li>
+                        <li>Gatley</li>
+                        <li>Victoria Park Masjid</li>
+                        <li>Makki Masjid</li>
+                    </ul>
+                </div>
+                <div>
+                    <div class="font-medium text-orange-600">Group C (9 teams)</div>
+                    <ul class="text-gray-600 mt-1 space-y-0.5">
+                        <li>Masjid Hidaya</li>
+                        <li>Hough End Masjid</li>
+                        <li>Imdadia</li>
+                        <li>Goulden Mosque</li>
+                        <li>BMA</li>
+                        <li>Madina Masjid</li>
+                        <li>Blue Crescent</li>
+                        <li>WMA</li>
+                        <li>Masjid al falah preston</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <button id="createBtn" onclick="createTournament()" class="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl font-semibold text-lg shadow-lg transition-all">
+            Create Tournament
+        </button>
+
+        <div id="status" class="mt-4 text-center hidden"></div>
+        <div id="result" class="mt-4 hidden"></div>
+    </div>
+
+    <script>
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+            authDomain: "stretford-padel-tournament.firebaseapp.com",
+            databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "stretford-padel-tournament",
+            storageBucket: "stretford-padel-tournament.firebasestorage.app",
+            messagingSenderId: "596263602058",
+            appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Team data
+        const groupATeams = [
+            'Hidaya', 'Masjid Umar Ibn Khattab', 'Salahadeen Al-Ayubi', 'Stanley House',
+            'Masjid Ibrahim', 'Cheadle Masjid CMA', 'Mawlawi Kurdish Cultural Centre',
+            'Assalaam Centre', 'Dar-us-Salam Longsight'
+        ];
+
+        const groupBTeams = [
+            'Masjid Bilal', 'Al Marifah Foundation', 'Khanka Naqshbandia', 'Mcdougalls Prayer Hall',
+            'Khanka Youth', 'Stockport Muslims', 'Gatley', 'Victoria Park Masjid', 'Makki Masjid'
+        ];
+
+        const groupCTeams = [
+            'Masjid Hidaya', 'Hough End Masjid', 'Imdadia', 'Goulden Mosque', 'BMA',
+            'Madina Masjid', 'Blue Crescent', 'WMA', 'Masjid al falah preston'
+        ];
+
+        function generateRoundRobinFixtures(teams) {
+            const teamCount = teams.length;
+            const rounds = [];
+            const teamIndices = teams.map((_, i) => i);
+
+            if (teamCount % 2 === 1) {
+                teamIndices.push(-1);
+            }
+
+            const numRounds = teamIndices.length - 1;
+            const halfSize = teamIndices.length / 2;
+
+            const rotatingTeams = [...teamIndices];
+            const fixed = rotatingTeams.shift();
+
+            for (let round = 0; round < numRounds; round++) {
+                const roundMatches = [];
+
+                if (rotatingTeams[0] !== -1 && fixed !== -1) {
+                    roundMatches.push({
+                        team1Index: fixed,
+                        team2Index: rotatingTeams[0],
+                        team1: { name: teams[fixed], id: fixed },
+                        team2: { name: teams[rotatingTeams[0]], id: rotatingTeams[0] }
+                    });
+                }
+
+                for (let i = 1; i < halfSize; i++) {
+                    const t1 = rotatingTeams[i];
+                    const t2 = rotatingTeams[teamIndices.length - 1 - i];
+
+                    if (t1 !== -1 && t2 !== -1) {
+                        roundMatches.push({
+                            team1Index: t1,
+                            team2Index: t2,
+                            team1: { name: teams[t1], id: t1 },
+                            team2: { name: teams[t2], id: t2 }
+                        });
+                    }
+                }
+
+                rounds.push({
+                    roundNumber: round + 1,
+                    matches: roundMatches
+                });
+
+                rotatingTeams.push(rotatingTeams.shift());
+            }
+
+            return rounds;
+        }
+
+        function createGroup(groupIndex, groupName, teamNames) {
+            const teams = teamNames.map((name, idx) => ({
+                id: idx,
+                name: name,
+                groupIndex: groupIndex,
+                teamIndexInGroup: idx
+            }));
+
+            return {
+                groupIndex: groupIndex,
+                groupName: groupName,
+                teams: teams,
+                fixtures: generateRoundRobinFixtures(teamNames),
+                standings: []
+            };
+        }
+
+        function generateTournamentId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let id = '';
+            for (let i = 0; i < 6; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+
+        async function createTournament() {
+            const btn = document.getElementById('createBtn');
+            const status = document.getElementById('status');
+            const result = document.getElementById('result');
+
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+            status.classList.remove('hidden');
+            status.innerHTML = '<div class="text-orange-600">Creating tournament...</div>';
+
+            const tournamentId = generateTournamentId();
+
+            const groups = [
+                createGroup(0, 'A', groupATeams),
+                createGroup(1, 'B', groupBTeams),
+                createGroup(2, 'C', groupCTeams)
+            ];
+
+            const allTeams = [
+                ...groupATeams.map((name, i) => ({ id: i, name, groupIndex: 0 })),
+                ...groupBTeams.map((name, i) => ({ id: i + groupATeams.length, name, groupIndex: 1 })),
+                ...groupCTeams.map((name, i) => ({ id: i + groupATeams.length + groupBTeams.length, name, groupIndex: 2 }))
+            ];
+
+            const tournamentData = {
+                meta: {
+                    name: 'Inter Masjid Tournament Jan 26',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    status: 'group_stage',
+                    playerCount: allTeams.length,
+                    format: 'masjid_tournament'
+                },
+                teams: allTeams,
+                groups: groups,
+                scores: {},
+                bracket: null
+            };
+
+            try {
+                await database.ref(`team-tournaments/${tournamentId}`).set(tournamentData);
+
+                // Store organizer status
+                localStorage.setItem(`team_organizer_${tournamentId}`, 'true');
+
+                btn.textContent = '✅ Created!';
+                btn.classList.remove('from-orange-500', 'to-amber-500');
+                btn.classList.add('from-green-500', 'to-emerald-500');
+
+                status.innerHTML = '<div class="text-green-600 font-semibold">Tournament created successfully!</div>';
+
+                result.classList.remove('hidden');
+                result.innerHTML = `
+                    <div class="bg-green-50 rounded-xl p-4 text-center">
+                        <div class="text-sm text-gray-600 mb-2">Tournament Code</div>
+                        <div class="text-3xl font-bold text-green-600 font-mono mb-4">${tournamentId.toUpperCase()}</div>
+                        <a href="./quick-play/team-league/#/t/${tournamentId}"
+                           class="inline-block px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                            Open Tournament →
+                        </a>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                btn.textContent = 'Try Again';
+                btn.disabled = false;
+                status.innerHTML = `<div class="text-red-600">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
