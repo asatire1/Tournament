@@ -36,4 +36,40 @@
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
+    <url>
+        <loc>https://uberpadel.com/blog/</loc>
+        <lastmod>2025-02-14</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    <url>
+        <loc>https://uberpadel.com/blog/what-is-padel-americano/</loc>
+        <lastmod>2025-02-14</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://uberpadel.com/blog/how-to-organise-padel-tournament/</loc>
+        <lastmod>2025-02-14</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://uberpadel.com/blog/mexicano-vs-americano/</loc>
+        <lastmod>2025-02-14</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://uberpadel.com/blog/padel-scoring-explained/</loc>
+        <lastmod>2025-02-14</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
+        <loc>https://uberpadel.com/blog/why-mix-format-works/</loc>
+        <lastmod>2025-02-14</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
 </urlset>

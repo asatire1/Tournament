@@ -10,6 +10,7 @@ const NAV_CONFIG = {
     home: '/',
     quickPlay: '/#quick-play',
     competitions: '/competitions/browse.html',
+    blog: '/blog/',
     login: '/account/login.html',
     profile: '/account/profile.html',
     logo: '/uberpadel-icon.svg'
@@ -45,6 +46,7 @@ function createNavHTML(user) {
     const homePath = getNavPath(NAV_CONFIG.home);
     const quickPlayPath = getNavPath(NAV_CONFIG.quickPlay);
     const competitionsPath = getNavPath(NAV_CONFIG.competitions);
+    const blogPath = getNavPath(NAV_CONFIG.blog);
     const loginPath = getNavPath(NAV_CONFIG.login);
     const profilePath = getNavPath(NAV_CONFIG.profile);
     const logoPath = getNavPath(NAV_CONFIG.logo);
@@ -66,6 +68,7 @@ function createNavHTML(user) {
                 <div class="flex items-center gap-3 md:gap-6">
                     <a href="${quickPlayPath}" class="text-blue-600 hover:text-blue-700 font-medium text-sm md:text-base transition-colors">Quick Play</a>
                     <a href="${competitionsPath}" class="text-purple-600 hover:text-purple-700 font-medium text-sm md:text-base transition-colors">Competitions</a>
+                    <a href="${blogPath}" class="text-gray-600 hover:text-gray-800 font-medium text-sm md:text-base transition-colors">Blog</a>
                     
                     <!-- Signed In State -->
                     <div id="shared-nav-signed-in" class="items-center gap-3" style="display: ${signedInDisplay};">
