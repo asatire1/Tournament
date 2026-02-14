@@ -100,6 +100,82 @@ const FORMAT_CONFIG = {
         
         // Help text
         hint: 'Uses fixed teams of 2 players each (4-24 teams)'
+    },
+
+    mixicano: {
+        name: 'Mixicano',
+        description: 'Mixed gender dynamic pairing based on standings',
+        emoji: '🔀',
+
+        // Player limits (must be divisible by 4, equal M/F)
+        minPlayers: 4,
+        maxPlayers: 80,
+
+        // Validation rule
+        rule: 'divisible4',
+
+        // Default settings
+        defaults: {
+            courts: 1,
+            pointsPerMatch: 32
+        },
+
+        // Help text
+        hint: 'Requires equal male and female players, divisible by 4 (4, 8, 12...)'
+    },
+
+    'round-robin': {
+        name: 'Round Robin',
+        description: 'Every team plays every other team once',
+        emoji: '🔁',
+
+        // Team limits
+        minTeams: 4,
+        maxTeams: 24,
+        playersPerTeam: 2,
+
+        // Computed player limits
+        get minPlayers() { return this.minTeams * this.playersPerTeam; },
+        get maxPlayers() { return this.maxTeams * this.playersPerTeam; },
+
+        // Validation rule
+        rule: 'teams',
+
+        // Default settings
+        defaults: {
+            courts: 2,
+            pointsPerMatch: 16
+        },
+
+        // Help text
+        hint: 'Fixed pairs of 2 players each (4-24 teams)'
+    },
+
+    swiss: {
+        name: 'Swiss System',
+        description: 'Opponents matched by standings each round',
+        emoji: '♟️',
+
+        // Team limits
+        minTeams: 4,
+        maxTeams: 40,
+        playersPerTeam: 2,
+
+        // Computed player limits
+        get minPlayers() { return this.minTeams * this.playersPerTeam; },
+        get maxPlayers() { return this.maxTeams * this.playersPerTeam; },
+
+        // Validation rule
+        rule: 'teams',
+
+        // Default settings
+        defaults: {
+            courts: 2,
+            pointsPerMatch: 16
+        },
+
+        // Help text
+        hint: 'Fixed pairs, even number of teams required (4-40 teams)'
     }
 };
 
@@ -116,7 +192,7 @@ function validateFormatCount(count, format) {
         return { valid: false, error: `Unknown format: ${format}` };
     }
     
-    const isTeamFormat = config.rule === 'teams';
+    const isTeamFormat = config.rule === 'teams' || config.playersPerTeam > 0;
     const label = isTeamFormat ? 'teams' : 'players';
     const min = isTeamFormat ? config.minTeams : config.minPlayers;
     const max = isTeamFormat ? config.maxTeams : config.maxPlayers;

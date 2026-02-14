@@ -280,6 +280,30 @@
             background: linear-gradient(135deg, #F97316, #F59E0B);
         }
 
+        .format-card-rose:hover {
+            border-color: rgba(244, 63, 94, 0.3);
+        }
+
+        .format-card-rose:hover::before {
+            background: linear-gradient(135deg, #F43F5E, #EC4899);
+        }
+
+        .format-card-emerald:hover {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .format-card-emerald:hover::before {
+            background: linear-gradient(135deg, #10B981, #059669);
+        }
+
+        .format-card-amber:hover {
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .format-card-amber:hover::before {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+        }
+
         /* Tournament Cards */
         .tournament-card {
             background: white;
@@ -552,7 +576,7 @@
             </div>
             
             <!-- Format Selection Cards - 5 columns -->
-            <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-5 max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto">
                 
                 <!-- Mix Tournament Card -->
                 <a href="./quick-play/tournament/" class="format-card format-card-blue group text-left cursor-pointer block">
@@ -728,10 +752,115 @@
                         </span>
                     </div>
                 </a>
+
+                <!-- Mixicano Format Card -->
+                <a href="./quick-play/mixicano/" class="format-card format-card-rose group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-2xl shadow-lg shadow-rose-500/30 group-hover:scale-110 transition-transform">
+                            🔀
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Mixicano</h3>
+                            <p class="text-sm text-gray-500">Mixed gender teams (1M+1F)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span>Dynamic pairings by standings</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span>Inclusive &amp; competitive</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span>Equal M/F representation</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-rose-600 group-hover:gap-3 transition-all">
+                            Start Mixicano
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- Round Robin Format Card -->
+                <a href="./quick-play/round-robin/" class="format-card format-card-emerald group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                            🔁
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Round Robin</h3>
+                            <p class="text-sm text-gray-500">4-24 teams (fixed pairs)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Every team plays everyone</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Single league table</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Pure league format</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 group-hover:gap-3 transition-all">
+                            Start Round Robin
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- Swiss System Format Card -->
+                <a href="./quick-play/swiss/" class="format-card format-card-amber group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                            ♟️
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Swiss System</h3>
+                            <p class="text-sm text-gray-500">4-40 teams (fixed pairs)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Fair Swiss pairing</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Fewer rounds needed</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Avoids repeat matchups</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 group-hover:gap-3 transition-all">
+                            Start Swiss System
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
-    
+
     <!-- Help & Community Section -->
     <div class="bg-gray-50 pb-12">
         <div class="max-w-6xl mx-auto px-6">
@@ -801,7 +930,7 @@
         </div>
         
         <!-- Tournament Lists - 5 columns -->
-        <div class="grid lg:grid-cols-5 gap-6">
+        <div class="grid lg:grid-cols-4 gap-6">
             
             <!-- Mix Tournaments -->
             <div>
@@ -912,10 +1041,73 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Mixicano Tournaments -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
+                        <span class="text-sm">🔀</span>
+                    </div>
+                    <h3 class="font-semibold text-gray-800">Mixicano</h3>
+                </div>
+                <div id="tournament-list-mixicano" class="space-y-2">
+                    <div class="tournament-card">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl skeleton"></div>
+                            <div class="flex-1">
+                                <div class="h-4 w-24 skeleton rounded mb-1.5"></div>
+                                <div class="h-3 w-20 skeleton rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Round Robin Tournaments -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                        <span class="text-sm">🔁</span>
+                    </div>
+                    <h3 class="font-semibold text-gray-800">Round Robin</h3>
+                </div>
+                <div id="tournament-list-roundrobin" class="space-y-2">
+                    <div class="tournament-card">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl skeleton"></div>
+                            <div class="flex-1">
+                                <div class="h-4 w-24 skeleton rounded mb-1.5"></div>
+                                <div class="h-3 w-20 skeleton rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Swiss Tournaments -->
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                        <span class="text-sm">♟️</span>
+                    </div>
+                    <h3 class="font-semibold text-gray-800">Swiss</h3>
+                </div>
+                <div id="tournament-list-swiss" class="space-y-2">
+                    <div class="tournament-card">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl skeleton"></div>
+                            <div class="flex-1">
+                                <div class="h-4 w-24 skeleton rounded mb-1.5"></div>
+                                <div class="h-3 w-20 skeleton rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         </div>
     </div>
-    
+
     <!-- How It Works Section -->
     <div class="bg-white border-t border-gray-100">
         <div class="max-w-6xl mx-auto px-6 py-16">
@@ -965,6 +1157,9 @@
                     <a href="quick-play/americano/" class="hover:text-white transition-colors">Americano</a>
                     <a href="quick-play/mexicano/" class="hover:text-white transition-colors">Mexicano</a>
                     <a href="quick-play/team-league/" class="hover:text-white transition-colors">Team Tournament</a>
+                    <a href="quick-play/mixicano/" class="hover:text-white transition-colors">Mixicano</a>
+                    <a href="quick-play/round-robin/" class="hover:text-white transition-colors">Round Robin</a>
+                    <a href="quick-play/swiss/" class="hover:text-white transition-colors">Swiss</a>
                 </div>
                 <p class="text-sm text-center md:text-right">
                     Built with ❤️ for the padel community
@@ -1226,6 +1421,90 @@
                 console.error('Error loading knockout tournaments:', error);
                 renderKnockoutTournaments([]);
             }
+
+            // Load Mixicano Tournaments
+            try {
+                const snapshot = await database.ref('mixicano-tournaments')
+                    .orderByChild('meta/updatedAt')
+                    .limitToLast(5)
+                    .once('value');
+
+                const tournaments = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data && data.meta) {
+                        tournaments.push({
+                            id: child.key,
+                            name: data.meta.name || 'Unnamed Session',
+                            updatedAt: data.meta.updatedAt || data.meta.createdAt,
+                            playerCount: data.playerCount || '?',
+                            type: 'mixicano'
+                        });
+                    }
+                });
+
+                tournaments.reverse();
+                renderMixicanoTournaments(tournaments);
+            } catch (error) {
+                console.error('Error loading mixicano tournaments:', error);
+                renderMixicanoTournaments([]);
+            }
+
+            // Load Round Robin Tournaments
+            try {
+                const snapshot = await database.ref('roundrobin-tournaments')
+                    .orderByChild('meta/updatedAt')
+                    .limitToLast(5)
+                    .once('value');
+
+                const tournaments = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data && data.meta) {
+                        tournaments.push({
+                            id: child.key,
+                            name: data.meta.name || 'Unnamed Tournament',
+                            updatedAt: data.meta.updatedAt || data.meta.createdAt,
+                            teamCount: data.teams ? data.teams.length : 0,
+                            type: 'round-robin'
+                        });
+                    }
+                });
+
+                tournaments.reverse();
+                renderRoundRobinTournaments(tournaments);
+            } catch (error) {
+                console.error('Error loading round robin tournaments:', error);
+                renderRoundRobinTournaments([]);
+            }
+
+            // Load Swiss Tournaments
+            try {
+                const snapshot = await database.ref('swiss-tournaments')
+                    .orderByChild('meta/updatedAt')
+                    .limitToLast(5)
+                    .once('value');
+
+                const tournaments = [];
+                snapshot.forEach(child => {
+                    const data = child.val();
+                    if (data && data.meta) {
+                        tournaments.push({
+                            id: child.key,
+                            name: data.meta.name || 'Unnamed Tournament',
+                            updatedAt: data.meta.updatedAt || data.meta.createdAt,
+                            teamCount: data.teams ? data.teams.length : 0,
+                            type: 'swiss'
+                        });
+                    }
+                });
+
+                tournaments.reverse();
+                renderSwissTournaments(tournaments);
+            } catch (error) {
+                console.error('Error loading swiss tournaments:', error);
+                renderSwissTournaments([]);
+            }
         }
         
         function render24PlayerTournaments(tournaments) {
@@ -1416,6 +1695,118 @@
             `).join('');
         }
 
+        function renderMixicanoTournaments(tournaments) {
+            const container = document.getElementById('tournament-list-mixicano');
+
+            if (tournaments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="text-4xl mb-3 opacity-50">🔀</div>
+                        <p class="text-gray-500 text-sm">No sessions yet</p>
+                        <a href="./quick-play/mixicano/" class="text-rose-600 text-sm font-medium hover:underline">Start your first →</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tournaments.map(t => `
+                <a href="./quick-play/mixicano/#/t/${t.id}" class="tournament-card block group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0">
+                            ${t.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate text-sm">${t.name}</h4>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                <span class="font-mono font-medium text-rose-600">${t.id.toUpperCase()}</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${formatTimeAgo(t.updatedAt)}</span>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-rose-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function renderRoundRobinTournaments(tournaments) {
+            const container = document.getElementById('tournament-list-roundrobin');
+
+            if (tournaments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="text-4xl mb-3 opacity-50">🔁</div>
+                        <p class="text-gray-500 text-sm">No tournaments yet</p>
+                        <a href="./quick-play/round-robin/" class="text-emerald-600 text-sm font-medium hover:underline">Start your first →</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tournaments.map(t => `
+                <a href="./quick-play/round-robin/#/t/${t.id}" class="tournament-card block group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0">
+                            ${t.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate text-sm">${t.name}</h4>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                <span class="font-mono font-medium text-emerald-600">${t.id.toUpperCase()}</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${t.teamCount} teams</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${formatTimeAgo(t.updatedAt)}</span>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function renderSwissTournaments(tournaments) {
+            const container = document.getElementById('tournament-list-swiss');
+
+            if (tournaments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                        <div class="text-4xl mb-3 opacity-50">♟️</div>
+                        <p class="text-gray-500 text-sm">No tournaments yet</p>
+                        <a href="./quick-play/swiss/" class="text-amber-600 text-sm font-medium hover:underline">Start your first →</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tournaments.map(t => `
+                <a href="./quick-play/swiss/#/t/${t.id}" class="tournament-card block group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center text-white font-bold shadow-sm flex-shrink-0">
+                            ${t.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate text-sm">${t.name}</h4>
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                <span class="font-mono font-medium text-amber-600">${t.id.toUpperCase()}</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${t.teamCount} teams</span>
+                                <span class="text-gray-300">•</span>
+                                <span>${formatTimeAgo(t.updatedAt)}</span>
+                            </div>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </a>
+            `).join('');
+        }
+
         // ===== UTILITY FUNCTIONS =====
         
         function formatTimeAgo(isoString) {
@@ -1528,6 +1919,39 @@
                 }
             } catch (e) {
                 console.error('Error checking knockout:', e);
+            }
+
+            // Check if it's a Mixicano tournament
+            try {
+                const snapshotMixicano = await database.ref(`mixicano-tournaments/${code}/meta`).once('value');
+                if (snapshotMixicano.exists()) {
+                    window.location.href = `./quick-play/mixicano/#/t/${code}`;
+                    return;
+                }
+            } catch (e) {
+                console.error('Error checking mixicano:', e);
+            }
+
+            // Check if it's a Round Robin tournament
+            try {
+                const snapshotRR = await database.ref(`roundrobin-tournaments/${code}/meta`).once('value');
+                if (snapshotRR.exists()) {
+                    window.location.href = `./quick-play/round-robin/#/t/${code}`;
+                    return;
+                }
+            } catch (e) {
+                console.error('Error checking round-robin:', e);
+            }
+
+            // Check if it's a Swiss tournament
+            try {
+                const snapshotSwiss = await database.ref(`swiss-tournaments/${code}/meta`).once('value');
+                if (snapshotSwiss.exists()) {
+                    window.location.href = `./quick-play/swiss/#/t/${code}`;
+                    return;
+                }
+            } catch (e) {
+                console.error('Error checking swiss:', e);
             }
 
             // Not found

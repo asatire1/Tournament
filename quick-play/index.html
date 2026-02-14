@@ -132,7 +132,39 @@
         .format-card-teal:hover::before {
             background: linear-gradient(135deg, #14B8A6, #06B6D4);
         }
-        
+
+        .format-card-orange:hover {
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+
+        .format-card-orange:hover::before {
+            background: linear-gradient(135deg, #F97316, #F59E0B);
+        }
+
+        .format-card-rose:hover {
+            border-color: rgba(244, 63, 94, 0.3);
+        }
+
+        .format-card-rose:hover::before {
+            background: linear-gradient(135deg, #F43F5E, #EC4899);
+        }
+
+        .format-card-emerald:hover {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .format-card-emerald:hover::before {
+            background: linear-gradient(135deg, #10B981, #059669);
+        }
+
+        .format-card-amber:hover {
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .format-card-amber:hover::before {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+        }
+
         /* Hero background pattern */
         .hero-pattern {
             background-image: 
@@ -214,7 +246,7 @@
         <div class="max-w-6xl mx-auto px-6">
             
             <!-- Format Cards Grid -->
-            <div class="animate-fade-in-up animate-delay-400 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div class="animate-fade-in-up animate-delay-400 grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
                 
                 <!-- Mix Tournament Card -->
                 <a href="./tournament/" class="format-card format-card-blue group text-left cursor-pointer block">
@@ -355,8 +387,148 @@
                         </span>
                     </div>
                 </a>
+
+                <!-- Knockout Format Card -->
+                <a href="./knockout/" class="format-card format-card-orange group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-3xl shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                            🏆
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Knockout</h3>
+                            <p class="text-gray-500">18-36 players (3 groups)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                            <span>3 groups, fixed pairs</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                            <span>Top teams to knockouts</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                            <span>QF, SF, Final bracket</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-orange-600 group-hover:gap-3 transition-all">
+                            Start Knockout
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- Mixicano Format Card -->
+                <a href="./mixicano/" class="format-card format-card-rose group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg shadow-rose-500/30 group-hover:scale-110 transition-transform">
+                            🔀
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Mixicano</h3>
+                            <p class="text-gray-500">Mixed gender teams (1M+1F)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span>Dynamic pairings by standings</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span>Inclusive &amp; competitive</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                            <span>Equal M/F representation</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-rose-600 group-hover:gap-3 transition-all">
+                            Start Mixicano
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- Round Robin Format Card -->
+                <a href="./round-robin/" class="format-card format-card-emerald group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                            🔁
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Round Robin</h3>
+                            <p class="text-gray-500">4-24 teams (fixed pairs)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Every team plays everyone</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Single league table</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Pure league format</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 group-hover:gap-3 transition-all">
+                            Start Round Robin
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- Swiss System Format Card -->
+                <a href="./swiss/" class="format-card format-card-amber group text-left cursor-pointer block">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-3xl shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                            ♟️
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-900 mb-1">Swiss System</h3>
+                            <p class="text-gray-500">4-40 teams (fixed pairs)</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-600 mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Fair Swiss pairing</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Fewer rounds needed</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span>Avoids repeat matchups</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100">
+                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 group-hover:gap-3 transition-all">
+                            Start Swiss System
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                        </span>
+                    </div>
+                </a>
             </div>
-            
+
             <!-- Help text -->
             <div class="text-center mt-10">
                 <p class="text-gray-500 text-sm mb-3">Not sure which format to choose?</p>
@@ -381,7 +553,7 @@
                         1️⃣
                     </div>
                     <h3 class="font-semibold text-gray-900 mb-1">Choose Format</h3>
-                    <p class="text-gray-600 text-sm">Select from Mix, Team, Americano, or Mexicano</p>
+                    <p class="text-gray-600 text-sm">Select from 8 tournament formats</p>
                 </div>
                 
                 <div class="text-center">
