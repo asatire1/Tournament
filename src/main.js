@@ -18,6 +18,7 @@ import { TournamentService, UserService } from './services/index.esm.js';
 
 // Import UI components
 import { UI, Modal, Toast, PlayerBadge, ScoreInput, StandingsTable, MatchCard, Loading, Empty, Tabs } from './components/ui/index.esm.js';
+import { initFeedbackButton } from './components/ui/FeedbackButton.js';
 
 /**
  * UberPadel Application
@@ -48,6 +49,9 @@ class UberPadelApp {
             
             // Initialize toast container
             Toast.init({ position: 'bottom-right' });
+
+            // Initialize BugsIQ feedback button
+            initFeedbackButton();
             
             this.initialized = true;
             console.log('✅ UberPadel initialized successfully');
