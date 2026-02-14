@@ -129,32 +129,26 @@ async function sharedNavSignOut() {
 
 /**
  * Initialize the navigation bar
- * Only adds nav on landing pages that don't have their own nav
- * Tournament views have their own header via tournament-header.js
+ * Adds shared nav to ALL pages, replacing any existing non-shared nav
  */
 function initSharedNav() {
-    // Don't add if nav already exists
+    // Don't add if shared nav already exists
     if (document.getElementById('shared-nav')) return;
-    
-    // Don't add if another nav already exists (landing pages have their own)
-    if (document.querySelector('nav')) return;
-    
-    // Don't add on tournament views - they have their own header
-    const hash = window.location.hash;
-    if (hash && hash.includes('/t/')) {
-        return; // Tournament view - don't add shared nav
-    }
-    
+
+    // Remove any existing old-style nav elements (we replace them with the shared nav)
+    const existingNavs = document.querySelectorAll('nav:not(#shared-nav)');
+    existingNavs.forEach(nav => nav.remove());
+
     // Get current user
     let currentUser = null;
     if (typeof AuthService !== 'undefined') {
-        currentUser = AuthService.getCurrentUser();
+        try { currentUser = AuthService.getCurrentUser(); } catch(e) {}
     }
-    
+
     // Insert nav at the start of body
     const navHTML = createNavHTML(currentUser);
     document.body.insertAdjacentHTML('afterbegin', navHTML);
-    
+
     // Listen for auth changes
     if (typeof AuthService !== 'undefined') {
         AuthService.onAuthStateChanged((user) => {
