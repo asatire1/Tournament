@@ -32,7 +32,62 @@ async function renderLandingPage() {
         }
     }
     
+    // Build auth nav
+    let currentUser = null;
+    if (typeof AuthService !== 'undefined') {
+        try { currentUser = AuthService.getCurrentUser(); } catch(e) {}
+    }
+
+    function buildAuthNav(user) {
+        if (user) {
+            const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
+            return `
+                <a href="../../account/profile.html" class="flex items-center gap-2 text-gray-600 hover:text-purple-600 font-medium text-sm transition-colors">
+                    <span class="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold">${initial}</span>
+                    <span class="hidden md:inline">${user.name || 'Account'}</span>
+                </a>
+            `;
+        } else {
+            return `
+                <div id="nav-signed-in" class="flex items-center gap-2" style="display: none;"></div>
+                <a id="nav-sign-in" href="../../account/login.html" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
+                    Sign In
+                </a>
+            `;
+        }
+    }
+
+    const navHtml = `
+        <nav class="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <a href="../../index.html" class="flex items-center gap-2">
+                        <img src="../../uberpadel-icon.svg" alt="Uber Padel" class="w-8 h-8">
+                        <span class="font-bold text-lg text-gray-800">Uber Padel</span>
+                    </a>
+                    <div class="flex items-center gap-3 md:gap-6">
+                        <a href="../../index.html#quick-play" class="text-purple-600 font-semibold text-sm md:text-base">Quick Play</a>
+                        <a href="../../competitions/browse.html" class="text-gray-600 hover:text-purple-600 font-medium text-sm md:text-base transition-colors">Competitions</a>
+                        <div id="nav-auth-container" class="flex items-center gap-3">
+                            ${buildAuthNav(currentUser)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    `;
+
+    if (typeof AuthService !== 'undefined') {
+        AuthService.onAuthStateChanged((user) => {
+            const container = document.getElementById('nav-auth-container');
+            if (container) {
+                container.innerHTML = buildAuthNav(user);
+            }
+        });
+    }
+
     document.getElementById('app').innerHTML = `
+        ${navHtml}
         <div class="min-h-screen">
             <!-- Hero Section -->
             <div class="relative overflow-hidden">
