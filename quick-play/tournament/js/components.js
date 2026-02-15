@@ -723,9 +723,9 @@ function renderFinalOnly(topPlayers, canEdit, viewOnlyMessage, formatSelector, q
     const final = state.getKnockoutScore('final');
     const champion = final.team1Score !== null && final.team2Score !== null ? (final.team1Score > final.team2Score ? 'team1' : 'team2') : null;
     
-    // Team 1: 1st + 3rd, Team 2: 2nd + 4th
-    const team1 = topPlayers[0] && topPlayers[2] ? [topPlayers[0].playerId, topPlayers[2].playerId] : null;
-    const team2 = topPlayers[1] && topPlayers[3] ? [topPlayers[1].playerId, topPlayers[3].playerId] : null;
+    // Team 1: 1st + 4th, Team 2: 2nd + 3rd
+    const team1 = topPlayers[0] && topPlayers[3] ? [topPlayers[0].playerId, topPlayers[3].playerId] : null;
+    const team2 = topPlayers[1] && topPlayers[2] ? [topPlayers[1].playerId, topPlayers[2].playerId] : null;
     
     return `
         <div class="space-y-6">
@@ -753,12 +753,12 @@ function renderSemiAndFinal(topPlayers, canEdit, viewOnlyMessage, formatSelector
     const sf2Winner = sf2.team1Score !== null && sf2.team2Score !== null ? (sf2.team1Score > sf2.team2Score ? 'team1' : 'team2') : null;
     const champion = final.team1Score !== null && final.team2Score !== null ? (final.team1Score > final.team2Score ? 'team1' : 'team2') : null;
     
-    // SF1: 1st+3rd vs 6th+8th
-    // SF2: 2nd+4th vs 5th+7th
-    const sf1Team1 = topPlayers[0] && topPlayers[2] ? [topPlayers[0].playerId, topPlayers[2].playerId] : null;
-    const sf1Team2 = topPlayers[5] && topPlayers[7] ? [topPlayers[5].playerId, topPlayers[7].playerId] : null;
-    const sf2Team1 = topPlayers[1] && topPlayers[3] ? [topPlayers[1].playerId, topPlayers[3].playerId] : null;
-    const sf2Team2 = topPlayers[4] && topPlayers[6] ? [topPlayers[4].playerId, topPlayers[6].playerId] : null;
+    // SF1: 1st+4th vs 5th+8th
+    // SF2: 2nd+3rd vs 6th+7th
+    const sf1Team1 = topPlayers[0] && topPlayers[3] ? [topPlayers[0].playerId, topPlayers[3].playerId] : null;
+    const sf1Team2 = topPlayers[4] && topPlayers[7] ? [topPlayers[4].playerId, topPlayers[7].playerId] : null;
+    const sf2Team1 = topPlayers[1] && topPlayers[2] ? [topPlayers[1].playerId, topPlayers[2].playerId] : null;
+    const sf2Team2 = topPlayers[5] && topPlayers[6] ? [topPlayers[5].playerId, topPlayers[6].playerId] : null;
     
     // Determine final teams based on semi winners
     let finalTeam1 = null, finalTeam2 = null;
@@ -807,21 +807,21 @@ function renderFullKnockout(topPlayers, canEdit, viewOnlyMessage, formatSelector
     const sf2Winner = sf2.team1Score !== null && sf2.team2Score !== null ? (sf2.team1Score > sf2.team2Score ? 'team1' : 'team2') : null;
     const champion = final.team1Score !== null && final.team2Score !== null ? (final.team1Score > final.team2Score ? 'team1' : 'team2') : null;
     
-    // QF teams
-    const qf1Team1 = top16[0] && top16[2] ? [top16[0].playerId, top16[2].playerId] : null;
-    const qf1Team2 = top16[13] && top16[15] ? [top16[13].playerId, top16[15].playerId] : null;
-    const qf2Team1 = top16[1] && top16[3] ? [top16[1].playerId, top16[3].playerId] : null;
-    const qf2Team2 = top16[12] && top16[14] ? [top16[12].playerId, top16[14].playerId] : null;
-    const qf3Team1 = top16[4] && top16[6] ? [top16[4].playerId, top16[6].playerId] : null;
-    const qf3Team2 = top16[9] && top16[11] ? [top16[9].playerId, top16[11].playerId] : null;
-    const qf4Team1 = top16[5] && top16[7] ? [top16[5].playerId, top16[7].playerId] : null;
-    const qf4Team2 = top16[8] && top16[10] ? [top16[8].playerId, top16[10].playerId] : null;
-    
-    // SF teams based on QF winners
+    // QF teams (seeded: 1+4 v 13+16, 2+3 v 14+15, 5+8 v 9+12, 6+7 v 10+11)
+    const qf1Team1 = top16[0] && top16[3] ? [top16[0].playerId, top16[3].playerId] : null;
+    const qf1Team2 = top16[12] && top16[15] ? [top16[12].playerId, top16[15].playerId] : null;
+    const qf2Team1 = top16[1] && top16[2] ? [top16[1].playerId, top16[2].playerId] : null;
+    const qf2Team2 = top16[13] && top16[14] ? [top16[13].playerId, top16[14].playerId] : null;
+    const qf3Team1 = top16[4] && top16[7] ? [top16[4].playerId, top16[7].playerId] : null;
+    const qf3Team2 = top16[8] && top16[11] ? [top16[8].playerId, top16[11].playerId] : null;
+    const qf4Team1 = top16[5] && top16[6] ? [top16[5].playerId, top16[6].playerId] : null;
+    const qf4Team2 = top16[9] && top16[10] ? [top16[9].playerId, top16[10].playerId] : null;
+
+    // SF teams based on QF winners (SF1: QF1 v QF2, SF2: QF3 v QF4)
     const sf1Team1 = qf1Winner === 'team1' ? qf1Team1 : qf1Team2;
-    const sf1Team2 = qf4Winner === 'team1' ? qf4Team1 : qf4Team2;
-    const sf2Team1 = qf2Winner === 'team1' ? qf2Team1 : qf2Team2;
-    const sf2Team2 = qf3Winner === 'team1' ? qf3Team1 : qf3Team2;
+    const sf1Team2 = qf2Winner === 'team1' ? qf2Team1 : qf2Team2;
+    const sf2Team1 = qf3Winner === 'team1' ? qf3Team1 : qf3Team2;
+    const sf2Team2 = qf4Winner === 'team1' ? qf4Team1 : qf4Team2;
     
     return `
         <div class="space-y-6">
@@ -840,8 +840,8 @@ function renderFullKnockout(topPlayers, canEdit, viewOnlyMessage, formatSelector
             <div>
                 <h3 class="text-lg font-bold text-gray-800 mb-4" style="letter-spacing: -0.5px;">Semi Finals</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${qf1Winner && qf4Winner ? KnockoutMatchCard('sf1', sf1Team1, sf1Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf1 || 'Semi Final 1'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF1 and QF4 first</div></div>`}
-                    ${qf2Winner && qf3Winner ? KnockoutMatchCard('sf2', sf2Team1, sf2Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf2 || 'Semi Final 2'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF2 and QF3 first</div></div>`}
+                    ${qf1Winner && qf2Winner ? KnockoutMatchCard('sf1', sf1Team1, sf1Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf1 || 'Semi Final 1'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF1 and QF2 first</div></div>`}
+                    ${qf3Winner && qf4Winner ? KnockoutMatchCard('sf2', sf2Team1, sf2Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf2 || 'Semi Final 2'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF3 and QF4 first</div></div>`}
                 </div>
             </div>
             <div>
