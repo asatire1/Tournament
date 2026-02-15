@@ -3,7 +3,7 @@
  * Provides offline caching and PWA support.
  */
 
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const PRECACHE = 'uberpadel-precache-' + CACHE_VERSION;
 const RUNTIME = 'uberpadel-runtime-' + CACHE_VERSION;
 
