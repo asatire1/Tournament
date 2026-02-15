@@ -76,18 +76,21 @@ const TVMode = {
                                 <span class="font-semibold text-sm text-gray-400">IDLE</span>
                             </div>
                         `}
+                        <button onclick="TVMode.exit()" class="bg-white/10 hover:bg-white/20 text-white/60 hover:text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors" title="Exit TV Mode">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Content -->
                 <div class="flex-1 flex ${hasMatches ? 'flex-col lg:flex-row' : ''} overflow-hidden">
                     <!-- Standings -->
-                    <div class="${hasMatches ? 'lg:w-[60%] w-full' : 'w-full'} overflow-y-auto p-4 md:p-6">
+                    <div class="${hasMatches ? 'lg:w-[45%] w-full' : 'w-full'} overflow-y-auto p-4 md:p-6">
                         ${this._renderStandings(data, accent)}
                     </div>
                     ${hasMatches ? `
                         <!-- Matches -->
-                        <div class="lg:w-[40%] w-full overflow-y-auto p-4 md:p-6 lg:border-l border-t lg:border-t-0 border-white/10">
+                        <div class="lg:w-[55%] w-full overflow-y-auto p-4 md:p-6 lg:border-l border-t lg:border-t-0 border-white/10">
                             ${this._renderMatches(data, accent)}
                         </div>
                     ` : ''}
@@ -188,48 +191,68 @@ const TVMode = {
             byRound[key].push(m);
         });
 
-        return Object.entries(byRound).map(([roundLabel, roundMatches]) => `
-            <div class="mb-6">
-                <h3 class="text-sm uppercase tracking-wider text-gray-500 font-bold mb-3">${roundLabel}</h3>
-                <div class="space-y-3">
-                    ${roundMatches.map(m => {
-                        const isLive = m.isLive && !m.isComplete;
-                        const isDone = m.isComplete;
-                        const borderColor = isLive ? 'border-green-500/50' : isDone ? 'border-white/10' : 'border-white/5';
-                        const bgColor = isLive ? 'bg-green-500/5' : 'bg-white/5';
+        const roundEntries = Object.entries(byRound);
+        const colClass = roundEntries.length > 1 ? 'grid grid-cols-2 gap-4' : '';
 
-                        return `
-                            <div class="${bgColor} border ${borderColor} rounded-xl p-4">
-                                ${m.courtName ? `<div class="text-xs text-gray-500 mb-2 uppercase tracking-wider">${m.courtName}</div>` : ''}
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex-1 text-right">
-                                        <span class="font-semibold text-base md:text-lg ${isDone && m.score1 > m.score2 ? 'text-white' : isDone ? 'text-gray-400' : 'text-white'}">${m.team1}</span>
+        return `<div class="${colClass} h-full">
+            ${roundEntries.map(([roundLabel, roundMatches], idx) => {
+                const isNext = idx > 0;
+                return `
+                <div class="${isNext ? 'border-l border-white/10 pl-4' : ''}">
+                    <h3 class="text-sm uppercase tracking-wider font-bold mb-3 ${isNext ? 'text-gray-600' : 'text-gray-500'}">${roundLabel}${isNext ? ' <span class="text-xs font-normal text-gray-600">(Up Next)</span>' : ''}</h3>
+                    <div class="space-y-2">
+                        ${roundMatches.map(m => {
+                            const isLive = m.isLive && !m.isComplete;
+                            const isDone = m.isComplete;
+                            const borderColor = isLive ? 'border-green-500/50' : isDone ? 'border-white/10' : 'border-white/5';
+                            const bgColor = isLive ? 'bg-green-500/5' : isNext ? 'bg-white/3' : 'bg-white/5';
+
+                            return `
+                                <div class="${bgColor} border ${borderColor} rounded-lg p-3">
+                                    ${m.courtName ? `<div class="text-xs text-gray-500 mb-1.5 uppercase tracking-wider">${m.courtName}</div>` : ''}
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex-1 text-right">
+                                            <span class="font-semibold text-sm ${isDone && m.score1 > m.score2 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team1}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            ${m.score1 != null ? `
+                                                <span class="text-xl font-bold min-w-[2ch] text-right">${m.score1}</span>
+                                                <span class="text-gray-600">-</span>
+                                                <span class="text-xl font-bold min-w-[2ch] text-left">${m.score2}</span>
+                                            ` : `
+                                                <span class="text-gray-600 text-sm">vs</span>
+                                            `}
+                                        </div>
+                                        <div class="flex-1">
+                                            <span class="font-semibold text-sm ${isDone && m.score2 > m.score1 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team2}</span>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-2 flex-shrink-0">
-                                        ${m.score1 != null ? `
-                                            <span class="text-2xl md:text-3xl font-bold min-w-[2ch] text-right">${m.score1}</span>
-                                            <span class="text-gray-600 text-xl">-</span>
-                                            <span class="text-2xl md:text-3xl font-bold min-w-[2ch] text-left">${m.score2}</span>
-                                        ` : `
-                                            <span class="text-gray-600 text-lg">vs</span>
-                                        `}
-                                    </div>
-                                    <div class="flex-1">
-                                        <span class="font-semibold text-base md:text-lg ${isDone && m.score2 > m.score1 ? 'text-white' : isDone ? 'text-gray-400' : 'text-white'}">${m.team2}</span>
-                                    </div>
+                                    ${isLive ? `
+                                        <div class="flex items-center justify-center gap-1 mt-1">
+                                            <span class="tv-live-dot w-1.5 h-1.5 bg-green-400 rounded-full inline-block"></span>
+                                            <span class="text-green-400 text-xs font-bold uppercase">Live</span>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                                ${isLive ? `
-                                    <div class="flex items-center justify-center gap-1.5 mt-2">
-                                        <span class="tv-live-dot w-2 h-2 bg-green-400 rounded-full inline-block"></span>
-                                        <span class="text-green-400 text-xs font-bold uppercase">Live</span>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        `;
-                    }).join('')}
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `}).join('')}
+        </div>`;
+    },
+
+    exit() {
+        this.isActive = false;
+        this.getDataFn = null;
+        // Show nav again
+        const nav = document.getElementById('shared-nav');
+        const spacer = document.getElementById('shared-nav-spacer');
+        if (nav) nav.style.display = '';
+        if (spacer) spacer.style.display = '';
+        // Navigate back to tournament view (remove /tv from hash)
+        const hash = window.location.hash.replace(/\/tv$/, '');
+        window.location.hash = hash;
     },
 
     getTVLink(tournamentId) {
