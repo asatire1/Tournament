@@ -208,28 +208,28 @@ const TVMode = {
                             const bgColor = isLive ? 'bg-green-500/5' : isNext ? 'bg-white/3' : 'bg-white/5';
 
                             return `
-                                <div class="${bgColor} border ${borderColor} rounded-lg p-2.5" style="height: 64px; display: flex; flex-direction: column; justify-content: center;">
-                                    <div class="flex items-center justify-between gap-2">
+                                <div class="${bgColor} border ${borderColor} rounded-lg p-3" style="height: 77px; display: flex; flex-direction: column; justify-content: center;">
+                                    <div class="flex items-center justify-between gap-3">
                                         <div class="flex-1 text-right min-w-0">
-                                            <span class="font-semibold text-sm ${isDone && m.score1 > m.score2 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team1}</span>
+                                            <span class="font-semibold text-base ${isDone && m.score1 > m.score2 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team1}</span>
                                         </div>
-                                        <div class="flex items-center gap-1.5 flex-shrink-0" style="min-width: 70px; justify-content: center;">
+                                        <div class="flex items-center gap-2 flex-shrink-0" style="min-width: 84px; justify-content: center;">
                                             ${m.score1 != null ? `
-                                                <span class="text-lg font-bold">${m.score1}</span>
+                                                <span class="text-xl font-bold">${m.score1}</span>
                                                 <span class="text-gray-600">-</span>
-                                                <span class="text-lg font-bold">${m.score2}</span>
+                                                <span class="text-xl font-bold">${m.score2}</span>
                                             ` : isLive ? `
-                                                <span class="tv-live-dot w-1.5 h-1.5 bg-green-400 rounded-full inline-block"></span>
-                                                <span class="text-green-400 text-xs font-bold uppercase">Live</span>
+                                                <span class="tv-live-dot w-2 h-2 bg-green-400 rounded-full inline-block"></span>
+                                                <span class="text-green-400 text-sm font-bold uppercase">Live</span>
                                             ` : `
-                                                <span class="text-gray-600 text-sm">vs</span>
+                                                <span class="text-gray-600 text-base">vs</span>
                                             `}
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <span class="font-semibold text-sm ${isDone && m.score2 > m.score1 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team2}</span>
+                                            <span class="font-semibold text-base ${isDone && m.score2 > m.score1 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team2}</span>
                                         </div>
                                     </div>
-                                    ${m.courtName ? `<div class="text-xs text-gray-600 text-center mt-0.5">${m.courtName}</div>` : ''}
+                                    ${m.courtName ? `<div class="text-xs text-gray-600 text-center mt-1">${m.courtName}</div>` : ''}
                                 </div>
                             `;
                         }).join('')}
