@@ -815,11 +815,19 @@ function getTvData() {
         });
     }
 
-    // Find first incomplete round
+    // Find first incomplete round (current) and the next round
+    const roundLabels = [...new Set(currentMatches.map(m => m.roundLabel))];
     const firstIncomplete = currentMatches.find(m => !m.isComplete)?.roundLabel;
-    const matchesToShow = firstIncomplete
-        ? currentMatches.filter(m => m.roundLabel === firstIncomplete)
-        : currentMatches.slice(-CONFIG.MATCHES_PER_ROUND);
+    let matchesToShow;
+    if (firstIncomplete) {
+        const currentIdx = roundLabels.indexOf(firstIncomplete);
+        const nextRound = roundLabels[currentIdx + 1];
+        matchesToShow = currentMatches.filter(m =>
+            m.roundLabel === firstIncomplete || (nextRound && m.roundLabel === nextRound)
+        );
+    } else {
+        matchesToShow = currentMatches.slice(-CONFIG.MATCHES_PER_ROUND);
+    }
 
     return {
         tournamentName: state.tournamentName || 'Mix Tournament',
