@@ -817,11 +817,11 @@ function renderFullKnockout(topPlayers, canEdit, viewOnlyMessage, formatSelector
     const qf4Team1 = top16[5] && top16[6] ? [top16[5].playerId, top16[6].playerId] : null;
     const qf4Team2 = top16[9] && top16[10] ? [top16[9].playerId, top16[10].playerId] : null;
     
-    // SF teams based on QF winners
+    // SF teams based on QF winners (SF1: QF1 v QF2, SF2: QF3 v QF4)
     const sf1Team1 = qf1Winner === 'team1' ? qf1Team1 : qf1Team2;
-    const sf1Team2 = qf4Winner === 'team1' ? qf4Team1 : qf4Team2;
-    const sf2Team1 = qf2Winner === 'team1' ? qf2Team1 : qf2Team2;
-    const sf2Team2 = qf3Winner === 'team1' ? qf3Team1 : qf3Team2;
+    const sf1Team2 = qf2Winner === 'team1' ? qf2Team1 : qf2Team2;
+    const sf2Team1 = qf3Winner === 'team1' ? qf3Team1 : qf3Team2;
+    const sf2Team2 = qf4Winner === 'team1' ? qf4Team1 : qf4Team2;
     
     return `
         <div class="space-y-6">
@@ -840,8 +840,8 @@ function renderFullKnockout(topPlayers, canEdit, viewOnlyMessage, formatSelector
             <div>
                 <h3 class="text-lg font-bold text-gray-800 mb-4" style="letter-spacing: -0.5px;">Semi Finals</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    ${qf1Winner && qf4Winner ? KnockoutMatchCard('sf1', sf1Team1, sf1Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf1 || 'Semi Final 1'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF1 and QF4 first</div></div>`}
-                    ${qf2Winner && qf3Winner ? KnockoutMatchCard('sf2', sf2Team1, sf2Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf2 || 'Semi Final 2'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF2 and QF3 first</div></div>`}
+                    ${qf1Winner && qf2Winner ? KnockoutMatchCard('sf1', sf1Team1, sf1Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf1 || 'Semi Final 1'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF1 and QF2 first</div></div>`}
+                    ${qf3Winner && qf4Winner ? KnockoutMatchCard('sf2', sf2Team1, sf2Team2, state.semiMaxScore) : `<div class="match-card border border-gray-200"><div class="px-5 py-2.5" style="background: rgba(0, 0, 0, 0.02);"><div class="font-semibold text-sm text-gray-800" style="letter-spacing: -0.3px;">${state.knockoutNames.sf2 || 'Semi Final 2'}</div></div><div class="p-4 text-sm text-gray-400 text-center">Complete QF3 and QF4 first</div></div>`}
                 </div>
             </div>
             <div>
