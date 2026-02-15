@@ -104,6 +104,12 @@ function renderTournamentHeader(options) {
                             </button>
                         `}
                         
+                        <!-- TV Mode -->
+                        <a href="${'#/t/' + tournamentId + '/tv'}" class="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur rounded-xl px-2.5 py-2 transition-colors" title="TV / Spectator Mode">
+                            <span class="text-sm">📺</span>
+                            <span class="hidden sm:inline text-xs font-medium">TV</span>
+                        </a>
+
                         <!-- Tournament Code + Share -->
                         <button onclick="${onShare}()" class="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-xl px-3 py-2 transition-colors" title="Share tournament">
                             <span class="font-mono font-bold tracking-wider text-sm">${tournamentId.toUpperCase()}</span>

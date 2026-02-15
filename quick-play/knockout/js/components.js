@@ -486,6 +486,9 @@ function renderTournamentHeader(state) {
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
+                        <a href="#/t/${state.tournamentId}/tv" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors" title="TV / Spectator Mode">
+                            📺 TV
+                        </a>
                         <button onclick="showShareLinksModal()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">
                             📋 Share
                         </button>
