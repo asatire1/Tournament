@@ -796,7 +796,7 @@ function getTvData() {
             const round = originalIdx + 1;
             const matches = state.fixtures[round] || [];
             matches.forEach((match, matchIdx) => {
-                const score = state.matchScores?.[round]?.[matchIdx + 1];
+                const score = state.matchScores?.[round]?.[matchIdx];
                 const s1 = score?.team1Score;
                 const s2 = score?.team2Score;
                 const isScored = s1 != null && s2 != null;

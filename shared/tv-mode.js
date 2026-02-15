@@ -192,7 +192,7 @@ const TVMode = {
         });
 
         const roundEntries = Object.entries(byRound);
-        const colClass = roundEntries.length > 1 ? 'grid grid-cols-2 gap-4' : '';
+        const colClass = roundEntries.length > 1 ? 'grid grid-cols-2 gap-4 items-start' : '';
 
         return `<div class="${colClass} h-full">
             ${roundEntries.map(([roundLabel, roundMatches], idx) => {
