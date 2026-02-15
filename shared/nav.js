@@ -164,3 +164,67 @@ if (document.readyState === 'loading') {
     // DOM already loaded, init now but with a small delay to ensure AuthService is ready
     setTimeout(initSharedNav, 100);
 }
+
+// ===== PWA: Service Worker Registration =====
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('SW registered, scope:', reg.scope))
+            .catch(err => console.warn('SW registration failed:', err));
+    });
+}
+
+// ===== PWA: Install Prompt =====
+let _deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredInstallPrompt = e;
+    _showInstallBanner();
+});
+
+function _showInstallBanner() {
+    // Don't show if already installed or dismissed this session
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (sessionStorage.getItem('pwa-install-dismissed')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.innerHTML = `
+        <div style="position:fixed;bottom:0;left:0;right:0;background:#1e3a5f;color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:10000;box-shadow:0 -4px 12px rgba(0,0,0,0.15);font-family:'Space Grotesk',-apple-system,sans-serif;">
+            <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                <img src="/uberpadel-icon-192.png" alt="" style="width:40px;height:40px;border-radius:10px;flex-shrink:0;">
+                <div style="min-width:0;">
+                    <div style="font-weight:700;font-size:14px;">Install Uber Padel</div>
+                    <div style="font-size:12px;opacity:0.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Add to home screen for quick access</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+                <button id="pwa-install-btn" style="background:#2563EB;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">Install</button>
+                <button id="pwa-dismiss-btn" style="background:transparent;color:white;border:1px solid rgba(255,255,255,0.3);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;">Not now</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(banner);
+
+    document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+        if (!_deferredInstallPrompt) return;
+        _deferredInstallPrompt.prompt();
+        const result = await _deferredInstallPrompt.userChoice;
+        console.log('Install prompt result:', result.outcome);
+        _deferredInstallPrompt = null;
+        banner.remove();
+    });
+
+    document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
+        sessionStorage.setItem('pwa-install-dismissed', 'true');
+        banner.remove();
+    });
+}
+
+window.addEventListener('appinstalled', () => {
+    console.log('Uber Padel installed');
+    _deferredInstallPrompt = null;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.remove();
+});
