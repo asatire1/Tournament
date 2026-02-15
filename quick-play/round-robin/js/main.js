@@ -14,6 +14,9 @@ Router.onRouteChange = async function(route, tournamentId, organiserKey) {
     if (route === Router.routes.HOME) {
         // Landing page
         await renderLandingPage();
+    } else if (route === Router.routes.TV) {
+        await loadTournament(tournamentId, null);
+        TVMode.init(getTvData);
     } else if (route === Router.routes.TOURNAMENT && tournamentId) {
         // Tournament page
         await loadTournament(tournamentId, organiserKey);
@@ -78,9 +81,54 @@ async function loadTournament(tournamentId, organiserKey) {
 // ===== GLOBAL RENDER FUNCTION =====
 
 function renderRoundRobin() {
+    if (typeof TVMode !== 'undefined' && TVMode.isActive) { TVMode.render(); return; }
     if (typeof RoundRobinApp !== 'undefined' && RoundRobinApp.render) {
         RoundRobinApp.render();
     }
+}
+
+/**
+ * TV Mode data adapter for Round Robin
+ */
+function getTvData() {
+    if (!state) return null;
+
+    const standings = typeof calculateStandings === 'function' ? calculateStandings() : [];
+
+    const currentMatches = [];
+    const fixtures = state.fixtures || [];
+    fixtures.forEach((match, i) => {
+        if (!match) return;
+        const isScored = match.score1 != null && match.score1 >= 0;
+        currentMatches.push({
+            courtName: match.court || null,
+            roundLabel: match.roundLabel || `Round ${match.round || Math.floor(i / 2) + 1}`,
+            team1: match.team1Name || match.team1 || 'TBD',
+            team2: match.team2Name || match.team2 || 'TBD',
+            score1: isScored ? match.score1 : null,
+            score2: isScored ? match.score2 : null,
+            isComplete: isScored,
+            isLive: !isScored
+        });
+    });
+
+    return {
+        tournamentName: state.tournamentName || 'Round Robin',
+        tournamentId: state.tournamentId,
+        formatName: 'Round Robin',
+        formatEmoji: '\u{1F501}',
+        accentColor: 'emerald',
+        standings: standings.map((s, i) => ({
+            rank: i + 1,
+            name: s.name || s.teamName || `Team ${i + 1}`,
+            played: s.played || 0,
+            points: s.points || 0,
+            wins: s.wins,
+            losses: s.losses,
+            pointsDiff: s.pointsDiff || s.goalDifference
+        })),
+        currentMatches: currentMatches.filter(m => !m.isComplete).slice(0, 6)
+    };
 }
 
 // ===== START APP =====

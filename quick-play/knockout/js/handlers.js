@@ -282,4 +282,75 @@ async function loadTournamentById(tournamentId) {
     render();
 }
 
+// ===== SHARE LINKS =====
+
+/**
+ * Show share links modal with TV Mode link
+ */
+function showShareLinksModal() {
+    const state = TournamentState.getState();
+    const tournamentId = state.tournamentId || TournamentState.tournamentId;
+    if (!tournamentId) return;
+
+    const playerLink = Router.getPlayerLink(tournamentId);
+
+    let container = document.getElementById('modal-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'modal-container';
+        document.body.appendChild(container);
+    }
+
+    container.innerHTML = `
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50" onclick="if(event.target === this) { document.getElementById('modal-container').innerHTML = ''; }">
+            <div class="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl max-h-[90vh] overflow-auto">
+                <div class="sticky top-0 bg-gradient-to-r from-orange-500 to-amber-500 px-5 py-4 sm:px-6 sm:py-5 flex items-center justify-between">
+                    <h2 class="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                        <span>🔗</span> Share Tournament
+                    </h2>
+                    <button onclick="document.getElementById('modal-container').innerHTML = ''" class="text-white/80 hover:text-white p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="p-5 sm:p-6 space-y-5">
+                    <div class="text-center pb-2">
+                        <div class="text-xl sm:text-2xl font-bold text-gray-800">${state.meta?.name || 'Knockout Tournament'}</div>
+                        <div class="text-sm text-gray-500 mt-1">Code: <span class="font-mono font-bold text-orange-600">${tournamentId.toUpperCase()}</span></div>
+                    </div>
+
+                    <!-- Player Link -->
+                    <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-lg">👥</span>
+                            <span class="font-semibold text-green-800">Share Link</span>
+                        </div>
+                        <p class="text-sm text-green-700 mb-3">Share this with everyone to view scores in real-time</p>
+                        <div class="flex gap-2">
+                            <input type="text" value="${playerLink}" readonly class="flex-1 min-w-0 px-3 py-2.5 bg-white border border-green-300 rounded-xl text-sm text-gray-600 font-mono truncate" onclick="this.select()" />
+                            <button onclick="navigator.clipboard.writeText('${playerLink}'); showToast('✅ Link copied!')" class="px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded-xl font-medium transition-colors whitespace-nowrap">Copy</button>
+                        </div>
+                    </div>
+
+                    <!-- TV Mode -->
+                    <div class="bg-purple-50 rounded-xl p-4">
+                        <div class="text-sm font-semibold text-purple-800 mb-2">📺 TV Mode</div>
+                        <p class="text-xs text-gray-500 mb-2">Full-screen leaderboard for wall-mounted screens</p>
+                        <div class="flex items-center gap-2">
+                            <input type="text" value="${Router.getTVLink(tournamentId)}" readonly class="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-lg text-sm font-mono" />
+                            <button onclick="navigator.clipboard.writeText('${Router.getTVLink(tournamentId)}'); showToast('✅ Copied!')" class="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sticky bottom-0 p-4 bg-gray-50 border-t border-gray-100">
+                    <button onclick="document.getElementById('modal-container').innerHTML = ''" class="w-full px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors">Done</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 console.log('Handlers loaded');

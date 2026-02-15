@@ -486,7 +486,7 @@ function renderTournamentHeader(state) {
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button onclick="copyShareLink()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">
+                        <button onclick="showShareLinksModal()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors">
                             📋 Share
                         </button>
                         <div class="flex gap-1">
@@ -543,6 +543,7 @@ function showToast(message) {
  * Main render function
  */
 function render() {
+    if (typeof TVMode !== 'undefined' && TVMode.isActive) { TVMode.render(); return; }
     const state = TournamentState.getState();
 
     if (state.isLoading) {

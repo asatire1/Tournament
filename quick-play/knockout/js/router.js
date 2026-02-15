@@ -29,6 +29,13 @@ const Router = {
         };
     },
 
+    // Route patterns
+    routes: {
+        HOME: 'home',
+        TOURNAMENT: 'tournament',
+        TV: 'tv'
+    },
+
     /**
      * Handle route change
      */
@@ -37,8 +44,17 @@ const Router = {
 
         switch (path) {
             case 't':
-                // View tournament: #/t/{tournamentId}
-                if (param1) {
+                // Check for TV mode: #/t/{tournamentId}/tv
+                if (param1 && param2 === 'tv') {
+                    this.currentRoute = this.routes.TV;
+                    this.tournamentId = param1;
+                    await loadTournamentById(param1);
+                    if (typeof TVMode !== 'undefined') {
+                        TVMode.init(getTvData);
+                    }
+                } else if (param1) {
+                    this.currentRoute = this.routes.TOURNAMENT;
+                    this.tournamentId = param1;
                     await loadTournamentById(param1);
                 }
                 break;
@@ -54,6 +70,7 @@ const Router = {
 
             default:
                 // Landing page
+                this.currentRoute = this.routes.HOME;
                 TournamentState.reset();
                 TournamentState.setCurrentView('setup');
                 render();
@@ -66,6 +83,18 @@ const Router = {
      */
     navigate(path) {
         window.location.hash = path;
+    },
+
+    // Get shareable player link (without key)
+    getPlayerLink(tournamentId) {
+        const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
+        return `${base}#/t/${tournamentId}`;
+    },
+
+    // Get TV mode link
+    getTVLink(tournamentId) {
+        const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
+        return `${base}#/t/${tournamentId}/tv`;
     }
 };
 

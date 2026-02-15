@@ -817,6 +817,14 @@ function showShareModal() {
                             </div>
                         </div>
                     ` : ''}
+                    <div class="bg-purple-50 rounded-xl p-4">
+                        <div class="text-sm font-semibold text-purple-800 mb-2">📺 TV Mode</div>
+                        <p class="text-xs text-gray-500 mb-2">Full-screen leaderboard for wall-mounted screens</p>
+                        <div class="flex items-center gap-2">
+                            <input type="text" value="${Router.getTVLink(state.tournamentId)}" readonly class="flex-1 px-3 py-2 bg-white border border-purple-200 rounded-lg text-sm font-mono" />
+                            <button onclick="copyToClipboard('${Router.getTVLink(state.tournamentId)}'); showToast('✅ Copied!')" class="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600">Copy</button>
+                        </div>
+                    </div>
                     <button onclick="closeModal()" class="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">Done</button>
                 </div>
             </div>

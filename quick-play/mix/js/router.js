@@ -10,7 +10,8 @@ const Router = {
     // Route patterns
     routes: {
         HOME: 'home',
-        TOURNAMENT: 'tournament'
+        TOURNAMENT: 'tournament',
+        TV: 'tv'
     },
     
     // Initialize router
@@ -35,23 +36,24 @@ const Router = {
             this.organiserKey = null;
             this.isOrganiser = false;
         } else if (hash.startsWith('/t/')) {
-            this.currentRoute = this.routes.TOURNAMENT;
-            
-            // Extract tournament ID and optional key
             const pathAndQuery = hash.slice(3); // Remove '/t/'
             const [path, queryString] = pathAndQuery.split('?');
-            
-            this.tournamentId = path;
-            
-            // Parse query parameters
+
+            if (path.endsWith('/tv')) {
+                this.currentRoute = this.routes.TV;
+                this.tournamentId = path.slice(0, -3);
+            } else {
+                this.currentRoute = this.routes.TOURNAMENT;
+                this.tournamentId = path;
+            }
+
             if (queryString) {
                 const params = new URLSearchParams(queryString);
                 this.organiserKey = params.get('key');
             } else {
                 this.organiserKey = null;
             }
-            
-            // isOrganiser will be verified against Firebase later
+
             this.isOrganiser = !!this.organiserKey;
         } else {
             // Unknown route, go home
@@ -88,6 +90,12 @@ const Router = {
         return `${base}#/t/${tournamentId}`;
     },
     
+    // Get TV mode link
+    getTVLink(tournamentId) {
+        const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
+        return `${base}#/t/${tournamentId}/tv`;
+    },
+
     // Get organiser link (with key)
     getOrganiserLink(tournamentId, organiserKey) {
         // Get clean base URL (remove any hash)

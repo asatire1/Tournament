@@ -60,6 +60,9 @@ async function handleRouteChange(route, tournamentId, organiserKey) {
     if (route === Router.routes.HOME) {
         // Show landing page
         await renderLandingPageView();
+    } else if (route === Router.routes.TV) {
+        await initializeTournament(tournamentId, null);
+        TVMode.init(getTvData);
     } else if (route === Router.routes.TOURNAMENT) {
         // Show tournament view
         await initializeTournament(tournamentId, organiserKey);
@@ -626,6 +629,7 @@ function SettingsTab() {
 // ===== MAIN RENDER FUNCTION =====
 
 function render() {
+    if (typeof TVMode !== 'undefined' && TVMode.isActive) { TVMode.render(); return; }
     // Don't render if no state (we're on landing page)
     if (!state) return;
     
@@ -771,6 +775,66 @@ function render() {
         <!-- Toast container -->
         <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
     `;
+}
+
+/**
+ * TV Mode data adapter for Mix format
+ */
+function getTvData() {
+    if (!state || !state.isInitialized) return null;
+
+    const standings = state.calculateStandings ? state.calculateStandings() : [];
+
+    // Get current round matches
+    const currentMatches = [];
+    if (state.fixtures) {
+        const roundOrder = state.roundOrder || Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => i);
+        roundOrder.forEach((originalIdx, displayIdx) => {
+            const round = originalIdx + 1;
+            const matches = state.fixtures[round] || [];
+            matches.forEach((match, matchIdx) => {
+                const score = state.matchScores?.[round]?.[matchIdx + 1];
+                const s1 = score?.team1Score;
+                const s2 = score?.team2Score;
+                const isScored = s1 != null && s1 >= 0;
+
+                currentMatches.push({
+                    courtName: state.matchNames?.[matchIdx + 1] || `Court ${matchIdx + 1}`,
+                    roundLabel: `Round ${displayIdx + 1}`,
+                    team1: match.team1.map(p => state.playerNames[p - 1] || `P${p}`).join(' & '),
+                    team2: match.team2.map(p => state.playerNames[p - 1] || `P${p}`).join(' & '),
+                    score1: isScored ? s1 : null,
+                    score2: isScored ? s2 : null,
+                    isComplete: isScored,
+                    isLive: !isScored
+                });
+            });
+        });
+    }
+
+    // Find first incomplete round
+    const firstIncomplete = currentMatches.find(m => !m.isComplete)?.roundLabel;
+    const matchesToShow = firstIncomplete
+        ? currentMatches.filter(m => m.roundLabel === firstIncomplete)
+        : currentMatches.slice(-CONFIG.MATCHES_PER_ROUND);
+
+    return {
+        tournamentName: state.tournamentName || 'Mix Tournament',
+        tournamentId: state.tournamentId,
+        formatName: 'Mix',
+        formatEmoji: '\u{1F3B2}',
+        accentColor: 'indigo',
+        standings: standings.map((s, i) => ({
+            rank: i + 1,
+            name: s.name || `Player ${s.playerNum || i + 1}`,
+            played: s.gamesPlayed || 0,
+            points: s.avgScore || s.totalScore || 0,
+            wins: s.wins,
+            losses: s.losses,
+            pointsDiff: s.pointsDiff
+        })),
+        currentMatches: matchesToShow
+    };
 }
 
 // ===== START THE APP =====

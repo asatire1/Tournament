@@ -850,7 +850,8 @@ function renderDangerSettings(canEdit) {
  */
 function render() {
     if (!state) return;
-    
+    if (typeof TVMode !== 'undefined' && TVMode.isActive) { TVMode.render(); return; }
+
     if (Router.currentRoute === Router.routes.TOURNAMENT) {
         renderTournament();
     }

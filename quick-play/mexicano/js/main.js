@@ -7,6 +7,7 @@
  * Main render function - decides what to show based on route
  */
 async function render() {
+    if (typeof TVMode !== 'undefined' && TVMode.isActive) { TVMode.render(); return; }
     if (!state) {
         await renderLandingPage();
         return;
@@ -30,6 +31,9 @@ async function onRouteChange(route, tournamentId, organiserKey) {
             state = null;
         }
         await renderLandingPage();
+    } else if (route === Router.routes.TV) {
+        await loadTournament(tournamentId, null);
+        TVMode.init(getTvData);
     } else if (route === Router.routes.TOURNAMENT) {
         await loadTournament(tournamentId, organiserKey);
     }
@@ -91,5 +95,53 @@ function initApp() {
 
 // Start app when DOM is ready
 document.addEventListener('DOMContentLoaded', initApp);
+
+/**
+ * TV Mode data adapter
+ */
+function getTvData() {
+    if (!state) return null;
+
+    const standings = state.getStandings ? state.getStandings() : [];
+
+    // Get current round matches
+    const currentMatches = [];
+    const rounds = state.rounds || [];
+    rounds.forEach((round, roundIdx) => {
+        if (!round) return;
+        round.forEach(match => {
+            const isScored = match.score1 != null && match.score1 >= 0;
+            currentMatches.push({
+                courtName: match.court || null,
+                roundLabel: `Round ${roundIdx + 1}`,
+                team1: match.team1Names || match.team1?.map(id => state.getPlayerName ? state.getPlayerName(id) : `Player ${id}`).join(' & ') || 'TBD',
+                team2: match.team2Names || match.team2?.map(id => state.getPlayerName ? state.getPlayerName(id) : `Player ${id}`).join(' & ') || 'TBD',
+                score1: isScored ? match.score1 : null,
+                score2: isScored ? match.score2 : null,
+                isComplete: isScored,
+                isLive: !isScored && roundIdx === rounds.length - 1
+            });
+        });
+    });
+
+    // Show last round only
+    const lastRoundLabel = currentMatches.length > 0 ? currentMatches[currentMatches.length - 1].roundLabel : null;
+    const matchesToShow = lastRoundLabel ? currentMatches.filter(m => m.roundLabel === lastRoundLabel) : [];
+
+    return {
+        tournamentName: state.name || state.tournamentName || 'Mexicano',
+        tournamentId: state.tournamentId,
+        formatName: 'Mexicano',
+        formatEmoji: '\u{1F1F2}\u{1F1FD}',
+        accentColor: 'teal',
+        standings: standings.map((s, i) => ({
+            rank: i + 1,
+            name: s.name || `Player ${s.id}`,
+            played: s.matchesPlayed || 0,
+            points: s.totalPoints || 0
+        })),
+        currentMatches: matchesToShow
+    };
+}
 
 console.log('✅ Mexicano Main loaded');

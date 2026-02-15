@@ -13,7 +13,8 @@ const Router = {
     // Route constants
     routes: {
         HOME: 'home',
-        TOURNAMENT: 'tournament'
+        TOURNAMENT: 'tournament',
+        TV: 'tv'
     },
     
     // Callback for route changes
@@ -40,19 +41,24 @@ const Router = {
             this.organiserKey = null;
             this.isOrganiser = false;
         } else if (hash.startsWith('/t/')) {
-            // Tournament page
-            this.currentRoute = this.routes.TOURNAMENT;
             const pathAndQuery = hash.slice(3);
             const [path, queryString] = pathAndQuery.split('?');
-            this.tournamentId = path.toLowerCase();
-            
+
+            if (path.endsWith('/tv')) {
+                this.currentRoute = this.routes.TV;
+                this.tournamentId = path.slice(0, -3).toLowerCase();
+            } else {
+                this.currentRoute = this.routes.TOURNAMENT;
+                this.tournamentId = path.toLowerCase();
+            }
+
             if (queryString) {
                 const params = new URLSearchParams(queryString);
                 this.organiserKey = params.get('key');
             } else {
                 this.organiserKey = null;
             }
-            
+
             this.isOrganiser = !!this.organiserKey;
         } else {
             // Unknown route - redirect home
@@ -99,7 +105,12 @@ const Router = {
         const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
         return `${base}#/t/${tournamentId}?key=${organiserKey}`;
     },
-    
+
+    getTVLink(tournamentId) {
+        const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
+        return `${base}#/t/${tournamentId}/tv`;
+    },
+
     /**
      * Generate unique tournament ID
      */
