@@ -799,7 +799,7 @@ function getTvData() {
                 const score = state.matchScores?.[round]?.[matchIdx + 1];
                 const s1 = score?.team1Score;
                 const s2 = score?.team2Score;
-                const isScored = s1 != null && s1 >= 0;
+                const isScored = s1 != null && s2 != null;
 
                 currentMatches.push({
                     courtName: state.matchNames?.[matchIdx + 1] || `Court ${matchIdx + 1}`,
