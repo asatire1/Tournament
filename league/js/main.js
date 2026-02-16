@@ -3,8 +3,7 @@
  * Initializes Firebase, sets up routing, and handles render cycle.
  */
 
-// Active tab state
-let activeTab = 'overview';
+// activeTab is declared in components.js (loaded before main.js)
 
 /**
  * Main render function — called on every data change.
@@ -171,13 +170,7 @@ function onRouteChange(route, leagueId, organiserKey) {
     }
 }
 
-/**
- * Switch the active tab
- */
-function switchTab(tabName) {
-    activeTab = tabName;
-    render();
-}
+// switchTab is declared in components.js (loaded before main.js)
 
 /**
  * Get TV data adapter for shared TV mode

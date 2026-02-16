@@ -9,7 +9,7 @@ let activeTab = 'overview';
 
 function switchTab(tabName) {
     activeTab = tabName;
-    renderLeague();
+    render();
 }
 
 // ===== MAIN RENDER =====
