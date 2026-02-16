@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGJ6CZ4DZ0"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-TGJ6CZ4DZ0');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Primary Meta Tags -->
+    <title>League - Uber Padel | Divisions, Promotion &amp; Relegation</title>
+    <meta name="title" content="League - Uber Padel | Divisions, Promotion & Relegation">
+    <meta name="description" content="Run a padel league with multiple divisions, weekly fixtures, and promotion/relegation. Best of 3 sets, automatic standings, and season management.">
+    <meta name="keywords" content="padel league, padel divisions, promotion relegation, padel season, league table, padel fixtures, team league, padel club">
+    <meta name="author" content="Uber Padel">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://uberpadel.com/league/">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F3C6;</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F3C6;</text></svg>">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://uberpadel.com/league/">
+    <meta property="og:title" content="League - Uber Padel">
+    <meta property="og:description" content="Run a padel league with multiple divisions, weekly fixtures, and promotion/relegation.">
+    <meta property="og:image" content="https://uberpadel.com/og-image-league.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Uber Padel">
+    <meta property="og:locale" content="en_GB">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://uberpadel.com/league/">
+    <meta name="twitter:title" content="League - Uber Padel">
+    <meta name="twitter:description" content="Run a padel league with multiple divisions, weekly fixtures, and promotion/relegation.">
+    <meta name="twitter:image" content="https://uberpadel.com/og-image-league.png">
+
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Padel League">
+    <meta name="application-name" content="Padel League">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "League - Uber Padel",
+        "description": "Padel league manager with divisions, promotion/relegation, and automatic scheduling.",
+        "url": "https://uberpadel.com/league/",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "Any",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "GBP"
+        },
+        "featureList": [
+            "Multiple divisions",
+            "Promotion and relegation",
+            "Best of 3 sets",
+            "Automatic schedule generation",
+            "Season management",
+            "Real-time score sync"
+        ],
+        "parent": {
+            "@type": "WebApplication",
+            "name": "Uber Padel Tournament Manager",
+            "url": "https://uberpadel.com/"
+        }
+    }
+    </script>
+
+    <!-- Preconnect hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./css/styles.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
+    <!-- Main App Container -->
+    <div id="app"></div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- JavaScript Files - Load in correct order -->
+    <script src="../account/auth-service.js"></script>
+    <script src="../shared/format-config.js"></script>
+    <script src="../shared/crypto.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/firebase-config.js"></script>
+    <script src="./js/router.js"></script>
+    <script src="./js/scheduler.js"></script>
+    <script src="./js/state.js"></script>
+    <script src="./js/components.js"></script>
+    <script src="./js/handlers.js"></script>
+    <script src="./js/landing.js"></script>
+    <script src="./js/main.js"></script>
+    <script src="../shared/social-share.js"></script>
+    <script src="../shared/result-card.js"></script>
+    <script src="/js/feedback-button.js" defer></script>
+    <script src="../shared/nav.js" defer></script>
+</body>
+</html>
