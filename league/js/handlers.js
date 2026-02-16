@@ -272,39 +272,24 @@ function showEditTeamModal(teamId) {
                             placeholder="e.g. The Smashers" maxlength="40" />
                     </div>
 
-                    <!-- Player 1 -->
+                    <!-- Players -->
+                    ${[1,2,3,4].map(p => `
                     <div class="grid grid-cols-3 gap-3">
                         <div class="col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Player 1</label>
-                            <input type="text" id="edit-p1-name" value="${_escAttr(team.player1Name || '')}"
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Player ${p}${p > 2 ? ' <span class="text-gray-400 font-normal">(optional)</span>' : ''}</label>
+                            <input type="text" id="edit-p${p}-name" value="${_escAttr(team['player' + p + 'Name'] || '')}"
                                 class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
                                 placeholder="Name" maxlength="30" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">Rating</label>
-                            <input type="number" id="edit-p1-rating" value="${team.player1Rating ?? ''}"
+                            <input type="number" id="edit-p${p}-rating" value="${team['player' + p + 'Rating'] ?? ''}"
                                 min="1" max="10" step="0.5"
                                 class="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors text-center"
                                 placeholder="1-10" />
                         </div>
                     </div>
-
-                    <!-- Player 2 -->
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Player 2</label>
-                            <input type="text" id="edit-p2-name" value="${_escAttr(team.player2Name || '')}"
-                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
-                                placeholder="Name" maxlength="30" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Rating</label>
-                            <input type="number" id="edit-p2-rating" value="${team.player2Rating ?? ''}"
-                                min="1" max="10" step="0.5"
-                                class="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors text-center"
-                                placeholder="1-10" />
-                        </div>
-                    </div>
+                    `).join('')}
 
                     <!-- Division -->
                     <div>
@@ -339,27 +324,35 @@ function showEditTeamModal(teamId) {
  */
 async function _saveEditTeam(teamId) {
     const name = document.getElementById('edit-team-name')?.value?.trim();
-    const p1Name = document.getElementById('edit-p1-name')?.value?.trim();
-    const p2Name = document.getElementById('edit-p2-name')?.value?.trim();
-    const p1Rating = parseFloat(document.getElementById('edit-p1-rating')?.value);
-    const p2Rating = parseFloat(document.getElementById('edit-p2-rating')?.value);
     const division = parseInt(document.getElementById('edit-team-division')?.value);
 
-    if (!p1Name || !p2Name) {
-        showToast('Please enter both player names');
+    const playerNames = [];
+    const teamData = { division: !isNaN(division) ? division : 0 };
+    let combinedRating = 0;
+
+    for (let p = 1; p <= 4; p++) {
+        const pName = document.getElementById(`edit-p${p}-name`)?.value?.trim();
+        const pRating = parseFloat(document.getElementById(`edit-p${p}-rating`)?.value);
+        const validRating = (!isNaN(pRating) && pRating >= 1 && pRating <= 10) ? pRating : null;
+
+        if (pName) {
+            teamData['player' + p + 'Name'] = pName;
+            teamData['player' + p + 'Rating'] = validRating;
+            combinedRating += validRating || 0;
+            playerNames.push(pName);
+        } else {
+            teamData['player' + p + 'Name'] = null;
+            teamData['player' + p + 'Rating'] = null;
+        }
+    }
+
+    if (playerNames.length < 2) {
+        showToast('Please enter at least 2 player names');
         return;
     }
 
-    const teamData = {
-        name: name || (p1Name + ' & ' + p2Name),
-        player1Name: p1Name,
-        player2Name: p2Name,
-        player1Rating: (!isNaN(p1Rating) && p1Rating >= 1 && p1Rating <= 10) ? p1Rating : null,
-        player2Rating: (!isNaN(p2Rating) && p2Rating >= 1 && p2Rating <= 10) ? p2Rating : null,
-        division: !isNaN(division) ? division : 0
-    };
-
-    teamData.combinedRating = (teamData.player1Rating || 0) + (teamData.player2Rating || 0);
+    teamData.name = name || playerNames.slice(0, 2).join(' & ');
+    teamData.combinedRating = combinedRating;
 
     const success = await setLeagueData(state.leagueId, `teams/${teamId}`, teamData);
 
@@ -424,39 +417,24 @@ function showAddTeamModal(divisionIndex) {
                             placeholder="e.g. The Smashers" maxlength="40" />
                     </div>
 
-                    <!-- Player 1 -->
+                    <!-- Players -->
+                    ${[1,2,3,4].map(p => `
                     <div class="grid grid-cols-3 gap-3">
                         <div class="col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Player 1</label>
-                            <input type="text" id="add-p1-name"
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Player ${p}${p > 2 ? ' <span class="text-gray-400 font-normal">(optional)</span>' : ''}</label>
+                            <input type="text" id="add-p${p}-name"
                                 class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
                                 placeholder="Name" maxlength="30" />
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">Rating</label>
-                            <input type="number" id="add-p1-rating"
+                            <input type="number" id="add-p${p}-rating"
                                 min="1" max="10" step="0.5"
                                 class="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors text-center"
                                 placeholder="1-10" />
                         </div>
                     </div>
-
-                    <!-- Player 2 -->
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Player 2</label>
-                            <input type="text" id="add-p2-name"
-                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors"
-                                placeholder="Name" maxlength="30" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Rating</label>
-                            <input type="number" id="add-p2-rating"
-                                min="1" max="10" step="0.5"
-                                class="w-full px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-colors text-center"
-                                placeholder="1-10" />
-                        </div>
-                    </div>
+                    `).join('')}
 
                     <!-- Division -->
                     <div>
@@ -488,31 +466,36 @@ function showAddTeamModal(divisionIndex) {
  */
 async function _submitAddTeam() {
     const name = document.getElementById('add-team-name')?.value?.trim();
-    const p1Name = document.getElementById('add-p1-name')?.value?.trim();
-    const p2Name = document.getElementById('add-p2-name')?.value?.trim();
-    const p1Rating = parseFloat(document.getElementById('add-p1-rating')?.value);
-    const p2Rating = parseFloat(document.getElementById('add-p2-rating')?.value);
     const division = parseInt(document.getElementById('add-team-division')?.value);
 
-    if (!p1Name || !p2Name) {
-        showToast('Please enter both player names');
-        return;
-    }
-
-    // Generate a new team ID
-    const teamId = _generateTeamId();
-
+    const playerNames = [];
     const teamData = {
-        name: name || (p1Name + ' & ' + p2Name),
-        player1Name: p1Name,
-        player2Name: p2Name,
-        player1Rating: (!isNaN(p1Rating) && p1Rating >= 1 && p1Rating <= 10) ? p1Rating : null,
-        player2Rating: (!isNaN(p2Rating) && p2Rating >= 1 && p2Rating <= 10) ? p2Rating : null,
         division: !isNaN(division) ? division : 0,
         createdAt: new Date().toISOString()
     };
+    let combinedRating = 0;
 
-    teamData.combinedRating = (teamData.player1Rating || 0) + (teamData.player2Rating || 0);
+    for (let p = 1; p <= 4; p++) {
+        const pName = document.getElementById(`add-p${p}-name`)?.value?.trim();
+        const pRating = parseFloat(document.getElementById(`add-p${p}-rating`)?.value);
+        const validRating = (!isNaN(pRating) && pRating >= 1 && pRating <= 10) ? pRating : null;
+
+        if (pName) {
+            teamData['player' + p + 'Name'] = pName;
+            teamData['player' + p + 'Rating'] = validRating;
+            combinedRating += validRating || 0;
+            playerNames.push(pName);
+        }
+    }
+
+    if (playerNames.length < 2) {
+        showToast('Please enter at least 2 player names');
+        return;
+    }
+
+    const teamId = _generateTeamId();
+    teamData.name = name || playerNames.slice(0, 2).join(' & ');
+    teamData.combinedRating = combinedRating;
 
     const success = await setLeagueData(state.leagueId, `teams/${teamId}`, teamData);
 

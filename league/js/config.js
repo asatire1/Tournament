@@ -16,8 +16,8 @@ const CONFIG = {
     // Default division names
     DEFAULT_DIVISION_NAMES: ['Beginner', 'Intermediate', 'Advanced'],
 
-    // Players per team (fixed: pairs)
-    PLAYERS_PER_TEAM: 2,
+    // Players per team (squad of 4, any 2 play each match)
+    PLAYERS_PER_TEAM: 4,
 
     // Match format
     DEFAULT_SETS_PER_MATCH: 3,  // Best of 3

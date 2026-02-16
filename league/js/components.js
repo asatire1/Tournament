@@ -454,10 +454,18 @@ function renderTeams() {
     `;
 }
 
+function getTeamPlayerNames(team) {
+    const names = [];
+    for (let p = 1; p <= 4; p++) {
+        const name = team['player' + p + 'Name'];
+        if (name) names.push(name);
+    }
+    return names;
+}
+
 function renderTeamCard(team, isOrganiser) {
-    const combinedRating = (team.player1Rating && team.player2Rating)
-        ? ((Number(team.player1Rating) + Number(team.player2Rating)).toFixed(1))
-        : null;
+    const combinedRating = team.combinedRating ? Number(team.combinedRating).toFixed(1) : null;
+    const players = getTeamPlayerNames(team);
 
     return `
         <div class="bg-gray-50 rounded-xl p-4 flex flex-col gap-2">
@@ -472,16 +480,16 @@ function renderTeamCard(team, isOrganiser) {
                 ` : ''}
             </div>
             <div class="text-sm text-gray-600">
-                <div class="flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>
-                    ${team.player1Name || 'Player 1'}
-                    ${team.player1Rating ? `<span class="text-xs text-gray-400">(${team.player1Rating})</span>` : ''}
-                </div>
-                <div class="flex items-center gap-1.5 mt-0.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>
-                    ${team.player2Name || 'Player 2'}
-                    ${team.player2Rating ? `<span class="text-xs text-gray-400">(${team.player2Rating})</span>` : ''}
-                </div>
+                ${[1,2,3,4].map(p => {
+                    const name = team['player' + p + 'Name'];
+                    const rating = team['player' + p + 'Rating'];
+                    if (!name) return '';
+                    return `<div class="flex items-center gap-1.5${p > 1 ? ' mt-0.5' : ''}">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block"></span>
+                        ${name}
+                        ${rating ? '<span class="text-xs text-gray-400">(' + rating + ')</span>' : ''}
+                    </div>`;
+                }).join('')}
             </div>
             ${combinedRating ? `
                 <div class="text-xs text-gray-400 mt-1">Combined rating: ${combinedRating}</div>
@@ -781,7 +789,7 @@ function renderStandingsTable(seasonNumber, divisionIndex, compact) {
 
                         const team = state.getTeam(row.teamId);
                         const teamName = team ? team.name : row.teamName;
-                        const players = team ? (team.player1Name + ' & ' + team.player2Name) : '';
+                        const players = team ? getTeamPlayerNames(team).join(', ') : '';
 
                         return `
                             <tr class="${rowBg} ${borderLeft} border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
@@ -893,7 +901,7 @@ function renderMatchCard(match, weekNumber, matchIndex) {
                     <!-- Team 1 -->
                     <div class="flex-1 min-w-0 ${winnerId === match.team1Id ? 'font-bold' : ''}">
                         <div class="text-sm ${winnerId === match.team1Id ? 'text-indigo-700' : 'text-gray-800'} truncate">${team1Name}</div>
-                        ${team1 ? `<div class="text-xs text-gray-400 truncate">${team1.player1Name} & ${team1.player2Name}</div>` : ''}
+                        ${team1 ? `<div class="text-xs text-gray-400 truncate">${getTeamPlayerNames(team1).join(', ')}</div>` : ''}
                     </div>
 
                     <!-- Score / VS -->
@@ -911,7 +919,7 @@ function renderMatchCard(match, weekNumber, matchIndex) {
                     <!-- Team 2 -->
                     <div class="flex-1 min-w-0 text-right ${winnerId === match.team2Id ? 'font-bold' : ''}">
                         <div class="text-sm ${winnerId === match.team2Id ? 'text-indigo-700' : 'text-gray-800'} truncate">${team2Name}</div>
-                        ${team2 ? `<div class="text-xs text-gray-400 truncate">${team2.player1Name} & ${team2.player2Name}</div>` : ''}
+                        ${team2 ? `<div class="text-xs text-gray-400 truncate">${getTeamPlayerNames(team2).join(', ')}</div>` : ''}
                     </div>
                 </div>
             </div>

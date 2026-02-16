@@ -160,10 +160,10 @@ const WizardState = {
             this.divisions.push({
                 name: this.divisionNames[i] || `Division ${i + 1}`,
                 teams: existingDiv?.teams || [
-                    { name: '', player1: '', player2: '', player1Rating: 5, player2Rating: 5 },
-                    { name: '', player1: '', player2: '', player1Rating: 5, player2Rating: 5 },
-                    { name: '', player1: '', player2: '', player1Rating: 5, player2Rating: 5 },
-                    { name: '', player1: '', player2: '', player1Rating: 5, player2Rating: 5 }
+                    { name: '', player1: '', player2: '', player3: '', player4: '', player1Rating: 5, player2Rating: 5, player3Rating: 5, player4Rating: 5 },
+                    { name: '', player1: '', player2: '', player3: '', player4: '', player1Rating: 5, player2Rating: 5, player3Rating: 5, player4Rating: 5 },
+                    { name: '', player1: '', player2: '', player3: '', player4: '', player1Rating: 5, player2Rating: 5, player3Rating: 5, player4Rating: 5 },
+                    { name: '', player1: '', player2: '', player3: '', player4: '', player1Rating: 5, player2Rating: 5, player3Rating: 5, player4Rating: 5 }
                 ]
             });
         }
@@ -893,44 +893,27 @@ function renderWizardStep3() {
                                 placeholder="Team name"
                             />
                             <div class="grid grid-cols-2 gap-2">
+                                ${[1,2,3,4].map(pNum => `
                                 <div>
                                     <input
                                         type="text"
-                                        data-team="${activeTab}-${tIdx}-p1"
-                                        value="${team.player1}"
+                                        data-team="${activeTab}-${tIdx}-p${pNum}"
+                                        value="${team['player' + pNum] || ''}"
                                         class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
-                                        placeholder="Player 1 name"
+                                        placeholder="Player ${pNum}${pNum <= 2 ? '' : ' (optional)'}"
                                     />
                                     <div class="flex items-center gap-1 mt-1">
                                         <span class="text-xs text-gray-400">Rating:</span>
                                         <input
                                             type="number"
-                                            data-team="${activeTab}-${tIdx}-p1r"
-                                            value="${team.player1Rating}"
+                                            data-team="${activeTab}-${tIdx}-p${pNum}r"
+                                            value="${team['player' + pNum + 'Rating'] || 5}"
                                             min="1" max="10" step="0.5"
                                             class="w-14 px-1 py-0.5 border border-gray-200 rounded text-xs text-center focus:border-indigo-500 focus:outline-none"
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <input
-                                        type="text"
-                                        data-team="${activeTab}-${tIdx}-p2"
-                                        value="${team.player2}"
-                                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
-                                        placeholder="Player 2 name"
-                                    />
-                                    <div class="flex items-center gap-1 mt-1">
-                                        <span class="text-xs text-gray-400">Rating:</span>
-                                        <input
-                                            type="number"
-                                            data-team="${activeTab}-${tIdx}-p2r"
-                                            value="${team.player2Rating}"
-                                            min="1" max="10" step="0.5"
-                                            class="w-14 px-1 py-0.5 border border-gray-200 rounded text-xs text-center focus:border-indigo-500 focus:outline-none"
-                                        />
-                                    </div>
-                                </div>
+                                `).join('')}
                             </div>
                         </div>
                     </div>
@@ -972,7 +955,7 @@ function renderWizardStep3() {
 function addTeamToDivision(divIndex) {
     collectTeamDataFromForm();
     WizardState.divisions[divIndex].teams.push({
-        name: '', player1: '', player2: '', player1Rating: 5, player2Rating: 5
+        name: '', player1: '', player2: '', player3: '', player4: '', player1Rating: 5, player2Rating: 5, player3Rating: 5, player4Rating: 5
     });
     renderWizardStep();
 }
@@ -987,16 +970,14 @@ function collectTeamDataFromForm() {
     WizardState.divisions.forEach((div, dIdx) => {
         div.teams.forEach((team, tIdx) => {
             const nameEl = document.querySelector(`[data-team="${dIdx}-${tIdx}-name"]`);
-            const p1El = document.querySelector(`[data-team="${dIdx}-${tIdx}-p1"]`);
-            const p2El = document.querySelector(`[data-team="${dIdx}-${tIdx}-p2"]`);
-            const p1rEl = document.querySelector(`[data-team="${dIdx}-${tIdx}-p1r"]`);
-            const p2rEl = document.querySelector(`[data-team="${dIdx}-${tIdx}-p2r"]`);
-
             if (nameEl) team.name = nameEl.value.trim();
-            if (p1El) team.player1 = p1El.value.trim();
-            if (p2El) team.player2 = p2El.value.trim();
-            if (p1rEl) team.player1Rating = parseFloat(p1rEl.value) || 5;
-            if (p2rEl) team.player2Rating = parseFloat(p2rEl.value) || 5;
+
+            for (let p = 1; p <= 4; p++) {
+                const pEl = document.querySelector(`[data-team="${dIdx}-${tIdx}-p${p}"]`);
+                const prEl = document.querySelector(`[data-team="${dIdx}-${tIdx}-p${p}r"]`);
+                if (pEl) team['player' + p] = pEl.value.trim();
+                if (prEl) team['player' + p + 'Rating'] = parseFloat(prEl.value) || 5;
+            }
         });
     });
 }
@@ -1589,27 +1570,31 @@ async function createLeague() {
             const teams = {};
             div.teams.forEach((team, tIdx) => {
                 const teamId = `team_${i}_${tIdx}`;
-                teams[teamId] = {
+                const p1 = team.player1 || `Player ${tIdx + 1}A`;
+                const p2 = team.player2 || `Player ${tIdx + 1}B`;
+                const teamEntry = {
                     id: teamId,
-                    name: team.name || `Team ${tIdx + 1}`,
-                    player1: {
-                        name: team.player1 || `Player ${tIdx + 1}A`,
-                        rating: team.player1Rating || 5
-                    },
-                    player2: {
-                        name: team.player2 || `Player ${tIdx + 1}B`,
-                        rating: team.player2Rating || 5
-                    },
-                    played: 0,
-                    won: 0,
-                    drawn: 0,
-                    lost: 0,
-                    setsWon: 0,
-                    setsLost: 0,
-                    gamesWon: 0,
-                    gamesLost: 0,
-                    points: 0
+                    name: team.name || (p1 + ' & ' + p2),
+                    player1Name: p1,
+                    player2Name: p2,
+                    player1Rating: team.player1Rating || 5,
+                    player2Rating: team.player2Rating || 5,
+                    division: i,
+                    played: 0, won: 0, drawn: 0, lost: 0,
+                    setsWon: 0, setsLost: 0, gamesWon: 0, gamesLost: 0, points: 0
                 };
+                if (team.player3) {
+                    teamEntry.player3Name = team.player3;
+                    teamEntry.player3Rating = team.player3Rating || 5;
+                }
+                if (team.player4) {
+                    teamEntry.player4Name = team.player4;
+                    teamEntry.player4Rating = team.player4Rating || 5;
+                }
+                teamEntry.combinedRating = (teamEntry.player1Rating || 0) + (teamEntry.player2Rating || 0)
+                    + (teamEntry.player3Rating || 0) + (teamEntry.player4Rating || 0);
+
+                teams[teamId] = teamEntry;
             });
 
             divisionsData[`division_${i}`] = {
