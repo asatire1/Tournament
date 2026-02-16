@@ -293,6 +293,7 @@ function showShareLinksModal() {
     if (!tournamentId) return;
 
     const playerLink = Router.getPlayerLink(tournamentId);
+    const shareButtonsHTML = typeof SocialShare !== 'undefined' ? SocialShare.getShareButtons(state.meta?.name || 'Knockout Tournament', tournamentId, 'knockout', playerLink, null) : '';
 
     let container = document.getElementById('modal-container');
     if (!container) {
@@ -316,6 +317,7 @@ function showShareLinksModal() {
                 </div>
 
                 <div class="p-5 sm:p-6 space-y-5">
+                    ${shareButtonsHTML}
                     <div class="text-center pb-2">
                         <div class="text-xl sm:text-2xl font-bold text-gray-800">${state.meta?.name || 'Knockout Tournament'}</div>
                         <div class="text-sm text-gray-500 mt-1">Code: <span class="font-mono font-bold text-orange-600">${tournamentId.toUpperCase()}</span></div>

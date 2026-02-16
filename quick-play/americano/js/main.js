@@ -150,5 +150,15 @@ function getTvData() {
     };
 }
 
+function getCardData() {
+    const tv = getTvData();
+    if (!tv) return null;
+    const { currentMatches, ...card } = tv;
+    const timeslots = state.getTimeslots ? state.getTimeslots() : [];
+    const total = timeslots.reduce((sum, s) => sum + s.length, 0);
+    const completed = Object.keys(state.scores || {}).length;
+    return { ...card, totalMatches: total, completedMatches: completed };
+}
+
 // Start the app when DOM is ready
 document.addEventListener('DOMContentLoaded', initializeApp);

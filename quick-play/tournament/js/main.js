@@ -778,6 +778,17 @@ function render() {
         <!-- Toast container -->
         <div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
     `;
+
+    // Check for tournament completion and show share prompt
+    setTimeout(function() {
+        if (typeof ResultCard !== 'undefined' && typeof getCardData === 'function') {
+            var completed = state.countCompletedMatches();
+            var total = CONFIG.TOTAL_ROUNDS * CONFIG.MATCHES_PER_ROUND;
+            if (completed === total && total > 0) {
+                ResultCard.showCompletionModal(getCardData());
+            }
+        }
+    }, 500);
 }
 
 /**
@@ -846,6 +857,17 @@ function getTvData() {
         })),
         currentMatches: matchesToShow
     };
+}
+
+function getCardData() {
+    const tv = getTvData();
+    if (!tv) return null;
+    const { currentMatches, ...card } = tv;
+    const totalRounds = CONFIG.TOTAL_ROUNDS || 15;
+    const matchesPerRound = CONFIG.MATCHES_PER_ROUND || 5;
+    const total = totalRounds * matchesPerRound;
+    const completed = state.matchScores ? Object.values(state.matchScores).reduce((sum, round) => sum + Object.keys(round || {}).length, 0) : 0;
+    return { ...card, totalMatches: total, completedMatches: completed };
 }
 
 // ===== START THE APP =====

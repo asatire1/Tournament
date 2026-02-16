@@ -279,6 +279,18 @@ function renderStandingsTab() {
                     </table>
                 </div>
             </div>
+
+            <!-- Share Result Card Buttons -->
+            <div class="mt-4 flex flex-wrap gap-2 justify-center">
+                <button onclick="ResultCard.share(getCardData(), 'landscape')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-xl transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Share Leaderboard
+                </button>
+                <button onclick="ResultCard.share(getCardData(), 'story')" class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-medium rounded-xl transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Share to Story
+                </button>
+            </div>
         </div>
     `;
 }
@@ -627,6 +639,24 @@ function renderRoundRobin() {
             </div>
         </div>
     `;
+
+    // Check for tournament completion and show share prompt
+    setTimeout(function() {
+        if (typeof ResultCard !== 'undefined' && typeof getCardData === 'function') {
+            var fixtures = state.fixtures || [];
+            var total = 0, completed = 0;
+            fixtures.forEach(function(round) {
+                (round.matches || []).forEach(function(match) {
+                    total++;
+                    var score = state.getScore ? state.getScore(match.team1Id, match.team2Id) : {};
+                    if (score && score.team1Score != null && score.team2Score != null) completed++;
+                });
+            });
+            if (completed === total && total > 0) {
+                ResultCard.showCompletionModal(getCardData());
+            }
+        }
+    }, 500);
 }
 
 // ===== COMPATIBILITY OBJECT =====

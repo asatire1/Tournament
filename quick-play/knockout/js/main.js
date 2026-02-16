@@ -57,6 +57,19 @@ function getTvData() {
     };
 }
 
+function getCardData() {
+    const tv = getTvData();
+    if (!tv) return null;
+    const { currentMatches, ...card } = tv;
+    // Flatten group standings for card display
+    if (card.standingsGroups && !card.standings) {
+        card.standings = card.standingsGroups.flatMap(g => (g.standings || []).map(s => ({ ...s, subtitle: `Group ${g.groupName}` })));
+        card.standings.sort((a, b) => (b.points || 0) - (a.points || 0));
+        card.standings.forEach((s, i) => s.rank = i + 1);
+    }
+    return card;
+}
+
 // Wait for DOM to be ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);

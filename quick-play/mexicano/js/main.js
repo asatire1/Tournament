@@ -144,4 +144,14 @@ function getTvData() {
     };
 }
 
+function getCardData() {
+    const tv = getTvData();
+    if (!tv) return null;
+    const { currentMatches, ...card } = tv;
+    const rounds = state.rounds || [];
+    const total = rounds.reduce((sum, r) => sum + (r ? r.length : 0), 0);
+    const completed = rounds.reduce((sum, r) => sum + (r ? r.filter(m => m.score1 != null).length : 0), 0);
+    return { ...card, totalMatches: total, completedMatches: completed };
+}
+
 console.log('✅ Mexicano Main loaded');

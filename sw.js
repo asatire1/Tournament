@@ -3,7 +3,7 @@
  * Provides offline caching and PWA support.
  */
 
-const CACHE_VERSION = 'v10';
+const CACHE_VERSION = 'v12';
 const PRECACHE = 'uberpadel-precache-' + CACHE_VERSION;
 const RUNTIME = 'uberpadel-runtime-' + CACHE_VERSION;
 
@@ -19,7 +19,9 @@ const PRECACHE_URLS = [
     '/shared/nav.js',
     '/shared/format-config.js',
     '/shared/tournament-header.js',
-    '/shared/tv-mode.js'
+    '/shared/tv-mode.js',
+    '/shared/social-share.js',
+    '/shared/result-card.js'
 ];
 
 // ---- INSTALL: precache app shell ----

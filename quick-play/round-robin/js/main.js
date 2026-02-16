@@ -131,6 +131,16 @@ function getTvData() {
     };
 }
 
+function getCardData() {
+    const tv = getTvData();
+    if (!tv) return null;
+    const { currentMatches, ...card } = tv;
+    const fixtures = state.fixtures || [];
+    const total = fixtures.length;
+    const completed = fixtures.filter(m => m && m.score1 != null && m.score1 >= 0).length;
+    return { ...card, totalMatches: total, completedMatches: completed };
+}
+
 // ===== START APP =====
 
 document.addEventListener('DOMContentLoaded', function() {

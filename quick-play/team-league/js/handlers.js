@@ -518,10 +518,12 @@ function exportTournamentData() {
 
 function showShareModal() {
     if (!state) return;
-    
+
     const playerLink = Router.getPlayerLink(state.tournamentId);
     const organiserLink = state.organiserKey ? Router.getOrganiserLink(state.tournamentId, state.organiserKey) : null;
-    
+    const allGroupStandings = [...(state.getGroupStandings ? state.getGroupStandings('A') : []), ...(state.getGroupStandings ? state.getGroupStandings('B') : [])].sort((a, b) => b.points - a.points).map(s => ({ name: s.team?.name || '', points: s.points }));
+    const shareButtonsHTML = typeof SocialShare !== 'undefined' ? SocialShare.getShareButtons(state.tournamentName || 'Team Tournament', state.tournamentId, 'team-league', playerLink, allGroupStandings) : '';
+
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
             <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
@@ -529,6 +531,7 @@ function showShareModal() {
                     <h2 class="text-xl font-bold text-white">🔗 Share Tournament</h2>
                 </div>
                 <div class="p-6 space-y-4">
+                    ${shareButtonsHTML}
                     <div class="text-center mb-4">
                         <div class="text-lg font-bold text-gray-800">${state.tournamentName || 'Team Tournament'}</div>
                         <div class="text-sm text-gray-500">Code: <span class="font-mono font-bold text-purple-600">${state.tournamentId?.toUpperCase() || ''}</span></div>

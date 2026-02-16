@@ -250,10 +250,12 @@ async function resetToJsonDefaults() {
 
 function showShareLinksModal() {
     if (!state.tournamentId) return;
-    
+
     const playerLink = Router.getPlayerLink(state.tournamentId);
     const canEdit = state.canEdit();
-    
+    const standings = (state.calculateStandings ? state.calculateStandings() : []).map(s => ({ name: s.name, points: s.score }));
+    const shareButtonsHTML = typeof SocialShare !== 'undefined' ? SocialShare.getShareButtons(state.tournamentName || 'Tournament', state.tournamentId, 'tournament', playerLink, standings) : '';
+
     const modal = document.getElementById('modal-container') || createModalContainer();
     modal.innerHTML = `
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50" onclick="if(event.target === this) closeModal()">
@@ -268,8 +270,9 @@ function showShareLinksModal() {
                         </svg>
                     </button>
                 </div>
-                
+
                 <div class="p-5 sm:p-6 space-y-5">
+                    ${shareButtonsHTML}
                     <div class="text-center pb-2">
                         <div class="text-xl sm:text-2xl font-bold text-gray-800">${state.tournamentName || 'Tournament'}</div>
                         <div class="text-sm text-gray-500 mt-1">Code: <span class="font-mono font-bold text-blue-600">${state.tournamentId.toUpperCase()}</span></div>

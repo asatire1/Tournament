@@ -1,0 +1,13 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "uberpadel-og"
+main = "src/index.ts"
+compatibility_date = "2025-01-13"
+compatibility_flags = ["nodejs_compat"]
+
+# Deploy to workers.dev first, then add custom domain
+workers_dev = true
+
+# Custom domain (add after DNS CNAME is set up):
+# routes = [
+#   { pattern = "og.uberpadel.com/*", zone_name = "uberpadel.com" }
+# ]

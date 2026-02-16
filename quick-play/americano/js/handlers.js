@@ -786,10 +786,12 @@ async function handleJoinSession() {
  */
 function showShareModal() {
     if (!state) return;
-    
+
     const playerLink = Router.getPlayerLink(state.tournamentId);
     const organiserLink = state.organiserKey ? Router.getOrganiserLink(state.tournamentId, state.organiserKey) : null;
-    
+    const standings = (state.calculateStandings ? state.calculateStandings() : []).map(s => ({ name: s.name, points: s.score }));
+    const shareButtonsHTML = typeof SocialShare !== 'undefined' ? SocialShare.getShareButtons(state.tournamentName || 'Americano', state.tournamentId, 'americano', playerLink, standings) : '';
+
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
             <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
@@ -797,6 +799,7 @@ function showShareModal() {
                     <h2 class="text-xl font-bold text-white">📤 Share Session</h2>
                 </div>
                 <div class="p-6 space-y-4">
+                    ${shareButtonsHTML}
                     <div class="bg-blue-50 rounded-xl p-4">
                         <div class="text-sm font-semibold text-blue-800 mb-2">📋 Session Code</div>
                         <div class="font-mono text-2xl font-bold text-blue-600 tracking-wider">${state.tournamentId.toUpperCase()}</div>

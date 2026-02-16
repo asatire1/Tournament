@@ -327,6 +327,8 @@ function showShareModal() {
 
     const playerLink = Router.getPlayerLink(state.tournamentId);
     const organiserLink = state.organiserKey ? Router.getOrganiserLink(state.tournamentId, state.organiserKey) : null;
+    const standings = (state.getStandings ? state.getStandings() : []).map(s => ({ name: s.name, points: s.points }));
+    const shareButtonsHTML = typeof SocialShare !== 'undefined' ? SocialShare.getShareButtons(state.tournamentName || 'Swiss System Tournament', state.tournamentId, 'swiss', playerLink, standings) : '';
 
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
@@ -335,6 +337,7 @@ function showShareModal() {
                     <h2 class="text-xl font-bold text-white">Share Tournament</h2>
                 </div>
                 <div class="p-6 space-y-4">
+                    ${shareButtonsHTML}
                     <div class="text-center mb-4">
                         <div class="text-lg font-bold text-gray-800">${state.tournamentName || 'Swiss System Tournament'}</div>
                         <div class="text-sm text-gray-500">Code: <span class="font-mono font-bold text-amber-600">${state.tournamentId?.toUpperCase() || ''}</span></div>
