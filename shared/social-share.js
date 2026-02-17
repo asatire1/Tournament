@@ -265,13 +265,13 @@ const SocialShare = {
 
         return `
             <div style="display:flex;gap:12px;">
-                <button onclick="SocialShare._handleNativeShare()"
+                <button onclick="event.stopPropagation(); SocialShare._handleNativeShare()"
                     style="display:${nativeShareVisible};flex:1;align-items:center;justify-content:center;gap:8px;padding:12px 16px;background:#3B82F6;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;"
                     onmouseenter="this.style.background='#2563EB'"
                     onmouseleave="this.style.background='#3B82F6'">
                     ${shareIconSVG} Share
                 </button>
-                <button onclick="SocialShare._handleWhatsApp()"
+                <button onclick="event.stopPropagation(); SocialShare._handleWhatsApp()"
                     style="display:flex;flex:1;align-items:center;justify-content:center;gap:8px;padding:12px 16px;background:#25D366;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;"
                     onmouseenter="this.style.background='#1EBE5A'"
                     onmouseleave="this.style.background='#25D366'">
