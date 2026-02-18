@@ -64,6 +64,9 @@ class TournamentState {
         
         // Round ordering (custom order for rounds)
         this.roundOrder = null;
+
+        // Excluded rounds (array of 1-based round numbers excluded from standings)
+        this.excludedRounds = [];
         
         // Tournament status (Phase 5)
         this.tournamentStatus = 'open'; // 'open', 'in-progress', 'completed'
@@ -208,6 +211,9 @@ class TournamentState {
         
         // Round ordering
         this.roundOrder = data.roundOrder || null;
+
+        // Excluded rounds
+        this.excludedRounds = data.excludedRounds || [];
         
         // Tournament status (Phase 5)
         this.tournamentStatus = data.meta?.status || 'open';
@@ -522,6 +528,7 @@ class TournamentState {
         updates[`${basePath}/showFairnessTabs`] = this.showFairnessTabs;
         updates[`${basePath}/registeredPlayers`] = this.registeredPlayers || {};
         updates[`${basePath}/roundOrder`] = this.roundOrder;
+        updates[`${basePath}/excludedRounds`] = this.excludedRounds;
         
         database.ref().update(updates).then(() => {
             // Clear saving flag after a short delay to allow Firebase listener to settle
@@ -945,6 +952,7 @@ class TournamentState {
     countCompletedMatches() {
         let count = 0;
         for (let round = 1; round <= CONFIG.TOTAL_ROUNDS; round++) {
+            if (this.excludedRounds.includes(round)) continue;
             for (let match = 0; match < CONFIG.MATCHES_PER_ROUND; match++) {
                 if (this.isMatchComplete(round, match)) count++;
             }
@@ -961,8 +969,9 @@ class TournamentState {
             const partners = new Set();
             
             for (let round = 1; round <= CONFIG.TOTAL_ROUNDS; round++) {
+                if (this.excludedRounds.includes(round)) continue;
                 if (!this.fixtures[round]) continue;
-                
+
                 this.fixtures[round].forEach((match, matchIdx) => {
                     const allPlayers = [...match.team1, ...match.team2];
                     if (!allPlayers.includes(playerId)) return;
@@ -1055,6 +1064,32 @@ class TournamentState {
         if (!this.canEdit()) return;
         this.roundOrder = null;
         this.saveToFirebase();
+    }
+
+    // ===== ROUND EXCLUSION =====
+
+    /**
+     * Check if a round is excluded from standings
+     * @param {number} round - 1-based round number
+     * @returns {boolean}
+     */
+    isRoundExcluded(round) {
+        return this.excludedRounds.includes(round);
+    }
+
+    /**
+     * Toggle a round's exclusion from standings
+     * @param {number} round - 1-based round number
+     */
+    toggleRoundExclusion(round) {
+        if (!this.canEdit()) return;
+        const idx = this.excludedRounds.indexOf(round);
+        if (idx === -1) {
+            this.excludedRounds.push(round);
+        } else {
+            this.excludedRounds.splice(idx, 1);
+        }
+        this.saveSettingToFirebase('excludedRounds', this.excludedRounds);
     }
 }
 

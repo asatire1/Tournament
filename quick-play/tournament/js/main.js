@@ -316,13 +316,28 @@ function SettingsTab() {
         `;
     } else if (state.settingsSubTab === 'rounds') {
         const hasCustomOrder = state.roundOrder !== null;
+        const activeCount = CONFIG.TOTAL_ROUNDS - state.excludedRounds.length;
+        const hasExclusions = state.excludedRounds.length > 0;
         content = `
             <div class="space-y-6">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 class="font-semibold text-blue-900 mb-2">📋 Round Order</h3>
-                    <div class="text-sm text-blue-800">Reorder when rounds are played. Use the arrows to move rounds up or down. Scores are preserved.</div>
+                    <h3 class="font-semibold text-blue-900 mb-2">📋 Round Order & Selection</h3>
+                    <div class="text-sm text-blue-800">Reorder when rounds are played and toggle which rounds count towards standings. Excluded rounds won't affect the leaderboard.</div>
                 </div>
-                
+
+                <!-- Active rounds summary -->
+                <div class="bg-white rounded-lg shadow p-4 flex items-center justify-between">
+                    <div>
+                        <span class="text-2xl font-bold text-gray-900">${activeCount}</span>
+                        <span class="text-sm text-gray-500 ml-1">of ${CONFIG.TOTAL_ROUNDS} rounds active</span>
+                    </div>
+                    ${hasExclusions ? `
+                        <button onclick="clearAllExclusions()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors">
+                            Include All
+                        </button>
+                    ` : ''}
+                </div>
+
                 ${hasCustomOrder ? `
                     <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
                         <div class="text-sm text-amber-700">
@@ -333,12 +348,13 @@ function SettingsTab() {
                         </button>
                     </div>
                 ` : ''}
-                
+
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="space-y-2">
                         ${Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, displayIdx) => {
                             const originalIdx = state.roundOrder ? state.roundOrder[displayIdx] : displayIdx;
                             const round = originalIdx + 1;
+                            const isExcluded = state.isRoundExcluded(round);
                             const matches = state.fixtures[round] || [];
                             const matchSummary = matches.slice(0, 2).map(m => {
                                 const t1 = m.team1.map(p => state.playerNames[p-1] || `P${p}`).join(' & ');
@@ -346,24 +362,31 @@ function SettingsTab() {
                                 return `${t1} vs ${t2}`;
                             }).join(', ');
                             const extraMatches = matches.length > 2 ? ` +${matches.length - 2} more` : '';
-                            
+
                             return `
-                                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200 hover:bg-gray-100">
-                                    <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg">
+                                <div class="flex items-center gap-3 p-3 rounded-xl border ${isExcluded ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}">
+                                    <div class="w-12 h-12 rounded-xl ${isExcluded ? 'bg-gray-200 text-gray-400' : 'bg-blue-100 text-blue-700'} flex items-center justify-center font-bold text-lg">
                                         ${displayIdx + 1}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="font-medium text-gray-800">
+                                        <div class="font-medium ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-800'}">
                                             Round ${displayIdx + 1}
-                                            ${hasCustomOrder && originalIdx !== displayIdx ? 
+                                            ${hasCustomOrder && originalIdx !== displayIdx ?
                                                 `<span class="text-xs text-gray-400 ml-1">(was R${originalIdx + 1})</span>` : ''}
+                                            ${isExcluded ? '<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full ml-2 no-underline inline-block" style="text-decoration:none">Excluded</span>' : ''}
                                         </div>
                                         <div class="text-sm text-gray-500 truncate">
                                             ${matches.length} matches: ${matchSummary}${extraMatches}
                                         </div>
                                     </div>
+                                    <!-- Toggle switch -->
+                                    <button onclick="toggleRoundExclusion(${round})"
+                                        class="relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${isExcluded ? 'bg-gray-300' : 'bg-green-500'}"
+                                        title="${isExcluded ? 'Include in standings' : 'Exclude from standings'}">
+                                        <span class="absolute top-0.5 ${isExcluded ? 'left-0.5' : 'left-5'} w-5 h-5 bg-white rounded-full shadow transition-all"></span>
+                                    </button>
                                     <div class="flex flex-col gap-1">
-                                        <button 
+                                        <button
                                             onclick="moveRoundUp(${displayIdx})"
                                             class="p-1.5 rounded-lg ${displayIdx === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-blue-100 hover:text-blue-600'}"
                                             ${displayIdx === 0 ? 'disabled' : ''}>
@@ -371,7 +394,7 @@ function SettingsTab() {
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                                             </svg>
                                         </button>
-                                        <button 
+                                        <button
                                             onclick="moveRoundDown(${displayIdx})"
                                             class="p-1.5 rounded-lg ${displayIdx === CONFIG.TOTAL_ROUNDS - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-blue-100 hover:text-blue-600'}"
                                             ${displayIdx === CONFIG.TOTAL_ROUNDS - 1 ? 'disabled' : ''}>

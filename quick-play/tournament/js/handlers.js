@@ -859,4 +859,28 @@ function resetRoundOrder() {
     showToast('✅ Round order reset');
 }
 
+/**
+ * Toggle a round's inclusion in standings
+ */
+function toggleRoundExclusion(round) {
+    if (!state || !state.canEdit()) return;
+
+    state.toggleRoundExclusion(round);
+    render();
+    const excluded = state.isRoundExcluded(round);
+    showToast(excluded ? `🚫 Round excluded from standings` : `✅ Round included in standings`);
+}
+
+/**
+ * Clear all round exclusions (include all rounds)
+ */
+function clearAllExclusions() {
+    if (!state || !state.canEdit()) return;
+
+    state.excludedRounds = [];
+    state.saveSettingToFirebase('excludedRounds', state.excludedRounds);
+    render();
+    showToast('✅ All rounds included');
+}
+
 console.log('✅ Handlers loaded');

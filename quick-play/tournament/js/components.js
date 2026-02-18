@@ -35,15 +35,16 @@ function MatchCard(round, matchIdx, match, displayRound = null) {
     const isComplete = state.isMatchComplete(round, matchIdx);
     const winner = state.getWinner(round, matchIdx);
     const canEdit = state.canEdit();
-    
+    const isExcluded = state.isRoundExcluded(round);
+
     // Use displayRound for UI, but round for data operations
     const showRound = displayRound !== null ? displayRound : round;
-    
+
     const team1Rating = (state.skillRatings[match.team1[0]] + state.skillRatings[match.team1[1]]).toFixed(2);
     const team2Rating = (state.skillRatings[match.team2[0]] + state.skillRatings[match.team2[1]]).toFixed(2);
-    
+
     const matchName = state.matchNames[matchIdx + 1] || `Match ${matchIdx + 1}`;
-    
+
     // Read-only score display
     const scoreDisplay = canEdit ? `
         <input type="number" min="0" max="${state.fixtureMaxScore}" value="${score.team1Score !== null ? score.team1Score : ''}" placeholder="—" class="score-input-compact" onchange="handleScoreChange(${round}, ${matchIdx}, this.value, 1)" />
@@ -54,14 +55,15 @@ function MatchCard(round, matchIdx, match, displayRound = null) {
         <span class="text-gray-400 text-2xl font-semibold">:</span>
         <span class="text-3xl font-bold text-gray-800">${score.team2Score !== null ? score.team2Score : '—'}</span>
     `;
-    
+
     return `
-        <div class="match-card ${within ? 'match-within' : 'match-cross'} ${isComplete ? 'complete' : ''}">
+        <div class="match-card ${within ? 'match-within' : 'match-cross'} ${isComplete ? 'complete' : ''}" ${isExcluded ? 'style="opacity:0.5"' : ''}>
             <div class="px-4 py-2 flex justify-between items-center bg-gray-50">
                 <div class="flex items-center gap-2">
                     <div class="font-semibold text-gray-800">R${showRound}</div>
                     <div class="w-1 h-1 rounded-full bg-gray-300"></div>
                     <div class="text-xs text-gray-500">${matchName}</div>
+                    ${isExcluded ? '<div class="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-500">Excluded</div>' : ''}
                 </div>
                 <div class="flex items-center gap-2">
                     ${winner === 'team1' ? `<span class="text-green-600">🏆</span>` : ''}
