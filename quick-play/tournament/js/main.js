@@ -872,8 +872,8 @@ function getTvData() {
         standings: standings.map((s, i) => ({
             rank: i + 1,
             name: s.name || `Player ${s.playerNum || i + 1}`,
-            played: s.gamesPlayed || 0,
-            points: s.avgScore || s.totalScore || 0,
+            played: s.matches || s.gamesPlayed || 0,
+            points: s.tournamentPoints || 0,
             wins: s.wins,
             losses: s.losses,
             pointsDiff: s.pointsDiff

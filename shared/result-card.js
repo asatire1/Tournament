@@ -808,7 +808,9 @@ const ResultCard = {
                             '<button onclick="SocialShare.shareWhatsApp(SocialShare.getRichShareText(\'' +
                                 (cardData.tournamentName || '').replace(/'/g, "\\'") + '\',\'' +
                                 (cardData.tournamentId || '') + '\',\'' +
-                                (cardData.formatName || '') + '\',' +
+                                (cardData.formatName || '') + '\',SocialShare.getOgShareUrl(\'' +
+                                (cardData.formatName || '') + '\',\'' +
+                                (cardData.tournamentId || '') + '\'),' +
                                 JSON.stringify(standings.slice(0, 3).map(function(s) { return { name: s.name, points: s.points }; })) +
                             '));this.closest(\'[class*=fixed]\').parentElement.innerHTML=\'\'" ' +
                             'class="w-full flex items-center justify-center gap-2 px-4 py-3 text-white font-semibold rounded-xl transition-colors" style="background:#25D366">' +

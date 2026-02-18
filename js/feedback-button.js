@@ -13,7 +13,7 @@
   // Inject styles
   const style = document.createElement('style');
   style.textContent = `
-.feedback-fab{position:fixed;bottom:20px;right:20px;width:44px;height:44px;border-radius:50%;border:none;background:#0d9488;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:background .2s,transform .2s,box-shadow .2s;z-index:9990;opacity:.7}
+.feedback-fab{position:fixed;bottom:20px;right:20px;width:44px;height:44px;border-radius:50%;border:none;background:#0d9488;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:background .2s,transform .2s,box-shadow .2s;z-index:10001;opacity:.7}
 .feedback-fab:hover{background:#0f766e;transform:scale(1.08);box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:1}
 .feedback-fab:active{transform:scale(.96)}
 .feedback-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px}
