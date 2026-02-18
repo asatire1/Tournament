@@ -253,7 +253,7 @@ function showShareLinksModal() {
 
     const playerLink = Router.getPlayerLink(state.tournamentId);
     const canEdit = state.canEdit();
-    const standings = (state.calculateStandings ? state.calculateStandings() : []).map(s => ({ name: s.name, points: s.score }));
+    const standings = (state.calculateStandings ? state.calculateStandings() : []).map(s => ({ name: s.name, points: s.tournamentPoints }));
     const shareButtonsHTML = typeof SocialShare !== 'undefined' ? SocialShare.getShareButtons(state.tournamentName || 'Tournament', state.tournamentId, 'tournament', playerLink, standings) : '';
 
     const modal = document.getElementById('modal-container') || createModalContainer();

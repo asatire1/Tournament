@@ -180,7 +180,7 @@ const SocialShare = {
     shareWhatsApp(text, url) {
         const message = url ? `${text}\n${url}` : text;
         const encoded = encodeURIComponent(message);
-        window.open(`https://wa.me/?text=${encoded}`, '_blank');
+        window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
     },
 
     // -----------------------------------------------------------------
@@ -345,6 +345,7 @@ const SocialShare = {
             d.standings
         );
 
-        SocialShare.shareWhatsApp(text, shareUrl);
+        // Don't pass shareUrl separately — it's already in the rich text
+        SocialShare.shareWhatsApp(text);
     },
 };
