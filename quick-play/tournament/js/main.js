@@ -381,9 +381,9 @@ function SettingsTab() {
                                     </div>
                                     <!-- Toggle switch -->
                                     <button onclick="toggleRoundExclusion(${round})"
-                                        class="relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${isExcluded ? 'bg-gray-300' : 'bg-green-500'}"
+                                        style="position:relative;width:44px;height:24px;border-radius:12px;border:none;cursor:pointer;flex-shrink:0;background:${isExcluded ? '#D1D5DB' : '#22C55E'};transition:background 0.2s;"
                                         title="${isExcluded ? 'Include in standings' : 'Exclude from standings'}">
-                                        <span class="absolute top-0.5 ${isExcluded ? 'left-0.5' : 'left-5'} w-5 h-5 bg-white rounded-full shadow transition-all"></span>
+                                        <span style="position:absolute;top:2px;${isExcluded ? 'left:2px' : 'left:22px'};width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.2s;"></span>
                                     </button>
                                     <div class="flex flex-col gap-1">
                                         <button
