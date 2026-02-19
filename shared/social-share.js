@@ -180,7 +180,12 @@ const SocialShare = {
     shareWhatsApp(text, url) {
         const message = url ? `${text}\n${url}` : text;
         const encoded = encodeURIComponent(message);
-        window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
+        const whatsappUrl = `https://wa.me/?text=${encoded}`;
+        // window.open can return null on iOS Safari (popup blocked)
+        const win = window.open(whatsappUrl, '_blank');
+        if (!win) {
+            window.location.href = whatsappUrl;
+        }
     },
 
     // -----------------------------------------------------------------
