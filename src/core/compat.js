@@ -179,10 +179,14 @@ function setupCompat(format) {
             return Firebase.saveScore(format.toUpperCase().replace('-', '_'), tournamentId, roundIndex, matchIndex, team1Score, team2Score);
         }
         try {
-            await window.database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/scores/${roundIndex}_${matchIndex}`).set({
-                team1: team1Score === null ? -1 : team1Score,
-                team2: team2Score === null ? -1 : team2Score
-            });
+            if (team1Score !== null && team1Score >= 0 && team2Score !== null && team2Score >= 0) {
+                await window.database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/scores/${roundIndex}_${matchIndex}`).set({
+                    team1: team1Score,
+                    team2: team2Score
+                });
+            } else {
+                await window.database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/scores/${roundIndex}_${matchIndex}`).remove();
+            }
             await window.database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/updatedAt`).set(new Date().toISOString());
             return true;
         } catch (error) {

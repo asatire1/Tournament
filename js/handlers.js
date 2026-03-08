@@ -642,15 +642,8 @@ async function createTournament(name, passcode, playerCount, courtCount, modeSet
             3: 'Court D'
         };
     } else {
-        // Classic mode: Initialize empty scores
-        const fixtures = getFixtures(playerCount, courtCount);
-        const scores = {};
-        fixtures.forEach((_, fixtureIdx) => {
-            const roundIndex = Math.floor(fixtureIdx / courtCount);
-            const matchIndex = fixtureIdx % courtCount;
-            scores[`${roundIndex}_${matchIndex}`] = { team1: -1, team2: -1 };
-        });
-        data.scores = scores;
+        // Classic mode: Start with empty scores (populated when matches are played)
+        data.scores = {};
     }
     
     await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}`).set(data);

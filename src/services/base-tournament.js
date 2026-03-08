@@ -332,10 +332,11 @@ class BaseTournament {
      */
     async saveScore(roundIndex, matchIndex, team1Score, team2Score) {
         const scoreKey = `${roundIndex}_${matchIndex}`;
-        this.scores[scoreKey] = {
-            team1: team1Score === null ? -1 : team1Score,
-            team2: team2Score === null ? -1 : team2Score
-        };
+        if (team1Score !== null && team1Score >= 0 && team2Score !== null && team2Score >= 0) {
+            this.scores[scoreKey] = { team1: team1Score, team2: team2Score };
+        } else {
+            delete this.scores[scoreKey];
+        }
 
         try {
             const Firebase = window.Firebase;
