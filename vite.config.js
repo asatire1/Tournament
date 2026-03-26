@@ -1,95 +1,95 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import { resolve }      from 'path';
+import { readdirSync, statSync } from 'fs';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Recursively collect all .html files under `dir`, returning a rollupOptions
+ * input map: { camelCaseKey: absolutePath }
+ *
+ * Excluded: node_modules, dist, .git, src, functions, tests, scripts, og-worker
+ * Excluded pages: debug.html, test-*.html, index-*.html (dev artefacts),
+ *                 yandex*.html (verification file)
+ */
+const EXCLUDED_DIRS  = new Set(['node_modules', 'dist', '.git', 'src', 'functions', 'tests', 'scripts', 'og-worker', 'public']);
+const EXCLUDED_FILES = /^(debug|test-all|test-core|test-engines|yandex|index-[0-9]|index-new|index-old|create-masjid)/i;
+
+function collectHtmlEntries(dir, root = dir) {
+    const entries = {};
+
+    for (const item of readdirSync(dir)) {
+        const fullPath = `${dir}/${item}`;
+        const stat = statSync(fullPath);
+
+        if (stat.isDirectory()) {
+            if (EXCLUDED_DIRS.has(item)) continue;
+            Object.assign(entries, collectHtmlEntries(fullPath, root));
+        } else if (item.endsWith('.html') && !EXCLUDED_FILES.test(item)) {
+            // Build a unique camelCase key from the relative path
+            const rel = fullPath.replace(root + '/', '');
+            const key = rel
+                .replace(/\.html$/, '')
+                .replace(/\/index$/, '')
+                .replace(/[^a-zA-Z0-9]+(.)/g, (_, c) => c.toUpperCase())
+                .replace(/^./, c => c.toLowerCase()) || 'main';
+            entries[key] = resolve(root, rel);
+        }
+    }
+
+    return entries;
+}
+
+const htmlEntries = collectHtmlEntries(__dirname);
 
 export default defineConfig({
   // Base public path
   base: '/',
-  
+
   // Source root
   root: '.',
-  
+
   // Public assets directory
   publicDir: 'public',
-  
+
   // Build configuration
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    
+
     // Generate sourcemaps for debugging
     sourcemap: true,
-    
+
     // Rollup options for multiple entry points
     rollupOptions: {
-      input: {
-        // Main pages
-        main: resolve(__dirname, 'index.html'),
-        login: resolve(__dirname, 'login.html'),
-        browse: resolve(__dirname, 'browse.html'),
-        about: resolve(__dirname, 'about.html'),
-        admin: resolve(__dirname, 'admin.html'),
-        myAccount: resolve(__dirname, 'my-account.html'),
-        competitions: resolve(__dirname, 'competitions.html'),
+      // Automatically include all HTML pages (glob-collected above)
+      input: htmlEntries,
 
-        // Organiser tools
-        organiserAnalytics: resolve(__dirname, 'organiser/analytics.html'),
-
-        // Tournament format pages
-        americano: resolve(__dirname, 'americano/index.html'),
-        mexicano: resolve(__dirname, 'mexicano/index.html'),
-        teamLeague: resolve(__dirname, 'team-league/index.html'),
-        tournament: resolve(__dirname, 'tournament/index.html'),
-      },
-      
       output: {
         // Chunk naming
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
-        
+
         // Manual chunks for better caching
-        manualChunks: {
-          // Core modules
-          'core': [
-            './src/core/firebase.js',
-            './src/core/permissions.js',
-            './src/core/storage.js',
-            './src/core/router.js',
-            './src/core/auth.js',
-          ],
-          // Services
-          'services': [
-            './src/services/base-tournament.js',
-            './src/services/tournament-service.js',
-            './src/services/user-service.js',
-          ],
-          // Phase 3: Rating + Notifications (lazily loaded — not in critical path)
-          'rating': [
-            './src/core/rating-engine.js',
-          ],
-          'notifications': [
-            './src/services/notification-service.js',
-            './src/components/ui/NotificationBell.js',
-          ],
-          // Phase 4: Analytics (organiser-only)
-          'analytics': [
-            './src/services/analytics-service.js',
-          ],
-          // UI Components
-          'ui': [
-            './src/components/ui/Modal.js',
-            './src/components/ui/Toast.js',
-            './src/components/ui/PlayerBadge.js',
-            './src/components/ui/ScoreInput.js',
-            './src/components/ui/StandingsTable.js',
-            './src/components/ui/MatchCard.js',
-            './src/components/ui/Loading.js',
-            './src/components/ui/Tabs.js',
-          ],
+        // Note: these only produce non-empty bundles when the pages that import
+        // them use <script type="module"> rather than CDN/legacy script tags.
+        manualChunks(id) {
+            if (id.includes('src/core/rating-engine'))   return 'rating';
+            if (id.includes('src/services/notification')) return 'notifications';
+            if (id.includes('src/components/ui/NotificationBell')) return 'notifications';
+            if (id.includes('src/services/analytics'))   return 'analytics';
+            if (id.includes('src/services/data-export')) return 'gdpr';
+            if (id.includes('src/core/firebase') || id.includes('src/core/router') ||
+                id.includes('src/core/auth')    || id.includes('src/core/storage')) return 'core';
+            if (id.includes('src/services'))             return 'services';
+            if (id.includes('src/components/ui'))        return 'ui';
         },
       },
     },
-    
+
     // Minification
     minify: 'terser',
     terserOptions: {
@@ -99,44 +99,44 @@ export default defineConfig({
       },
     },
   },
-  
+
   // Development server
   server: {
     port: 3000,
     open: true,
     cors: true,
-    
+
     // Watch for changes
     watch: {
       usePolling: false,
     },
   },
-  
+
   // Preview server (for testing production builds)
   preview: {
     port: 4173,
     open: true,
   },
-  
+
   // Resolve aliases
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-      '@core': resolve(__dirname, 'src/core'),
-      '@services': resolve(__dirname, 'src/services'),
-      '@components': resolve(__dirname, 'src/components'),
-      '@ui': resolve(__dirname, 'src/components/ui'),
+      '@':            resolve(__dirname, 'src'),
+      '@core':        resolve(__dirname, 'src/core'),
+      '@services':    resolve(__dirname, 'src/services'),
+      '@components':  resolve(__dirname, 'src/components'),
+      '@ui':          resolve(__dirname, 'src/components/ui'),
     },
   },
-  
+
   // CSS configuration
   css: {
     postcss: './postcss.config.js',
   },
-  
+
   // Environment variables prefix
   envPrefix: 'UBER_',
-  
+
   // Optimize dependencies
   optimizeDeps: {
     include: [],

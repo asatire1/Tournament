@@ -288,6 +288,39 @@
         }
       }
     },
+    "knockout-tournaments": {
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
+      "$tournamentId": {
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
+        ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
+        "scores": {
+          "$matchId": {
+            ".write": true,
+            "team1": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            },
+            "team2": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+            }
+          }
+        },
+        "meta": {
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          },
+          "organiserKey": {
+            ".validate": "newData.isString() && newData.val().length >= 8 && newData.val().length <= 64"
+          },
+          "passcodeHash": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128"
+          },
+          "createdAt":   { ".validate": "newData.isString()" },
+          "updatedAt":   { ".validate": "newData.isString()" },
+          "organizerUid":{ ".validate": "newData.isString() && newData.val().length <= 128" }
+        }
+      }
+    },
     "swiss-tournaments": {
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
