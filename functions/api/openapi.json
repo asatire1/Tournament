@@ -1,0 +1,314 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "UberPadel REST API",
+    "description": "Public REST API for UberPadel tournament management platform.\n\n**Authentication:** All endpoints require a Firebase ID token:\n```\nAuthorization: Bearer <firebase_id_token>\n```\nObtain a token via Firebase Auth SDK.\n\n**Rate Limiting:** 100 requests per minute per user.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "UberPadel Support",
+      "url": "https://uberpadel.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://europe-west1-stretford-padel-tournament.cloudfunctions.net/api",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:5001/stretford-padel-tournament/europe-west1/api",
+      "description": "Local emulator"
+    }
+  ],
+  "security": [
+    { "BearerAuth": [] }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Firebase ID Token"
+      }
+    },
+    "schemas": {
+      "Tournament": {
+        "type": "object",
+        "properties": {
+          "id":          { "type": "string" },
+          "format":      { "type": "string", "enum": ["americano","mexicano","mix","mixicano","team-league","knockout","round-robin","swiss"] },
+          "name":        { "type": "string" },
+          "status":      { "type": "string", "enum": ["setup","active","paused","completed"] },
+          "players":     { "type": "integer", "description": "Number of players" },
+          "createdAt":   { "type": "string", "format": "date-time" },
+          "updatedAt":   { "type": "string", "format": "date-time" }
+        }
+      },
+      "Competition": {
+        "type": "object",
+        "properties": {
+          "id":          { "type": "string" },
+          "name":        { "type": "string" },
+          "format":      { "type": "string" },
+          "status":      { "type": "string" },
+          "eventDate":   { "type": "string", "format": "date-time" },
+          "venue":       { "type": "string" },
+          "maxPlayers":  { "type": "integer" },
+          "registered":  { "type": "integer" },
+          "fee":         { "type": "integer", "description": "Fee in pence/cents (0 = free)" }
+        }
+      },
+      "PlayerRating": {
+        "type": "object",
+        "properties": {
+          "uid":          { "type": "string" },
+          "rating":       { "type": "integer", "description": "ELO rating (default 1000)" },
+          "gamesPlayed":  { "type": "integer" },
+          "confidence":   { "type": "number", "minimum": 0, "maximum": 1 },
+          "lastPlayedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id":           { "type": "string" },
+          "type":         { "type": "string", "enum": ["match_ready","tournament_start","result_posted","tournament_complete","registration_confirmed"] },
+          "title":        { "type": "string" },
+          "body":         { "type": "string" },
+          "tournamentId": { "type": "string", "nullable": true },
+          "read":         { "type": "boolean" },
+          "createdAt":    { "type": "string", "format": "date-time" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "getHealth",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status":    { "type": "string", "example": "ok" },
+                    "version":   { "type": "string", "example": "1.0.0" },
+                    "timestamp": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tournaments": {
+      "get": {
+        "summary": "List organiser's tournaments",
+        "operationId": "listTournaments",
+        "parameters": [
+          { "name": "format", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit",  "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tournaments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tournaments": { "type": "array", "items": { "$ref": "#/components/schemas/Tournament" } },
+                    "total":       { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorised" }
+        }
+      }
+    },
+    "/v1/tournaments/{format}/{id}": {
+      "get": {
+        "summary": "Get a tournament",
+        "operationId": "getTournament",
+        "parameters": [
+          { "name": "format", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "id",     "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Tournament data" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/v1/tournaments/{format}/{id}/standings": {
+      "get": {
+        "summary": "Get tournament standings",
+        "operationId": "getTournamentStandings",
+        "parameters": [
+          { "name": "format", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "id",     "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Players, scores, rounds" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/v1/competitions": {
+      "get": {
+        "summary": "List competitions",
+        "operationId": "listCompetitions",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit",  "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of competitions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "competitions": { "type": "array", "items": { "$ref": "#/components/schemas/Competition" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/competitions/{id}": {
+      "get": {
+        "summary": "Get a competition",
+        "operationId": "getCompetition",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Competition data" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/v1/players/{uid}/rating": {
+      "get": {
+        "summary": "Get a player's ELO rating",
+        "operationId": "getPlayerRating",
+        "parameters": [
+          { "name": "uid", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player rating",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlayerRating" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/players/leaderboard": {
+      "get": {
+        "summary": "Global ELO leaderboard",
+        "operationId": "getLeaderboard",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100, "maximum": 200 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "leaderboard": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          { "$ref": "#/components/schemas/PlayerRating" },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "rank": { "type": "integer" },
+                              "name": { "type": "string" }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "summary": "Get current user profile + rating",
+        "operationId": "getMe",
+        "responses": {
+          "200": { "description": "User profile and rating" },
+          "401": { "description": "Unauthorised" }
+        }
+      }
+    },
+    "/v1/me/notifications": {
+      "get": {
+        "summary": "Get current user's notifications",
+        "operationId": "getMyNotifications",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "maximum": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notifications": { "type": "array", "items": { "$ref": "#/components/schemas/Notification" } },
+                    "unreadCount":   { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/notifications/{id}/read": {
+      "post": {
+        "summary": "Mark a notification as read",
+        "operationId": "markNotificationRead",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      }
+    }
+  }
+}

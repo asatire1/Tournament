@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organiser Analytics — Uber Padel</title>
+    <meta name="robots" content="noindex">
+
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563EB">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Space Grotesk', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#2563EB', light: '#3B82F6', dark: '#1D4ED8' }
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <style>
+        body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+
+        /* Simple bar chart bars */
+        .bar-chart-bar {
+            transition: height 0.4s ease;
+        }
+
+        /* Card hover */
+        .stat-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(0,0,0,0.1);
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.4s infinite;
+            border-radius: 6px;
+        }
+        @keyframes skeleton-loading {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="/" class="flex items-center gap-2 text-gray-900 font-bold text-lg hover:text-brand transition-colors">
+                <img src="/uberpadel-icon.svg" alt="" class="w-8 h-8">
+                Uber Padel
+            </a>
+            <span class="text-gray-300">/</span>
+            <span class="text-gray-600 text-sm font-medium">Organiser Analytics</span>
+        </div>
+
+        <div id="authArea" class="flex items-center gap-3">
+            <span class="text-sm text-gray-500" id="userDisplay">Loading…</span>
+            <button id="signOutBtn" class="hidden text-sm text-gray-500 hover:text-red-600 transition-colors">
+                Sign out
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ===== MAIN ===== -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Auth gate -->
+    <div id="authGate" class="hidden text-center py-20">
+        <div class="text-6xl mb-4">🔒</div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Sign in required</h2>
+        <p class="text-gray-500 mb-6">Analytics are only available to registered organisers.</p>
+        <a href="/login.html?redirect=/organiser/analytics.html"
+           class="inline-block bg-brand text-white px-6 py-3 rounded-lg font-semibold hover:bg-brand-dark transition-colors">
+            Sign in
+        </a>
+    </div>
+
+    <!-- Dashboard content (hidden until loaded) -->
+    <div id="dashboard" class="hidden space-y-8">
+
+        <!-- Page title + export -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <p class="text-sm text-gray-500 mt-1" id="lastRefreshed"></p>
+            </div>
+            <div class="flex gap-3">
+                <button id="refreshBtn"
+                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700
+                               bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003
+                                 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                </button>
+                <button id="exportCsvBtn"
+                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white
+                               bg-brand rounded-lg hover:bg-brand-dark transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- ====== SUMMARY CARDS ====== -->
+        <section>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Overview</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="summaryCards">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+
+        <!-- ====== FORMAT BREAKDOWN ====== -->
+        <section>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">By Format</h2>
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <table class="w-full text-sm" id="formatTable">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200">
+                            <th class="text-left px-4 py-3 font-semibold text-gray-700">Format</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Tournaments</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Completed</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Completion %</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Avg Players</th>
+                        </tr>
+                    </thead>
+                    <tbody id="formatTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <p id="formatEmpty" class="hidden text-center text-gray-400 py-8 text-sm">
+                    No tournaments yet.
+                </p>
+            </div>
+        </section>
+
+        <!-- ====== ACTIVITY TIMELINE ====== -->
+        <section>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Activity (last 12 months)</h2>
+            <div class="bg-white rounded-xl border border-gray-200 p-6">
+                <div id="timelineChart" class="flex items-end gap-1.5 h-32" aria-label="Activity chart">
+                    <!-- Populated by JS -->
+                </div>
+                <div id="timelineLabels" class="flex gap-1.5 mt-1" aria-hidden="true">
+                    <!-- Month labels -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== PLAYER DISTRIBUTION + REVENUE (2-col) ====== -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Player distribution -->
+            <section class="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Player Distribution</h2>
+                <div id="playerDistribution" class="space-y-3">
+                    <!-- Populated by JS -->
+                </div>
+                <div id="playerStats" class="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-4 text-center text-sm">
+                    <!-- min/avg/max -->
+                </div>
+            </section>
+
+            <!-- Revenue -->
+            <section class="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">Revenue</h2>
+                <p class="text-xs text-gray-400 mb-4">From paid competition registrations</p>
+                <div id="revenueSection">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- ====== REGISTRATION FUNNEL ====== -->
+        <section>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Registration Funnel</h2>
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200">
+                            <th class="text-left px-4 py-3 font-semibold text-gray-700">Competition</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Max</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Registered</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Paid</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-700">Fill %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="funnelTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <p id="funnelEmpty" class="hidden text-center text-gray-400 py-8 text-sm">
+                    No competitions yet.
+                </p>
+            </div>
+        </section>
+
+    </div><!-- /dashboard -->
+
+    <!-- Loading state -->
+    <div id="loadingState" class="space-y-8">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="skeleton h-24 rounded-xl"></div>
+            <div class="skeleton h-24 rounded-xl"></div>
+            <div class="skeleton h-24 rounded-xl"></div>
+            <div class="skeleton h-24 rounded-xl"></div>
+            <div class="skeleton h-24 rounded-xl"></div>
+            <div class="skeleton h-24 rounded-xl"></div>
+        </div>
+        <div class="skeleton h-48 rounded-xl"></div>
+        <div class="skeleton h-48 rounded-xl"></div>
+    </div>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="mt-16 border-t border-gray-200 py-6 text-center text-sm text-gray-400">
+    <p>Uber Padel · <a href="/privacy.html" class="hover:underline">Privacy</a></p>
+</footer>
+
+<!-- ===== Firebase init ===== -->
+<script>
+    const FIREBASE_CONFIG = {
+        apiKey:            "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain:        "stretford-padel-tournament.firebaseapp.com",
+        databaseURL:       "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId:         "stretford-padel-tournament",
+        storageBucket:     "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId:             "1:596263602058:web:f69f7f8d00c60abbd0aa73",
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    const _db   = firebase.database();
+    const _auth = firebase.auth();
+
+    // Minimal Firebase shim for AnalyticsService
+    window.Firebase = {
+        getDatabase: () => _db,
+    };
+</script>
+
+<!-- ===== Analytics Service (inline module) ===== -->
+<script type="module">
+    import { AnalyticsService } from '/src/services/analytics-service.js';
+
+    // ---------------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------------
+
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function fmtNum(n) {
+        return Number.isFinite(n) ? n.toLocaleString() : '–';
+    }
+
+    function fmtPct(n) {
+        return Number.isFinite(n) ? `${n}%` : '–';
+    }
+
+    function formatName(slug) {
+        const names = {
+            americano: 'Americano', mexicano: 'Mexicano',
+            mix: 'Mix', mixicano: 'Mixicano',
+            'team-league': 'Team League', knockout: 'Knockout',
+            'round-robin': 'Round Robin', swiss: 'Swiss',
+        };
+        return names[slug] ?? slug.charAt(0).toUpperCase() + slug.slice(1);
+    }
+
+    function monthLabel(key) {
+        const [yr, mo] = key.split('-');
+        const d = new Date(Number(yr), Number(mo) - 1);
+        return d.toLocaleDateString('en-GB', { month: 'short' });
+    }
+
+    // ---------------------------------------------------------------------------
+    // Render functions
+    // ---------------------------------------------------------------------------
+
+    function renderSummaryCards(summary) {
+        const cards = [
+            { label: 'Tournaments',   value: fmtNum(summary.totalTournaments),      icon: '🏟',  color: 'blue'   },
+            { label: 'Completed',     value: fmtNum(summary.completedTournaments),   icon: '✅',  color: 'green'  },
+            { label: 'Active',        value: fmtNum(summary.activeTournaments),      icon: '▶️',  color: 'yellow' },
+            { label: 'Completion',    value: fmtPct(summary.completionRate),         icon: '📈',  color: 'purple' },
+            { label: 'Total Players', value: fmtNum(summary.totalPlayers),           icon: '👥',  color: 'indigo' },
+            { label: 'Avg Players',   value: fmtNum(summary.avgPlayersPerTournament),icon: '📊',  color: 'pink'   },
+        ];
+
+        const colorMap = {
+            blue:   'text-blue-600   bg-blue-50',
+            green:  'text-green-600  bg-green-50',
+            yellow: 'text-yellow-600 bg-yellow-50',
+            purple: 'text-purple-600 bg-purple-50',
+            indigo: 'text-indigo-600 bg-indigo-50',
+            pink:   'text-pink-600   bg-pink-50',
+        };
+
+        document.getElementById('summaryCards').innerHTML = cards.map(c => `
+            <div class="stat-card bg-white rounded-xl border border-gray-200 p-4">
+                <div class="text-2xl mb-1">${c.icon}</div>
+                <div class="text-xl font-bold text-gray-900">${c.value}</div>
+                <div class="text-xs text-gray-500 mt-0.5">${c.label}</div>
+            </div>
+        `).join('');
+    }
+
+    function renderFormatTable(byFormat) {
+        const tbody = document.getElementById('formatTableBody');
+        if (!byFormat.length) {
+            document.getElementById('formatTable').classList.add('hidden');
+            document.getElementById('formatEmpty').classList.remove('hidden');
+            return;
+        }
+
+        tbody.innerHTML = byFormat.map(f => `
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 font-medium text-gray-900">${escHtml(formatName(f.format))}</td>
+                <td class="px-4 py-3 text-right text-gray-700">${fmtNum(f.count)}</td>
+                <td class="px-4 py-3 text-right text-gray-700">${fmtNum(f.completed)}</td>
+                <td class="px-4 py-3 text-right">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                        ${f.completionRate >= 75 ? 'bg-green-100 text-green-700' :
+                          f.completionRate >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'}">
+                        ${fmtPct(f.completionRate)}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-right text-gray-700">${fmtNum(f.avgPlayers)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function renderTimeline(timeline) {
+        const chart  = document.getElementById('timelineChart');
+        const labels = document.getElementById('timelineLabels');
+
+        if (!timeline.length) { chart.innerHTML = '<p class="text-gray-400 text-sm">No data</p>'; return; }
+
+        const maxVal = Math.max(...timeline.map(t => t.total), 1);
+
+        chart.innerHTML = timeline.map(t => {
+            const heightPct = Math.round((t.total / maxVal) * 100);
+            return `
+                <div class="flex-1 flex flex-col items-center justify-end gap-1 group relative"
+                     title="${t.month}: ${t.total} total">
+                    <div class="text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity
+                                absolute -top-5 whitespace-nowrap text-center">${t.total}</div>
+                    <div class="w-full bar-chart-bar bg-brand rounded-t"
+                         style="height: ${Math.max(heightPct, t.total > 0 ? 4 : 0)}%"></div>
+                </div>
+            `;
+        }).join('');
+
+        // Month labels (every other month to avoid crowding on small screens)
+        labels.innerHTML = timeline.map((t, i) => `
+            <div class="flex-1 text-center text-xs text-gray-400
+                        ${i % 2 !== 0 ? 'hidden sm:block' : ''}">${monthLabel(t.month)}</div>
+        `).join('');
+    }
+
+    function renderPlayerStats(playerStats) {
+        // Distribution bars
+        const maxCount = Math.max(...playerStats.distribution.map(d => d.count), 1);
+        document.getElementById('playerDistribution').innerHTML = playerStats.distribution.map(d => `
+            <div class="flex items-center gap-3">
+                <span class="w-14 text-xs text-gray-500 text-right flex-shrink-0">${d.range}</span>
+                <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div class="h-full bg-brand rounded-full transition-all duration-500"
+                         style="width: ${Math.round((d.count / maxCount) * 100)}%"></div>
+                </div>
+                <span class="w-6 text-xs text-gray-600 text-right flex-shrink-0">${d.count}</span>
+            </div>
+        `).join('');
+
+        // Min/avg/max
+        document.getElementById('playerStats').innerHTML = [
+            { label: 'Min', value: playerStats.min },
+            { label: 'Avg', value: playerStats.avg },
+            { label: 'Max', value: playerStats.max },
+        ].map(s => `
+            <div>
+                <div class="text-lg font-bold text-gray-900">${s.value}</div>
+                <div class="text-xs text-gray-400">${s.label}</div>
+            </div>
+        `).join('');
+    }
+
+    function renderRevenue(revenue) {
+        const el = document.getElementById('revenueSection');
+
+        if (!revenue.byCompetition.length) {
+            el.innerHTML = `
+                <div class="text-center py-8 text-gray-400 text-sm">
+                    <div class="text-3xl mb-2">💷</div>
+                    No paid competitions yet.<br>
+                    <a href="/competitions/create.html" class="text-brand hover:underline text-xs mt-1 inline-block">
+                        Create a paid competition
+                    </a>
+                </div>
+            `;
+            return;
+        }
+
+        el.innerHTML = `
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-green-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-green-700">£${revenue.totalRevenuePounds}</div>
+                    <div class="text-xs text-green-600 mt-1">Collected</div>
+                </div>
+                <div class="bg-yellow-50 rounded-lg p-4">
+                    <div class="text-2xl font-bold text-yellow-700">£${revenue.pendingPounds}</div>
+                    <div class="text-xs text-yellow-600 mt-1">Pending</div>
+                </div>
+            </div>
+            <div class="space-y-2">
+                ${revenue.byCompetition.map(c => `
+                    <div class="flex justify-between items-center text-sm py-1 border-b border-gray-100">
+                        <span class="text-gray-700 truncate mr-2">${escHtml(c.name)}</span>
+                        <span class="text-gray-900 font-medium flex-shrink-0">
+                            £${(c.revenuePence / 100).toFixed(2)}
+                        </span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function renderFunnel(funnel) {
+        const tbody = document.getElementById('funnelTableBody');
+
+        if (!funnel.competitions.length) {
+            document.querySelector('table:has(#funnelTableBody)').classList.add('hidden');
+            document.getElementById('funnelEmpty').classList.remove('hidden');
+            return;
+        }
+
+        tbody.innerHTML = funnel.competitions.map(c => `
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3 font-medium text-gray-900">
+                    <a href="/competitions/view.html?id=${escHtml(c.id)}"
+                       class="hover:text-brand transition-colors">${escHtml(c.name)}</a>
+                </td>
+                <td class="px-4 py-3 text-right text-gray-600">${c.maxPlayers}</td>
+                <td class="px-4 py-3 text-right text-gray-700 font-medium">${c.registered}</td>
+                <td class="px-4 py-3 text-right text-green-600 font-medium">${c.paid}</td>
+                <td class="px-4 py-3 text-right">
+                    ${c.fillRate !== null ? `
+                        <div class="flex items-center justify-end gap-2">
+                            <div class="w-16 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                <div class="h-full rounded-full ${c.fillRate >= 80 ? 'bg-green-500' : c.fillRate >= 50 ? 'bg-yellow-500' : 'bg-red-400'}"
+                                     style="width: ${c.fillRate}%"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700">${c.fillRate}%</span>
+                        </div>
+                    ` : '–'}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ---------------------------------------------------------------------------
+    // Load & render
+    // ---------------------------------------------------------------------------
+
+    let currentUid = null;
+
+    async function loadAnalytics(uid) {
+        document.getElementById('loadingState').classList.remove('hidden');
+        document.getElementById('dashboard').classList.add('hidden');
+
+        try {
+            const data = await AnalyticsService.getOrganizerAnalytics(uid);
+
+            renderSummaryCards(data.summary);
+            renderFormatTable(data.byFormat);
+            renderTimeline(data.timeline);
+            renderPlayerStats(data.playerStats);
+            renderRevenue(data.revenue);
+            renderFunnel(data.funnel);
+
+            document.getElementById('lastRefreshed').textContent =
+                `Last refreshed: ${new Date().toLocaleTimeString()}`;
+
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+        } catch (err) {
+            console.error('[Analytics] Load error:', err);
+            document.getElementById('loadingState').innerHTML = `
+                <div class="text-center py-20 text-gray-500">
+                    <div class="text-5xl mb-4">⚠️</div>
+                    <p class="font-medium">Failed to load analytics</p>
+                    <p class="text-sm mt-1">${escHtml(err.message)}</p>
+                    <button onclick="location.reload()" class="mt-4 text-brand hover:underline text-sm">
+                        Try again
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Auth
+    // ---------------------------------------------------------------------------
+
+    _auth.onAuthStateChanged(user => {
+        if (!user || user.isAnonymous) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('authGate').classList.remove('hidden');
+            document.getElementById('userDisplay').textContent = '';
+            return;
+        }
+
+        currentUid = user.uid;
+        document.getElementById('authGate').classList.add('hidden');
+        document.getElementById('userDisplay').textContent =
+            user.displayName || user.email || 'Organiser';
+        document.getElementById('signOutBtn').classList.remove('hidden');
+
+        loadAnalytics(user.uid);
+    });
+
+    // ---------------------------------------------------------------------------
+    // Button events
+    // ---------------------------------------------------------------------------
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+        if (currentUid) loadAnalytics(currentUid);
+    });
+
+    document.getElementById('exportCsvBtn').addEventListener('click', async () => {
+        if (!currentUid) return;
+        const btn = document.getElementById('exportCsvBtn');
+        btn.disabled = true;
+        btn.textContent = 'Exporting…';
+
+        try {
+            const csv = await AnalyticsService.exportCsv(currentUid);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = `uberpadel-tournaments-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export CSV
+            `;
+        }
+    });
+
+    document.getElementById('signOutBtn').addEventListener('click', () => {
+        _auth.signOut().then(() => location.href = '/');
+    });
+</script>
+
+</body>
+</html>

@@ -350,3 +350,10 @@ exports.applyInactivityDecay = functions
 
         return null;
     });
+
+// ---------------------------------------------------------------------------
+// REST API (Express app)
+// ---------------------------------------------------------------------------
+
+const { api } = require('./api/index.js');
+exports.api = api;
