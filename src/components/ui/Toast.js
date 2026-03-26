@@ -6,6 +6,21 @@
  */
 
 /**
+ * Escape user-supplied strings before injecting into innerHTML.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * Toast configuration defaults
  */
 const TOAST_DEFAULTS = {
@@ -115,10 +130,10 @@ const Toast = {
         toast.style.minWidth = '200px';
         toast.style.maxWidth = '400px';
         
-        // Add icon and message
+        // Add icon and message — message is escaped to prevent XSS
         toast.innerHTML = `
             ${icon ? `<span class="flex-shrink-0">${icon}</span>` : ''}
-            <span class="flex-1">${message}</span>
+            <span class="flex-1">${escapeHtml(message)}</span>
             ${options.dismissible !== false ? `<button onclick="Toast.dismiss(this.parentElement)" class="ml-2 opacity-70 hover:opacity-100">×</button>` : ''}
         `;
         

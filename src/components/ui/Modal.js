@@ -6,6 +6,22 @@
  */
 
 /**
+ * Escape user-supplied strings before injecting into innerHTML.
+ * Prevents XSS from tournament names, player names, or any user input.
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * Modal configuration defaults
  */
 const MODAL_DEFAULTS = {
@@ -61,31 +77,35 @@ const Modal = {
         const sizeClass = MODAL_SIZES[config.size] || MODAL_SIZES.md;
         const animClass = MODAL_ANIMATIONS[config.animation] || '';
 
-        // Build header
+        // Build header — title and subtitle are escaped (may contain user data)
         let headerHTML = '';
         if (config.title || config.icon) {
             const gradientClass = config.headerGradient || 'from-blue-600 to-purple-600';
+            const safeTitle = escapeHtml(config.title || '');
+            const safeSubtitle = config.subtitle ? escapeHtml(config.subtitle) : '';
+            // Icons are emoji/trusted developer strings — not user input
             headerHTML = `
                 <div class="bg-gradient-to-r ${gradientClass} px-6 py-5">
                     <h2 class="text-xl font-bold text-white">
-                        ${config.icon ? `${config.icon} ` : ''}${config.title || ''}
+                        ${config.icon ? `${config.icon} ` : ''}${safeTitle}
                     </h2>
-                    ${config.subtitle ? `<p class="text-white/70 text-sm mt-1">${config.subtitle}</p>` : ''}
+                    ${safeSubtitle ? `<p class="text-white/70 text-sm mt-1">${safeSubtitle}</p>` : ''}
                 </div>
             `;
         }
 
-        // Build footer
+        // Build footer — button text is escaped; onClick must be a safe JS expression
         let footerHTML = '';
         if (config.buttons && config.buttons.length > 0) {
             const buttonsHTML = config.buttons.map(btn => {
-                const btnClass = btn.primary 
-                    ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                const btnClass = btn.primary
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white'
                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700';
                 const onClick = btn.onClick || 'Modal.close()';
-                return `<button onclick="${onClick}" class="flex-1 px-5 py-3 ${btnClass} rounded-xl font-medium transition-colors">${btn.text}</button>`;
+                const safeText = escapeHtml(btn.text || '');
+                return `<button onclick="${onClick}" class="flex-1 px-5 py-3 ${btnClass} rounded-xl font-medium transition-colors">${safeText}</button>`;
             }).join('');
-            
+
             footerHTML = `<div class="flex gap-3 p-6 pt-0">${buttonsHTML}</div>`;
         }
 
@@ -136,7 +156,7 @@ const Modal = {
         return this.show({
             title: options.title || 'Alert',
             icon: options.icon || '⚠️',
-            content: `<p class="text-gray-600">${message}</p>`,
+            content: `<p class="text-gray-600">${escapeHtml(message)}</p>`,
             buttons: [
                 { text: options.buttonText || 'OK', primary: true, onClick: 'Modal.close()' }
             ],
@@ -157,7 +177,7 @@ const Modal = {
             this.show({
                 title: options.title || 'Confirm',
                 icon: options.icon || '❓',
-                content: `<p class="text-gray-600">${message}</p>`,
+                content: `<p class="text-gray-600">${escapeHtml(message)}</p>`,
                 headerGradient: options.danger ? 'from-red-500 to-orange-500' : 'from-blue-600 to-purple-600',
                 buttons: [
                     { text: options.cancelText || 'Cancel', onClick: 'Modal.close(); window._modalConfirmResolve(false)' },
@@ -182,7 +202,7 @@ const Modal = {
             
             const inputId = 'modal-prompt-input';
             const content = `
-                <p class="text-gray-600 mb-4">${message}</p>
+                <p class="text-gray-600 mb-4">${escapeHtml(message)}</p>
                 <input type="${options.type || 'text'}" 
                        id="${inputId}"
                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temp / scratch
+*.backup.json
+I9P54F-fixtures.txt
+issues_report.txt
+DEVELOPMENT-SPEC.md
+scripts/analyse-*.cjs
+scripts/generate-*.cjs
+scripts/update-*.cjs

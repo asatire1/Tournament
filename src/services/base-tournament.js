@@ -88,33 +88,31 @@ class BaseTournament {
     // ===== SHARED METHODS =====
 
     /**
-     * Generate a tournament ID
+     * Generate a cryptographically random tournament ID
+     * Uses crypto.getRandomValues() — never Math.random().
      * @private
      */
     _generateId() {
         const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-        let id = '';
-        for (let i = 0; i < 6; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
+        const bytes = new Uint8Array(6);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes).map(b => chars[b % chars.length]).join('');
     }
 
     /**
-     * Generate an organiser key
+     * Generate a cryptographically random organiser key
      */
     generateOrganiserKey() {
         const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let key = '';
-        for (let i = 0; i < 16; i++) {
-            key += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        this.organiserKey = key;
-        return key;
+        const bytes = new Uint8Array(24);
+        crypto.getRandomValues(bytes);
+        this.organiserKey = Array.from(bytes).map(b => chars[b % chars.length]).join('');
+        return this.organiserKey;
     }
 
     /**
-     * Hash a passcode using SHA-256 (async)
+     * Hash a passcode using SHA-256 (Web Crypto API).
+     * No weak fallback — if Web Crypto is unavailable the operation fails loudly.
      * @param {string} passcode
      * @returns {Promise<string>}
      */
@@ -123,29 +121,16 @@ class BaseTournament {
             this.passcodeHash = '';
             return '';
         }
-        
-        // Use Web Crypto API for secure hashing
-        if (typeof crypto !== 'undefined' && crypto.subtle) {
-            try {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(passcode);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                this.passcodeHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                return this.passcodeHash;
-            } catch (e) {
-                console.warn('Web Crypto API failed, using fallback');
-            }
+
+        if (typeof crypto === 'undefined' || !crypto.subtle) {
+            throw new Error('Web Crypto API is not available. Cannot hash passcode securely.');
         }
-        
-        // Fallback
-        let hash = 0;
-        for (let i = 0; i < passcode.length; i++) {
-            const char = passcode.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        this.passcodeHash = hash.toString(16);
+
+        const encoder = new TextEncoder();
+        const data = encoder.encode(passcode);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        this.passcodeHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         return this.passcodeHash;
     }
 
@@ -161,7 +146,8 @@ class BaseTournament {
             courts = [],
             mode = 'anyone',
             levelCriteria = null,
-            passcode = null
+            passcode = null,
+            organizerUid = null
         } = options;
 
         this.meta.name = name;
@@ -169,6 +155,10 @@ class BaseTournament {
         this.meta.updatedAt = new Date().toISOString();
         this.meta.mode = mode;
         this.meta.levelCriteria = levelCriteria;
+
+        // Store organizerUid so Firebase Security Rules can verify ownership.
+        // Pass the current Firebase auth uid here (Auth.getCurrentUser()?.uid).
+        this.meta.organizerUid = organizerUid || null;
 
         this.players = players;
         this.courts = courts.length > 0 ? courts : this._getDefaultCourts();
@@ -486,7 +476,9 @@ class BaseTournament {
     }
 
     /**
-     * Verify passcode and return organiser key
+     * Verify passcode and return organiser key.
+     * Only SHA-256 hashes are accepted. Legacy weak hashes (base64, Java hashCode)
+     * are no longer supported — tournaments using them must be recreated.
      * @param {string} passcode
      * @returns {Promise<string|null>} Organiser key if valid, null otherwise
      */
@@ -494,37 +486,23 @@ class BaseTournament {
         try {
             const Firebase = window.Firebase;
             const storedHash = await Firebase.getPasscodeHash(this.format, this.id);
-            
+
             if (!storedHash) return null;
-            
-            // Handle legacy base64 encoded passcodes
-            try {
-                if (btoa(atob(storedHash)) === storedHash) {
-                    if (atob(storedHash) === passcode) {
-                        return await Firebase.getOrganiserKey(this.format, this.id);
-                    }
-                }
-            } catch (e) { /* Not base64 */ }
-            
-            // Handle legacy simple hash
-            if (storedHash.length <= 8 && /^-?[0-9a-f]+$/i.test(storedHash)) {
-                let legacyHash = 0;
-                for (let i = 0; i < passcode.length; i++) {
-                    const char = passcode.charCodeAt(i);
-                    legacyHash = ((legacyHash << 5) - legacyHash) + char;
-                    legacyHash = legacyHash & legacyHash;
-                }
-                if (legacyHash.toString(16) === storedHash) {
-                    return await Firebase.getOrganiserKey(this.format, this.id);
-                }
+
+            // SHA-256 hashes are 64 hex chars. Reject anything that isn't.
+            if (!/^[0-9a-f]{64}$/i.test(storedHash)) {
+                console.warn(
+                    'Tournament uses a legacy passcode format that is no longer supported. ' +
+                    'The organiser should recreate the tournament to set a new passcode.'
+                );
+                return null;
             }
-            
-            // Compare with SHA-256 hash
+
             const hash = await this.hashPasscode(passcode);
             if (storedHash === hash) {
                 return await Firebase.getOrganiserKey(this.format, this.id);
             }
-            
+
             return null;
         } catch (error) {
             console.error('Error verifying passcode:', error);

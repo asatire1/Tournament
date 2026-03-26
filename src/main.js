@@ -10,6 +10,10 @@
 // Import styles
 import './styles/main.css';
 
+// Error tracking must initialise before anything else so it catches early failures
+import { ErrorTracking } from './core/error-tracking.js';
+ErrorTracking.init();
+
 // Import core modules
 import { Core, Firebase, Permissions, Storage, Router, Auth } from './core/index.esm.js';
 
@@ -119,6 +123,9 @@ if (typeof window !== 'undefined') {
     window.showToast = (msg) => Toast.show(msg);
     window.closeModal = () => Modal.close();
     
+    // Error tracking
+    window.ErrorTracking = ErrorTracking;
+
     // App instance
     window.UberPadel = app;
 }

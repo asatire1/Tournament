@@ -68,11 +68,13 @@ function createRouter(config = {}) {
         },
         
         /**
-         * Parse current hash and update route state
+         * Parse current hash and update route state.
+         * Organiser keys are NEVER stored in the URL — they live in sessionStorage only.
+         * If a legacy URL contains ?key=... we migrate it to sessionStorage and clean the URL.
          */
         handleRoute() {
             const hash = window.location.hash.slice(1);
-            
+
             if (!hash || hash === '/' || hash === '') {
                 // Home page
                 this.currentRoute = ROUTES.HOME;
@@ -85,14 +87,28 @@ function createRouter(config = {}) {
                 const pathAndQuery = hash.slice(3);
                 const [path, queryString] = pathAndQuery.split('?');
                 this.tournamentId = path;
-                
+
+                // Migrate legacy ?key= URLs: move to sessionStorage and strip from URL
                 if (queryString) {
                     const params = new URLSearchParams(queryString);
-                    this.organiserKey = params.get('key');
-                } else {
+                    const keyFromUrl = params.get('key');
+                    if (keyFromUrl && this.tournamentId) {
+                        try {
+                            sessionStorage.setItem(`organiserKey_${this.tournamentId}`, keyFromUrl);
+                        } catch (e) { /* sessionStorage unavailable */ }
+                        // Replace URL without the key so it doesn't leak in history/logs
+                        const cleanHash = `/t/${this.tournamentId}`;
+                        history.replaceState(null, '', `${window.location.pathname}#${cleanHash}`);
+                    }
+                }
+
+                // Read key from sessionStorage (never from URL)
+                try {
+                    this.organiserKey = sessionStorage.getItem(`organiserKey_${this.tournamentId}`);
+                } catch (e) {
                     this.organiserKey = null;
                 }
-                
+
                 this.isOrganiser = !!this.organiserKey;
             } else if (hash === '/create') {
                 this.currentRoute = ROUTES.CREATE;
@@ -117,27 +133,31 @@ function createRouter(config = {}) {
         },
         
         /**
-         * Navigate to a route
+         * Navigate to a route.
+         * If organiserKey is provided it is stored in sessionStorage — never in the URL.
          * @param {string} route - Route name or ROUTES constant
          * @param {string} [tournamentId] - Tournament ID for tournament route
-         * @param {string} [organiserKey] - Organiser key for organiser access
+         * @param {string} [organiserKey] - Organiser key — stored in sessionStorage, not URL
          */
         navigate(route, tournamentId = null, organiserKey = null) {
             let hash = '';
-            
+
             if (route === 'home' || route === ROUTES.HOME) {
                 hash = '';
             } else if (route === 'tournament' || route === ROUTES.TOURNAMENT) {
                 hash = `/t/${tournamentId}`;
-                if (organiserKey) {
-                    hash += `?key=${organiserKey}`;
+                // Store organiser key in sessionStorage — keep it out of the URL
+                if (organiserKey && tournamentId) {
+                    try {
+                        sessionStorage.setItem(`organiserKey_${tournamentId}`, organiserKey);
+                    } catch (e) { /* sessionStorage unavailable */ }
                 }
             } else if (route === 'create' || route === ROUTES.CREATE) {
                 hash = '/create';
             } else if (route === 'settings' || route === ROUTES.SETTINGS) {
                 hash = '/settings';
             }
-            
+
             window.location.hash = hash;
         },
         
@@ -176,71 +196,58 @@ function createRouter(config = {}) {
         },
         
         /**
-         * Generate organiser link with key
+         * Generate organiser link.
+         * The organiser key is NOT included in the URL — it lives in sessionStorage.
+         * Organiser access is regained via passcode entry after a new session starts.
          * @param {string} tournamentId
-         * @param {string} organiserKey
-         * @returns {string} Full URL
+         * @returns {string} Full URL (same as player link — access controlled by passcode)
          */
-        getOrganiserLink(tournamentId, organiserKey) {
+        getOrganiserLink(tournamentId) {
             const base = window.location.origin + window.location.pathname.replace(/\/$/, '');
-            return `${base}#/t/${tournamentId}?key=${organiserKey}`;
+            return `${base}#/t/${tournamentId}`;
         },
         
         /**
-         * Generate unique tournament ID
+         * Generate a cryptographically random tournament ID.
+         * Uses crypto.getRandomValues() — never Math.random().
          * @returns {string}
          */
         generateTournamentId() {
             const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-            let id = '';
-            for (let i = 0; i < settings.TOURNAMENT_ID_LENGTH; i++) {
-                id += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return id;
+            const bytes = new Uint8Array(settings.TOURNAMENT_ID_LENGTH);
+            crypto.getRandomValues(bytes);
+            return Array.from(bytes).map(b => chars[b % chars.length]).join('');
         },
-        
+
         /**
-         * Generate organiser key
+         * Generate a cryptographically random organiser key.
          * @returns {string}
          */
         generateOrganiserKey() {
             const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let key = '';
-            for (let i = 0; i < settings.ORGANISER_KEY_LENGTH; i++) {
-                key += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return key;
+            const bytes = new Uint8Array(24);
+            crypto.getRandomValues(bytes);
+            return Array.from(bytes).map(b => chars[b % chars.length]).join('');
         },
-        
+
         /**
-         * Generate a passcode hash using SHA-256 (async)
+         * Hash a passcode using SHA-256 (Web Crypto API).
+         * No weak fallback — Web Crypto is supported in all modern browsers.
          * @param {string} passcode
          * @returns {Promise<string>}
          */
         async hashPasscode(passcode) {
             if (!passcode) return '';
-            
-            // Use Web Crypto API for secure hashing
-            if (typeof crypto !== 'undefined' && crypto.subtle) {
-                try {
-                    const encoder = new TextEncoder();
-                    const data = encoder.encode(passcode);
-                    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                    const hashArray = Array.from(new Uint8Array(hashBuffer));
-                    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-                } catch (e) {
-                    console.warn('Web Crypto API failed, using fallback');
-                }
+
+            if (typeof crypto === 'undefined' || !crypto.subtle) {
+                throw new Error('Web Crypto API unavailable — cannot hash passcode securely.');
             }
-            
-            // Fallback for environments without Web Crypto
-            let hash = 0;
-            for (let i = 0; i < passcode.length; i++) {
-                const char = passcode.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return hash.toString(16);
+
+            const encoder = new TextEncoder();
+            const data = encoder.encode(passcode);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         },
         
         /**
