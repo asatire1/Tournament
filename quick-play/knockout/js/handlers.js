@@ -191,9 +191,8 @@ async function handleKnockoutScoreChange(input) {
 
     // Save to Firebase
     await updateKnockoutBracket(TournamentState.tournamentId, bracket);
-    await updateTournament(TournamentState.tournamentId, {
-        'meta/updatedAt': new Date().toISOString()
-    });
+    // meta/updatedAt write removed — score writes are open to all users but meta writes
+    // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
 
     // Re-render
     render();

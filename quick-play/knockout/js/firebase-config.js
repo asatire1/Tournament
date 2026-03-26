@@ -80,7 +80,8 @@ function subscribeTournament(tournamentId, callback) {
 async function updateMatchScore(tournamentId, scoreKey, score) {
     try {
         await database.ref(`${KNOCKOUT_PATH}/${tournamentId}/scores/${scoreKey}`).set(score);
-        await database.ref(`${KNOCKOUT_PATH}/${tournamentId}/meta/updatedAt`).set(new Date().toISOString());
+        // meta/updatedAt write removed — score writes are open to all users but meta writes
+        // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
         return true;
     } catch (error) {
         console.error('Error updating score:', error);
@@ -94,7 +95,8 @@ async function updateMatchScore(tournamentId, scoreKey, score) {
 async function updateKnockoutBracket(tournamentId, bracket) {
     try {
         await database.ref(`${KNOCKOUT_PATH}/${tournamentId}/bracket`).set(bracket);
-        await database.ref(`${KNOCKOUT_PATH}/${tournamentId}/meta/updatedAt`).set(new Date().toISOString());
+        // meta/updatedAt write removed — score writes are open to all users but meta writes
+        // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
         return true;
     } catch (error) {
         console.error('Error updating bracket:', error);

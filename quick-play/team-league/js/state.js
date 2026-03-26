@@ -588,8 +588,9 @@ class TeamLeagueState {
         }
         
         if (hasUpdates) {
-            updates[`${basePath}/meta/updatedAt`] = new Date().toISOString();
-            
+            // meta/updatedAt write removed — score writes are open to all users but meta writes
+            // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
+
             database.ref().update(updates)
                 .then(() => {
                     console.log(`✅ Saved ${Object.keys(this.pendingGroupScores).length} group + ${Object.keys(this.pendingKnockoutScores).length} knockout scores`);

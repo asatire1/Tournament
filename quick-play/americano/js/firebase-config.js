@@ -79,7 +79,8 @@ async function saveScoreToFirebase(tournamentId, roundIndex, matchIndex, team1Sc
             team1: team1Score === null ? -1 : team1Score,
             team2: team2Score === null ? -1 : team2Score
         });
-        await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/updatedAt`).set(new Date().toISOString());
+        // meta/updatedAt write removed — score writes are open to all users but meta writes
+        // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
         return true;
     } catch (error) {
         console.error('Error saving score:', error);

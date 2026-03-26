@@ -604,9 +604,9 @@ class TournamentState {
         }
         
         if (hasUpdates) {
-            // Add timestamp
-            updates[`${basePath}/meta/updatedAt`] = new Date().toISOString();
-            
+            // meta/updatedAt write removed — score writes are open to all users but meta writes
+            // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
+
             // Batch write all updates
             database.ref().update(updates)
                 .then(() => {
