@@ -44,9 +44,49 @@
         },
         "updatedAt": {
           ".validate": "newData.isString()"
+        },
+
+        "notifications": {
+          ".read":  "auth != null && auth.uid == $userId",
+          ".write": "auth != null && auth.uid == $userId",
+          "$notificationId": {
+            ".validate": "newData.hasChildren(['type', 'title', 'body', 'read', 'createdAt'])",
+            "type": {
+              ".validate": "newData.isString() && (newData.val() == 'match_ready' || newData.val() == 'tournament_start' || newData.val() == 'result_posted' || newData.val() == 'tournament_complete' || newData.val() == 'registration_confirmed')"
+            },
+            "title":        { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "body":         { ".validate": "newData.isString() && newData.val().length <= 300" },
+            "tournamentId": { ".validate": "newData.isString() || newData.val() == null" },
+            "read":         { ".validate": "newData.isBoolean()" },
+            "createdAt":    { ".validate": "newData.isString()" }
+          }
+        },
+
+        "ratings": {
+          ".read": true,
+          ".write": "auth != null && auth.uid == $userId"
         }
       }
     },
+
+    "userRatings": {
+      ".read": true,
+      "$uid": {
+        ".write": "auth != null && (auth.uid == $uid || auth.token.admin == true)",
+        "uid":          { ".validate": "newData.isString()" },
+        "rating":       { ".validate": "newData.isNumber() && newData.val() >= 100 && newData.val() <= 3000" },
+        "confidence":   { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+        "gamesPlayed":  { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "lastPlayedAt": { ".validate": "newData.isString()" },
+        "updatedAt":    { ".validate": "newData.isString()" },
+        "history": {
+          "$matchId": {
+            ".validate": "newData.hasChildren(['before', 'after', 'delta', 'timestamp'])"
+          }
+        }
+      }
+    },
+
     "americano-tournaments": {
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
