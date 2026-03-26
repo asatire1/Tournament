@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELO Leaderboard — Uber Padel</title>
+    <meta name="description" content="The global Uber Padel ELO leaderboard. See the top-rated padel players in your region.">
+    <meta name="robots" content="index, follow">
+
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563EB">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="ELO Leaderboard — Uber Padel">
+    <meta property="og:description" content="The global padel ELO leaderboard. See how you rank.">
+    <meta property="og:url" content="https://uberpadel.com/leaderboard.html">
+    <meta property="og:image" content="https://uberpadel.com/og-image.png">
+
+    <!-- Fonts & Tailwind -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Space Grotesk', 'system-ui', 'sans-serif'] },
+                    colors: { brand: { DEFAULT: '#2563EB', dark: '#1D4ED8' } }
+                }
+            }
+        };
+    </script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <style>
+        body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+        .rank-gold   { color: #D97706; font-weight: 700; }
+        .rank-silver { color: #6B7280; font-weight: 700; }
+        .rank-bronze { color: #92400E; font-weight: 700; }
+        .skeleton {
+            background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skel 1.4s infinite;
+            border-radius: 6px;
+        }
+        @keyframes skel { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+        /* Rating badge colours */
+        .rating-elite   { background: #FEF3C7; color: #92400E; }
+        .rating-advanced{ background: #EDE9FE; color: #5B21B6; }
+        .rating-mid     { background: #DBEAFE; color: #1D4ED8; }
+        .rating-beginner{ background: #F0FDF4; color: #166534; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2 font-bold text-gray-900 hover:text-brand transition-colors">
+            <img src="/uberpadel-icon.svg" alt="" class="w-8 h-8">
+            Uber Padel
+        </a>
+        <nav class="hidden sm:flex items-center gap-6 text-sm font-medium text-gray-600">
+            <a href="/browse.html"            class="hover:text-gray-900 transition-colors">Tournaments</a>
+            <a href="/competitions.html"       class="hover:text-gray-900 transition-colors">Competitions</a>
+            <a href="/leaderboard.html"        class="text-brand">Leaderboard</a>
+        </nav>
+        <div id="authNav" class="flex items-center gap-3">
+            <a href="/login.html" id="signInLink"
+               class="text-sm font-medium text-brand hover:text-brand-dark transition-colors">Sign in</a>
+            <span id="userChip" class="hidden text-sm font-medium text-gray-700 bg-gray-100
+                                        px-3 py-1.5 rounded-full"></span>
+        </div>
+    </div>
+</header>
+
+<!-- HERO -->
+<div class="bg-gradient-to-br from-brand to-blue-700 text-white py-12 px-4">
+    <div class="max-w-5xl mx-auto text-center">
+        <h1 class="text-3xl sm:text-4xl font-bold mb-2">🏆 ELO Leaderboard</h1>
+        <p class="text-blue-100 text-sm sm:text-base max-w-xl mx-auto">
+            Rankings based on competitive match results across all tournament formats.
+            Play more to climb the ranks.
+        </p>
+
+        <!-- My rank chip (shown after auth) -->
+        <div id="myRankBanner" class="hidden mt-6 inline-flex items-center gap-3
+                                       bg-white/20 backdrop-blur-sm rounded-xl px-6 py-3">
+            <span class="text-2xl font-bold" id="myRankNum">—</span>
+            <div class="text-left">
+                <div class="text-xs text-blue-200">Your rank</div>
+                <div class="font-semibold" id="myRatingDisplay">— pts</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+
+    <!-- Filters + search -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
+        <div class="relative flex-1">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none"
+                 stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+            </svg>
+            <input id="searchInput" type="search" placeholder="Search player…"
+                   class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-brand bg-white">
+        </div>
+        <select id="limitSelect"
+                class="px-3 py-2 text-sm border border-gray-300 rounded-lg
+                       focus:outline-none focus:ring-2 focus:ring-brand bg-white">
+            <option value="25">Top 25</option>
+            <option value="50" selected>Top 50</option>
+            <option value="100">Top 100</option>
+        </select>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div id="loadingSkeleton" class="space-y-2">
+        <div class="skeleton h-14 rounded-xl"></div>
+        <div class="skeleton h-14 rounded-xl"></div>
+        <div class="skeleton h-14 rounded-xl"></div>
+        <div class="skeleton h-14 rounded-xl"></div>
+        <div class="skeleton h-14 rounded-xl"></div>
+    </div>
+
+    <!-- Leaderboard table -->
+    <div id="leaderboardContainer" class="hidden bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600 w-12">#</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-600">Player</th>
+                    <th class="px-4 py-3 text-right font-semibold text-gray-600">Rating</th>
+                    <th class="px-4 py-3 text-right font-semibold text-gray-600 hidden sm:table-cell">Games</th>
+                    <th class="px-4 py-3 text-right font-semibold text-gray-600 hidden md:table-cell">Confidence</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+                <!-- Populated by JS -->
+            </tbody>
+        </table>
+
+        <div id="emptyState" class="hidden text-center py-12 text-gray-400">
+            <div class="text-4xl mb-2">🎾</div>
+            <p class="font-medium">No players found</p>
+            <p class="text-sm mt-1">Play rated tournaments to appear on the leaderboard.</p>
+        </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div id="statsBar" class="hidden mt-4 text-xs text-gray-400 text-center">
+        Showing <span id="showingCount">—</span> of <span id="totalCount">—</span> rated players ·
+        Updated in real-time
+    </div>
+
+    <!-- CTA for guests -->
+    <div id="guestCta" class="hidden mt-8 bg-brand/5 border border-brand/20 rounded-xl p-6 text-center">
+        <div class="text-3xl mb-2">🚀</div>
+        <h3 class="font-bold text-gray-900 mb-1">Want to climb the rankings?</h3>
+        <p class="text-sm text-gray-500 mb-4">
+            Create an account and join rated tournaments to get your ELO score.
+        </p>
+        <a href="/register.html"
+           class="inline-block bg-brand text-white px-6 py-2.5 rounded-lg font-semibold
+                  hover:bg-brand-dark transition-colors text-sm">
+            Create free account
+        </a>
+    </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="mt-16 border-t border-gray-200 py-6 text-center text-sm text-gray-400">
+    <p>Uber Padel · <a href="/privacy.html" class="hover:underline">Privacy</a> ·
+    <a href="/about.html" class="hover:underline">About</a></p>
+</footer>
+
+<!-- Firebase init -->
+<script>
+    const FIREBASE_CONFIG = {
+        apiKey:            "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain:        "stretford-padel-tournament.firebaseapp.com",
+        databaseURL:       "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId:         "stretford-padel-tournament",
+        storageBucket:     "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId:             "1:596263602058:web:f69f7f8d00c60abbd0aa73",
+    };
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    const _db   = firebase.database();
+    const _auth = firebase.auth();
+</script>
+
+<script>
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function escHtml(s) {
+    return String(s ?? '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function ratingClass(r) {
+    if (r >= 1800) return 'rating-elite';
+    if (r >= 1400) return 'rating-advanced';
+    if (r >= 1100) return 'rating-mid';
+    return 'rating-beginner';
+}
+
+function ratingLabel(r) {
+    if (r >= 1800) return 'Elite';
+    if (r >= 1400) return 'Advanced';
+    if (r >= 1100) return 'Mid';
+    return 'Beginner';
+}
+
+function confidencePct(c) {
+    return Math.round((c ?? 0) * 100);
+}
+
+function rankDecoration(rank) {
+    if (rank === 1) return '<span class="rank-gold">🥇 1</span>';
+    if (rank === 2) return '<span class="rank-silver">🥈 2</span>';
+    if (rank === 3) return '<span class="rank-bronze">🥉 3</span>';
+    return `<span class="text-gray-500">${rank}</span>`;
+}
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+let allPlayers = [];
+let myUid      = null;
+let searchQuery = '';
+
+// ---------------------------------------------------------------------------
+// Data loading
+// ---------------------------------------------------------------------------
+
+async function loadLeaderboard(limit = 50) {
+    document.getElementById('loadingSkeleton').classList.remove('hidden');
+    document.getElementById('leaderboardContainer').classList.add('hidden');
+    document.getElementById('statsBar').classList.add('hidden');
+
+    try {
+        const snap = await _db.ref('userRatings')
+            .orderByChild('rating')
+            .limitToLast(limit)
+            .once('value');
+
+        if (!snap.exists()) {
+            allPlayers = [];
+            render();
+            return;
+        }
+
+        const players = [];
+        snap.forEach(child => players.push({ uid: child.key, ...child.val() }));
+        players.sort((a, b) => b.rating - a.rating);
+
+        // Fetch display names in parallel (max 50 to avoid hammering)
+        const withNames = await Promise.all(
+            players.map(async (p, i) => {
+                const profileSnap = await _db.ref(`users/${p.uid}`).once('value');
+                const profile = profileSnap.val();
+                return {
+                    rank: i + 1,
+                    uid: p.uid,
+                    name: profile?.name ?? 'Anonymous',
+                    playtomicLevel: profile?.playtomicLevel ?? null,
+                    rating: p.rating,
+                    gamesPlayed: p.gamesPlayed ?? 0,
+                    confidence: p.confidence ?? 0,
+                };
+            })
+        );
+
+        allPlayers = withNames;
+        render();
+
+        // Highlight my rank if signed in
+        highlightMyRank();
+    } catch (err) {
+        console.error('[Leaderboard] Load error:', err);
+        document.getElementById('loadingSkeleton').innerHTML = `
+            <div class="text-center py-12 text-gray-500">
+                <p>⚠️ Failed to load leaderboard. <button onclick="location.reload()"
+                   class="text-brand hover:underline">Retry</button></p>
+            </div>
+        `;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Render
+// ---------------------------------------------------------------------------
+
+function render() {
+    const query = searchQuery.toLowerCase();
+    const filtered = allPlayers.filter(p =>
+        !query || p.name.toLowerCase().includes(query)
+    );
+
+    document.getElementById('loadingSkeleton').classList.add('hidden');
+    document.getElementById('leaderboardContainer').classList.remove('hidden');
+    document.getElementById('statsBar').classList.remove('hidden');
+    document.getElementById('showingCount').textContent = filtered.length;
+    document.getElementById('totalCount').textContent   = allPlayers.length;
+
+    const tbody = document.getElementById('leaderboardBody');
+    const empty  = document.getElementById('emptyState');
+
+    if (!filtered.length) {
+        tbody.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+    }
+
+    empty.classList.add('hidden');
+
+    tbody.innerHTML = filtered.map(p => {
+        const isMe = p.uid === myUid;
+        const rowBg = isMe ? 'bg-blue-50 border-l-4 border-brand' : 'hover:bg-gray-50';
+        const cPct = confidencePct(p.confidence);
+
+        return `
+            <tr class="border-b border-gray-100 transition-colors ${rowBg}">
+                <td class="px-4 py-3.5 text-center">${rankDecoration(p.rank)}</td>
+                <td class="px-4 py-3.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand to-blue-400
+                                    flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                            ${escHtml(p.name.charAt(0).toUpperCase())}
+                        </div>
+                        <div>
+                            <div class="font-medium text-gray-900 ${isMe ? 'text-brand' : ''}">
+                                ${escHtml(p.name)}${isMe ? ' <span class="text-xs">(you)</span>' : ''}
+                            </div>
+                            ${p.playtomicLevel != null ? `
+                                <div class="text-xs text-gray-400">Level ${p.playtomicLevel}</div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </td>
+                <td class="px-4 py-3.5 text-right">
+                    <div class="inline-flex flex-col items-end gap-0.5">
+                        <span class="font-bold text-gray-900">${p.rating.toLocaleString()}</span>
+                        <span class="text-xs px-1.5 py-0.5 rounded-full font-medium ${ratingClass(p.rating)}">
+                            ${ratingLabel(p.rating)}
+                        </span>
+                    </div>
+                </td>
+                <td class="px-4 py-3.5 text-right text-gray-600 hidden sm:table-cell">${p.gamesPlayed}</td>
+                <td class="px-4 py-3.5 text-right hidden md:table-cell">
+                    <div class="flex items-center justify-end gap-2">
+                        <div class="w-16 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                            <div class="h-full bg-brand rounded-full"
+                                 style="width: ${cPct}%"></div>
+                        </div>
+                        <span class="text-xs text-gray-500 w-8 text-right">${cPct}%</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// My rank
+// ---------------------------------------------------------------------------
+
+function highlightMyRank() {
+    if (!myUid) return;
+    const me = allPlayers.find(p => p.uid === myUid);
+    if (!me) return;
+
+    document.getElementById('myRankBanner').classList.remove('hidden');
+    document.getElementById('myRankNum').textContent = `#${me.rank}`;
+    document.getElementById('myRatingDisplay').textContent = `${me.rating} pts`;
+}
+
+// ---------------------------------------------------------------------------
+// Auth
+// ---------------------------------------------------------------------------
+
+_auth.onAuthStateChanged(user => {
+    if (user && !user.isAnonymous) {
+        myUid = user.uid;
+        document.getElementById('signInLink').classList.add('hidden');
+        document.getElementById('userChip').classList.remove('hidden');
+        document.getElementById('userChip').textContent =
+            user.displayName || user.email?.split('@')[0] || 'Me';
+        document.getElementById('guestCta').classList.add('hidden');
+        highlightMyRank();
+    } else {
+        myUid = null;
+        document.getElementById('guestCta').classList.remove('hidden');
+    }
+});
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+document.getElementById('searchInput').addEventListener('input', e => {
+    searchQuery = e.target.value;
+    render();
+});
+
+document.getElementById('limitSelect').addEventListener('change', e => {
+    loadLeaderboard(Number(e.target.value));
+});
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+loadLeaderboard(50);
+</script>
+
+</body>
+</html>

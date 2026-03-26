@@ -30,7 +30,10 @@ export default defineConfig({
         admin: resolve(__dirname, 'admin.html'),
         myAccount: resolve(__dirname, 'my-account.html'),
         competitions: resolve(__dirname, 'competitions.html'),
-        
+
+        // Organiser tools
+        organiserAnalytics: resolve(__dirname, 'organiser/analytics.html'),
+
         // Tournament format pages
         americano: resolve(__dirname, 'americano/index.html'),
         mexicano: resolve(__dirname, 'mexicano/index.html'),
@@ -60,6 +63,18 @@ export default defineConfig({
             './src/services/tournament-service.js',
             './src/services/user-service.js',
           ],
+          // Phase 3: Rating + Notifications (lazily loaded — not in critical path)
+          'rating': [
+            './src/core/rating-engine.js',
+          ],
+          'notifications': [
+            './src/services/notification-service.js',
+            './src/components/ui/NotificationBell.js',
+          ],
+          // Phase 4: Analytics (organiser-only)
+          'analytics': [
+            './src/services/analytics-service.js',
+          ],
           // UI Components
           'ui': [
             './src/components/ui/Modal.js',
@@ -79,7 +94,7 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false, // Keep console.log in production for debugging
+        drop_console: true,   // Remove console.log in production builds
         drop_debugger: true,
       },
     },
