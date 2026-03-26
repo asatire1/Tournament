@@ -412,6 +412,27 @@
         }
       }
     },
+
+    "deletionRequests": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['uid', 'status', 'requestedAt', 'deadline'])",
+        "uid":         { ".validate": "newData.isString() && newData.val() == $uid" },
+        "status":      { ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'processing' || newData.val() == 'completed')" },
+        "reason":      { ".validate": "newData.isString() && newData.val().length <= 500" },
+        "requestedAt": { ".validate": "newData.isString()" },
+        "deadline":    { ".validate": "newData.isString()" }
+      }
+    },
+
+    "rateLimits": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+
     ".read": false,
     ".write": false
   }

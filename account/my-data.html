@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Data & Privacy — Uber Padel</title>
+    <meta name="robots" content="noindex">
+    <meta name="description" content="Manage your personal data, download your data, and exercise your GDPR rights.">
+
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563EB">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Space Grotesk', 'system-ui', 'sans-serif'] },
+                    colors: { brand: { DEFAULT: '#2563EB', dark: '#1D4ED8' } }
+                }
+            }
+        };
+    </script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <style>
+        body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2 font-bold text-gray-900 hover:text-brand">
+            <img src="/uberpadel-icon.svg" alt="" class="w-8 h-8">
+            Uber Padel
+        </a>
+        <a href="/my-account.html" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+            ← Back to account
+        </a>
+    </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 py-10 space-y-8">
+
+    <!-- Auth gate -->
+    <div id="authGate" class="hidden text-center py-20">
+        <div class="text-6xl mb-4">🔒</div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Sign in required</h2>
+        <a href="/login.html?redirect=/account/my-data.html"
+           class="inline-block mt-4 bg-brand text-white px-6 py-3 rounded-lg font-semibold">
+            Sign in
+        </a>
+    </div>
+
+    <div id="content" class="hidden space-y-8">
+
+        <!-- Page title -->
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">My Data &amp; Privacy</h1>
+            <p class="text-gray-500 mt-1 text-sm">
+                Manage your personal data in line with GDPR. You have the right to access,
+                download, and delete all data we hold about you.
+            </p>
+        </div>
+
+        <!-- DATA HELD -->
+        <section class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900">📋 Data we hold about you</h2>
+            <ul class="space-y-2 text-sm text-gray-600">
+                <li class="flex items-start gap-2">
+                    <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                    <span><strong>Profile:</strong> Name, email address, Playtomic level</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                    <span><strong>Tournaments:</strong> Tournaments you created, scores, standings</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                    <span><strong>ELO Rating:</strong> Current rating, full match history</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                    <span><strong>Notifications:</strong> In-app notification history (last 50)</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-green-500 mt-0.5 flex-shrink-0">✓</span>
+                    <span><strong>Competitions:</strong> Registration records and payment status</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-gray-400 mt-0.5 flex-shrink-0">✗</span>
+                    <span class="text-gray-400"><strong>We do NOT hold:</strong> Payment card details (processed by Stripe), location data, browsing history</span>
+                </li>
+            </ul>
+        </section>
+
+        <!-- DOWNLOAD YOUR DATA -->
+        <section class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-1">⬇️ Download your data</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Get a copy of all your personal data (GDPR Article 20 – Right to Data Portability).
+                Your data will be downloaded as a JSON file.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button id="downloadJsonBtn"
+                        class="flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-lg
+                               font-semibold text-sm hover:bg-brand-dark transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download all data (JSON)
+                </button>
+                <button id="downloadCsvBtn"
+                        class="flex items-center gap-2 px-5 py-2.5 bg-white text-gray-700 border
+                               border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1
+                                 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download rating history (CSV)
+                </button>
+            </div>
+            <p id="downloadStatus" class="mt-3 text-sm text-gray-500 hidden"></p>
+        </section>
+
+        <!-- GDPR RIGHTS -->
+        <section class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900">⚖️ Your GDPR rights</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="font-semibold text-gray-900 mb-1">📄 Right of Access (Art. 15)</div>
+                    <p class="text-gray-500 text-xs">Download your data above to receive a full copy.</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="font-semibold text-gray-900 mb-1">✏️ Right to Rectification (Art. 16)</div>
+                    <p class="text-gray-500 text-xs">
+                        Update your profile via
+                        <a href="/my-account.html" class="text-brand hover:underline">My Account</a>.
+                    </p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="font-semibold text-gray-900 mb-1">🚚 Right to Portability (Art. 20)</div>
+                    <p class="text-gray-500 text-xs">Download your data in machine-readable JSON format above.</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="font-semibold text-gray-900 mb-1">🗑️ Right to Erasure (Art. 17)</div>
+                    <p class="text-gray-500 text-xs">Request account deletion below. Fulfilled within 30 days.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- DELETE ACCOUNT -->
+        <section class="bg-white rounded-xl border border-red-200 p-6">
+            <h2 class="text-lg font-semibold text-red-700 mb-1">🗑️ Delete my account</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Request permanent deletion of your account and all associated data.
+                This cannot be undone. Your request will be processed within 30 days (GDPR Art. 17).
+            </p>
+
+            <!-- Pending deletion status -->
+            <div id="deletionPending" class="hidden mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm font-semibold text-yellow-800">⏳ Deletion request pending</p>
+                <p class="text-xs text-yellow-700 mt-1">
+                    Requested: <span id="deletionRequestedAt"></span><br>
+                    Deadline: <span id="deletionDeadline"></span>
+                </p>
+                <button id="cancelDeletionBtn"
+                        class="mt-3 text-xs text-red-600 hover:text-red-800 hover:underline font-medium">
+                    Cancel deletion request
+                </button>
+            </div>
+
+            <!-- Request deletion form -->
+            <div id="deletionForm">
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Reason (optional)
+                    </label>
+                    <select id="deletionReason"
+                            class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                                   focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <option value="">Prefer not to say</option>
+                        <option value="no-longer-using">No longer using the service</option>
+                        <option value="privacy-concerns">Privacy concerns</option>
+                        <option value="switching-platform">Switching to another platform</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="mb-4 flex items-start gap-2">
+                    <input type="checkbox" id="confirmDeletion"
+                           class="mt-0.5 flex-shrink-0 w-4 h-4 rounded border-gray-300">
+                    <label for="confirmDeletion" class="text-sm text-gray-600">
+                        I understand this will permanently delete my account, tournaments, ratings,
+                        and all associated data.
+                    </label>
+                </div>
+                <button id="requestDeletionBtn"
+                        disabled
+                        class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-semibold text-sm
+                               hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                    Request account deletion
+                </button>
+            </div>
+
+            <p id="deletionResult" class="hidden mt-3 text-sm"></p>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="bg-blue-50 rounded-xl border border-blue-200 p-6">
+            <h2 class="text-lg font-semibold text-blue-900 mb-2">📬 Contact our Data Protection team</h2>
+            <p class="text-sm text-blue-700">
+                For any privacy concerns or to exercise rights not covered above, email:
+                <a href="mailto:privacy@uberpadel.com" class="font-semibold hover:underline">
+                    privacy@uberpadel.com
+                </a>
+            </p>
+            <p class="text-xs text-blue-600 mt-2">
+                We aim to respond within 30 days as required by GDPR.
+            </p>
+        </section>
+
+    </div><!-- /content -->
+
+</main>
+
+<!-- Firebase init -->
+<script>
+    const FIREBASE_CONFIG = {
+        apiKey:            "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain:        "stretford-padel-tournament.firebaseapp.com",
+        databaseURL:       "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId:         "stretford-padel-tournament",
+        storageBucket:     "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId:             "1:596263602058:web:f69f7f8d00c60abbd0aa73",
+    };
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    const _db   = firebase.database();
+    const _auth = firebase.auth();
+    window.Firebase = { getDatabase: () => _db };
+</script>
+
+<script type="module">
+    import { DataExportService } from '/src/services/data-export-service.js';
+
+    let currentUid = null;
+
+    function setStatus(text, isError = false) {
+        const el = document.getElementById('downloadStatus');
+        el.textContent = text;
+        el.className = `mt-3 text-sm ${isError ? 'text-red-600' : 'text-green-600'}`;
+        el.classList.remove('hidden');
+    }
+
+    async function checkDeletionStatus(uid) {
+        const status = await DataExportService.getDeletionRequestStatus(uid);
+        if (status.exists) {
+            document.getElementById('deletionPending').classList.remove('hidden');
+            document.getElementById('deletionForm').classList.add('hidden');
+            document.getElementById('deletionRequestedAt').textContent =
+                new Date(status.requestedAt).toLocaleDateString();
+            document.getElementById('deletionDeadline').textContent =
+                new Date(status.deadline).toLocaleDateString();
+        }
+    }
+
+    // Auth
+    _auth.onAuthStateChanged(async user => {
+        if (!user || user.isAnonymous) {
+            document.getElementById('authGate').classList.remove('hidden');
+            return;
+        }
+
+        currentUid = user.uid;
+        document.getElementById('content').classList.remove('hidden');
+        await checkDeletionStatus(uid);
+    });
+
+    // Download JSON
+    document.getElementById('downloadJsonBtn').addEventListener('click', async () => {
+        if (!currentUid) return;
+        const btn = document.getElementById('downloadJsonBtn');
+        btn.disabled = true;
+        btn.textContent = 'Preparing download…';
+        setStatus('Collecting your data…');
+
+        const result = await DataExportService.downloadJson(currentUid);
+
+        if (result.success) {
+            setStatus('✅ Your data has been downloaded.');
+        } else {
+            setStatus('❌ Download failed: ' + result.error, true);
+        }
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download all data (JSON)
+        `;
+    });
+
+    // Download CSV
+    document.getElementById('downloadCsvBtn').addEventListener('click', async () => {
+        if (!currentUid) return;
+        const btn = document.getElementById('downloadCsvBtn');
+        btn.disabled = true;
+        btn.textContent = 'Preparing CSV…';
+
+        const result = await DataExportService.downloadRatingHistoryCsv(currentUid);
+
+        if (result.success) {
+            setStatus(`✅ Rating history downloaded (${result.count} matches).`);
+        } else {
+            setStatus('❌ CSV download failed: ' + result.error, true);
+        }
+        btn.disabled = false;
+        btn.textContent = 'Download rating history (CSV)';
+    });
+
+    // Enable delete button when checkbox is checked
+    document.getElementById('confirmDeletion').addEventListener('change', e => {
+        document.getElementById('requestDeletionBtn').disabled = !e.target.checked;
+    });
+
+    // Request deletion
+    document.getElementById('requestDeletionBtn').addEventListener('click', async () => {
+        if (!currentUid) return;
+        const reason = document.getElementById('deletionReason').value;
+        const btn = document.getElementById('requestDeletionBtn');
+        btn.disabled = true;
+        btn.textContent = 'Submitting…';
+
+        const result = await DataExportService.requestDeletion(currentUid, reason);
+        const resultEl = document.getElementById('deletionResult');
+
+        if (result.success) {
+            document.getElementById('deletionForm').classList.add('hidden');
+            document.getElementById('deletionPending').classList.remove('hidden');
+            resultEl.textContent = '✅ Deletion request submitted. You will receive a confirmation email.';
+            resultEl.className = 'mt-3 text-sm text-green-600';
+            await checkDeletionStatus(currentUid);
+        } else {
+            resultEl.textContent = '❌ Failed to submit request: ' + result.error;
+            resultEl.className = 'mt-3 text-sm text-red-600';
+        }
+        resultEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Request account deletion';
+    });
+
+    // Cancel deletion
+    document.getElementById('cancelDeletionBtn').addEventListener('click', async () => {
+        if (!currentUid) return;
+        const result = await DataExportService.cancelDeletionRequest(currentUid);
+        if (result.success) {
+            document.getElementById('deletionPending').classList.add('hidden');
+            document.getElementById('deletionForm').classList.remove('hidden');
+        }
+    });
+</script>
+
+</body>
+</html>
