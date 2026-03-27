@@ -427,7 +427,7 @@ function renderKnockoutView() {
 function renderKnockoutMatch(match, stage, matchIndex, isOrganizer) {
     const team1Name = match.team1?.team?.name || match.team1?.name || 'TBD';
     const team2Name = match.team2?.team?.name || match.team2?.name || 'TBD';
-    const hasScore = match.score.team1 !== null && match.score.team2 !== null;
+    const hasScore = match.score?.team1 != null && match.score?.team2 != null;
     const team1Winner = match.winner && (match.winner === match.team1 || match.winner.teamIndex === match.team1?.teamIndex);
     const team2Winner = match.winner && (match.winner === match.team2 || match.winner.teamIndex === match.team2?.teamIndex);
     const winningScore = getWinningScore(stage);
@@ -445,14 +445,14 @@ function renderKnockoutMatch(match, stage, matchIndex, isOrganizer) {
                         min="0"
                         max="20"
                         class="w-10 h-7 text-center border border-gray-200 rounded font-bold text-sm"
-                        value="${match.score.team1 !== null ? match.score.team1 : ''}"
+                        value="${match.score?.team1 != null ? match.score.team1 : ''}"
                         data-stage="${stage}"
                         data-match="${matchIndex}"
                         data-team="1"
                         onchange="handleKnockoutScoreChange(this)"
                     />
                 ` : `
-                    <span class="font-bold ${team1Winner ? 'text-green-700' : ''}">${match.score.team1 !== null ? match.score.team1 : '-'}</span>
+                    <span class="font-bold ${team1Winner ? 'text-green-700' : ''}">${match.score?.team1 != null ? match.score.team1 : '-'}</span>
                 `}
             </div>
 
@@ -465,14 +465,14 @@ function renderKnockoutMatch(match, stage, matchIndex, isOrganizer) {
                         min="0"
                         max="20"
                         class="w-10 h-7 text-center border border-gray-200 rounded font-bold text-sm"
-                        value="${match.score.team2 !== null ? match.score.team2 : ''}"
+                        value="${match.score?.team2 != null ? match.score.team2 : ''}"
                         data-stage="${stage}"
                         data-match="${matchIndex}"
                         data-team="2"
                         onchange="handleKnockoutScoreChange(this)"
                     />
                 ` : `
-                    <span class="font-bold ${team2Winner ? 'text-green-700' : ''}">${match.score.team2 !== null ? match.score.team2 : '-'}</span>
+                    <span class="font-bold ${team2Winner ? 'text-green-700' : ''}">${match.score?.team2 != null ? match.score.team2 : '-'}</span>
                 `}
             </div>
         </div>

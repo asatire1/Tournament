@@ -23,6 +23,7 @@ const KNOCKOUT_PATH = 'knockout-tournaments';
  */
 async function saveTournament(tournamentId, data) {
     try {
+        if (typeof OrganizerAuth !== 'undefined') await OrganizerAuth.init();
         await database.ref(`${KNOCKOUT_PATH}/${tournamentId}`).set(data);
         console.log('Tournament saved:', tournamentId);
         return true;

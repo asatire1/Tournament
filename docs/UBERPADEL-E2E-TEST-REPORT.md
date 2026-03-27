@@ -4,7 +4,7 @@
 **Tester:** Claude Code (automated E2E walkthrough via Chrome MCP + CLI)
 **Environment:** `localhost:3001` (Vite dev server), Firebase project `stretford-padel-tournament`
 **Test account:** `e2e.qa.uberpadel.2026@gmail.com`
-**Git HEAD:** `67be896` (feat: add prize money tournament system)
+**Git HEAD:** `2b5530a` → extended through Knockout testing
 
 ---
 
@@ -15,16 +15,17 @@
 | Account registration & login | PASS | 2 | 2 |
 | Round Robin (Quick Play) | PASS | 1 | 1 |
 | TV Mode | PASS (after fix) | 2 | 2 |
-| Leaderboard | FAIL | 1 | 0 |
+| Leaderboard | PASS (after deploy) | 1 | 1 |
 | Analytics dashboard | PASS | 0 | 0 |
 | GDPR / My Data | PASS (after fix) | 1 | 1 |
 | Notifications (bell) | PASS | 0 | 0 |
 | Security / passcode | PARTIAL | 1 | 0 |
 | REST API (code review) | PASS | 0 | 0 |
 | REST API (live) | NOT TESTABLE | — | — |
-| Firebase rules deployment | FAIL | 1 | 0 |
+| Firebase rules deployment | PASS (deployed) | 1 | 1 |
+| Knockout (Quick Play) | PASS (after fixes) | 4 | 4 |
 
-**Total bugs found: 8 · Fixed this session: 6 · Outstanding: 2**
+**Total bugs found: 13 · Fixed this session: 12 · Outstanding: 1**
 
 ---
 
@@ -282,16 +283,52 @@ Built as part of this session. Code-review assessment:
 
 ---
 
-## 11. Outstanding Issues
+## 11. Knockout Tournament (Quick Play)
 
-| # | Severity | Area | Description | Recommended Fix |
-|---|---|---|---|---|
-| 1 | HIGH | Firebase Rules | `/userRatings`, `/knockout-tournaments` blocked by undeployed rules — leaderboard broken for all users | `firebase deploy --only database` |
-| 2 | MEDIUM | Security UX | Wrong organiser key shows "Tournament Not Found" instead of "Invalid key — read-only mode" | Fix router to detect key mismatch vs ID mismatch |
+**Tournament ID:** `cuiq2q` — "E2E Knockout Test 2026", 9 teams across 3 groups (Group Stage + Knockout)
+
+### Bugs found and fixed
+
+**Bug 7 (FIXED):** `quick-play/knockout/index.html` did not load `organizer-auth.js`. The app used Firebase Auth SDK but never called `signInAnonymously()`, so all RTDB writes failed with `PERMISSION_DENIED` (rule requires `auth != null`).
+Fix: added `<script src="../../src/core/organizer-auth.js"></script>` before other scripts.
+
+**Bug 8 (FIXED):** `quick-play/knockout/js/firebase-config.js:saveTournament()` wrote to Firebase without ensuring auth was established.
+Fix: added `if (typeof OrganizerAuth !== 'undefined') await OrganizerAuth.init();` at the top of `saveTournament`.
+
+**Bug 9 (FIXED):** `quick-play/knockout/js/handlers.js:handleStartTournament()` did not write `organizerUid` to `meta`. The RTDB rule for subsequent overwrites requires `data.child('meta/organizerUid').val() == auth.uid`. Without `organizerUid` being set on first write, any future full-document update from this user would fail.
+Fix: added `const organizerUid = await OrganizerAuth.ensureUid()` and included it in `updateMeta()`.
+
+**Bug 10 (FIXED):** `quick-play/knockout/js/components.js:renderKnockoutMatch()` accessed `match.score.team1` and `match.score.team2` without optional chaining in 4 places (lines 430, 448, 455, 468, 475). Bracket matches are initialised without a `score` field, so this threw `TypeError: Cannot read properties of undefined (reading 'team1')` on every render.
+Fix: replaced all 5 with `match.score?.team1` / `match.score?.team2` using `!= null` comparison.
+
+**Additional fix:** Firebase RTDB rules had never been deployed. All Quick Play formats except Round Robin (and some other older formats) were blocked because `knockout-tournaments`, `userRatings`, and other paths added in recent commits only existed in the local `firebase-rules-production.json`.
+Fix: ran `firebase deploy --only database --project stretford-padel-tournament` — rules validated and released successfully.
+
+### Test results
+
+| Step | Expected | Actual | Result |
+|---|---|---|---|
+| Create tournament (18 players, 9 teams) | Tournament saved to Firebase | Saved | PASS |
+| Group stage generated (3 groups × 3 fixtures) | 18 matches across 3 groups | 18 matches | PASS |
+| Score entry (Group A Round 1) | Scores saved, standings update | Updated correctly | PASS |
+| Enter all 18 group stage scores | All matches scored | Done | PASS |
+| Standings calculation | Win=3pts, GD tracked | Correct | PASS |
+| "Start Knockouts" button appears | Shown when all group scores in | Shown | PASS |
+| Knockout bracket generated | QF seeded by group standings | Seeded correctly | PASS |
+| Bracket renders (QF/SF/Final) | Cards show TBD for unplayed | Shows TBD | PASS |
+| No console errors | Clean | Clean | PASS |
 
 ---
 
-## 12. Bugs Fixed This Session
+## 12. Outstanding Issues
+
+| # | Severity | Area | Description | Recommended Fix |
+|---|---|---|---|---|
+| 1 | MEDIUM | Security UX | Wrong organiser key shows "Tournament Not Found" instead of "Invalid key — read-only mode" | Fix router to detect key mismatch vs ID mismatch |
+
+---
+
+## 13. Bugs Fixed This Session
 
 | # | File | Description |
 |---|---|---|
@@ -301,10 +338,16 @@ Built as part of this session. Code-review assessment:
 | 4 | `quick-play/round-robin/js/main.js` | TV mode: Firebase arrays returned as objects, not coerced |
 | 5 | *(Runtime)* | TV mode: Service Worker caching stale `main.js` preventing fix from loading |
 | 6 | `account/my-data.html` | `uid is not defined` in auth callback (should be `user.uid`) |
+| 7 | `quick-play/knockout/index.html` | `organizer-auth.js` not loaded — anonymous sign-in never called |
+| 8 | `quick-play/knockout/js/firebase-config.js` | `saveTournament()` wrote without ensuring auth established |
+| 9 | `quick-play/knockout/js/handlers.js` | `organizerUid` not written to meta — ownership check fails on update |
+| 10 | `quick-play/knockout/js/components.js` | `match.score.team1/team2` accessed without optional chaining (5 places) |
+| 11 | `firebase-rules-production.json` (deploy) | Rules never deployed — `knockout-tournaments`, `userRatings`, etc. blocked |
+| 12 | *(Runtime)* | Service Worker repeatedly re-caching stale JS across all Quick Play pages |
 
 ---
 
-## 13. Test Execution Log
+## 14. Test Execution Log
 
 | Time | Action | Outcome |
 |---|---|---|

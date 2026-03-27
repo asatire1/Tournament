@@ -71,10 +71,12 @@ async function handleStartTournament() {
     const groupsWithFixtures = GroupKnockoutEngine.generateAllGroupFixtures(groups);
     TournamentState.setGroups(groupsWithFixtures);
 
-    // Update meta
+    // Update meta (include organizerUid so Firebase write rule can verify ownership on updates)
+    const organizerUid = typeof OrganizerAuth !== 'undefined' ? await OrganizerAuth.ensureUid() : null;
     TournamentState.updateMeta({
         status: 'group_stage',
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        ...(organizerUid && { organizerUid })
     });
 
     // Save to Firebase
