@@ -267,12 +267,16 @@ const AuthService = {
         if (!this._auth) {
             throw new Error('Firebase not initialized');
         }
-        
+
         const result = await this._auth.createUserWithEmailAndPassword(email, password);
-        
+
         // Update display name
         await result.user.updateProfile({ displayName });
-        
+
+        // Force a token refresh so the RTDB WebSocket re-authenticates before
+        // we attempt the profile write (avoids a race-condition PERMISSION_DENIED).
+        await result.user.getIdToken(/* forceRefresh */ true);
+
         return this._syncFirebaseUser(result.user);
     },
     
@@ -460,6 +464,7 @@ const AuthService = {
             
             await userRef.set({
                 name: newUser.name,
+                type: 'registered',
                 email: newUser.email,
                 status: 'pending',
                 profileCompleted: false,
