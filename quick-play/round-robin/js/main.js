@@ -93,7 +93,13 @@ function renderRoundRobin() {
 function getTvData() {
     if (!state) return null;
 
-    const standings = typeof calculateStandings === 'function' ? calculateStandings() : [];
+    // Firebase returns arrays as objects {0:{},1:{}} — coerce back to array
+    const teamsArr = Array.isArray(state.teams)
+        ? state.teams
+        : Object.values(state.teams || {});
+    const standings = typeof calculateStandings === 'function'
+        ? calculateStandings(teamsArr, state.matchScores || {})
+        : [];
 
     const currentMatches = [];
     const fixtures = state.fixtures || [];
