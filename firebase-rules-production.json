@@ -466,6 +466,44 @@
       }
     },
 
+    "verifications": {
+      ".indexOn": ["status", "organizerId", "submittedAt"],
+      "$competitionId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['competitionId', 'status', 'organizerId'])",
+        "competitionId": { ".validate": "newData.isString()" },
+        "organizerId":   { ".validate": "newData.isString()" },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'submitted' || newData.val() == 'approved' || newData.val() == 'rejected')"
+        },
+        "paymentStatus": {
+          ".validate": "newData.isString() && (newData.val() == 'awaiting_approval' || newData.val() == 'processing' || newData.val() == 'paid' || newData.val() == 'failed')"
+        },
+        "photos": {
+          "$photoId": {
+            ".validate": "newData.hasChildren(['url', 'uploadedAt'])"
+          }
+        },
+        "playerConfirmations": {
+          "$playerId": {
+            ".validate": "newData.hasChildren(['agrees', 'confirmedAt'])"
+          }
+        },
+        "organiserConfirmed": { ".validate": "newData.isBoolean()" },
+        "prizePool":          { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "currency":           { ".validate": "newData.isString() && newData.val() == 'GBP'" }
+      }
+    },
+
+    "admins": {
+      ".read": "auth != null",
+      ".write": false,
+      "$uid": {
+        ".validate": "newData.isBoolean()"
+      }
+    },
+
     ".read": false,
     ".write": false
   }

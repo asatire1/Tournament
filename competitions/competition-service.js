@@ -373,7 +373,19 @@ const CompetitionService = {
                 organizerId: data.organizerId,
                 organizerName: data.organizerName || 'Unknown',
                 organiserKey,
-                
+
+                // Prize money (optional — UK only)
+                prizeMoney: (data.prizeMoney && data.prizeMoney.enabled) ? {
+                    enabled: true,
+                    entryFee: data.prizeMoney.entryFee || 20,
+                    currency: 'GBP',
+                    ukOnly: true,
+                    prizePool: data.prizeMoney.prizePool || 0,
+                    split: data.prizeMoney.split || { first: 0.6, second: 0.3, third: 0.1 },
+                    verificationStatus: 'pending',
+                    paymentStatus: 'awaiting_approval',
+                } : { enabled: false },
+
                 // Timestamps
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
