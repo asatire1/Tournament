@@ -75,10 +75,15 @@ async function updateTournamentInFirebase(tournamentId, data) {
  */
 async function saveScoreToFirebase(tournamentId, roundIndex, matchIndex, team1Score, team2Score) {
     try {
-        await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/scores/${roundIndex}_${matchIndex}`).set({
-            team1: team1Score === null ? -1 : team1Score,
-            team2: team2Score === null ? -1 : team2Score
-        });
+        if (team1Score !== null && team1Score >= 0 && team2Score !== null && team2Score >= 0) {
+            await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/scores/${roundIndex}_${matchIndex}`).set({
+                team1: team1Score,
+                team2: team2Score
+            });
+        } else {
+            // Remove unplayed score
+            await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/scores/${roundIndex}_${matchIndex}`).remove();
+        }
         await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/updatedAt`).set(new Date().toISOString());
         return true;
     } catch (error) {

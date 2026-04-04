@@ -196,13 +196,15 @@ const Firebase = {
     async saveScore(format, tournamentId, roundIndex, matchIndex, team1Score, team2Score) {
         try {
             const ref = this.getTournamentRef(format, tournamentId);
-            await ref.child(`scores/${roundIndex}_${matchIndex}`).set({
-                team1: team1Score === null ? -1 : team1Score,
-                team2: team2Score === null ? -1 : team2Score
-            });
-            // Note: meta/updatedAt is intentionally NOT written here.
-            // Score writes are open to all users (players on court), but meta
-            // writes require organiser ownership per Firebase Security Rules.
+            if (team1Score !== null && team1Score >= 0 && team2Score !== null && team2Score >= 0) {
+                await ref.child(`scores/${roundIndex}_${matchIndex}`).set({
+                    team1: team1Score,
+                    team2: team2Score
+                });
+            } else {
+                await ref.child(`scores/${roundIndex}_${matchIndex}`).remove();
+            }
+            await ref.child('meta/updatedAt').set(new Date().toISOString());
             return true;
         } catch (error) {
             console.error('Error saving score:', error);

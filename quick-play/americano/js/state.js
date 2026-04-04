@@ -442,13 +442,15 @@ class AmericanoState {
     saveToFirebase() {
         if (!this.tournamentId) return;
         
-        // Convert scores to Firebase format
+        // Convert scores to Firebase format (only include played scores)
         const firebaseScores = {};
         Object.entries(this.scores).forEach(([key, value]) => {
-            firebaseScores[key] = {
-                team1: value.team1 === null ? -1 : value.team1,
-                team2: value.team2 === null ? -1 : value.team2
-            };
+            if (value.team1 !== null && value.team1 >= 0 && value.team2 !== null && value.team2 >= 0) {
+                firebaseScores[key] = {
+                    team1: value.team1,
+                    team2: value.team2
+                };
+            }
         });
         
         database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).update({
@@ -478,10 +480,15 @@ class AmericanoState {
         
         // Queue the update
         const key = `f_${fixtureIndex}`;
-        this.pendingScoreUpdates[key] = { 
-            team1: team1Score === null ? -1 : team1Score, 
-            team2: team2Score === null ? -1 : team2Score 
-        };
+        if (team1Score !== null && team1Score >= 0 && team2Score !== null && team2Score >= 0) {
+            this.pendingScoreUpdates[key] = {
+                team1: team1Score,
+                team2: team2Score
+            };
+        } else {
+            // Remove unplayed score from Firebase
+            this.pendingScoreUpdates[key] = null;
+        }
         
         // Debounce the actual save
         this.debouncedScoreSave();
