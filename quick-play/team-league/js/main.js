@@ -96,7 +96,8 @@ function getTvData() {
     const standingsGroups = [];
 
     // Get group standings
-    ['A', 'B'].forEach(group => {
+    const activeGroups = state.groupMode === 'four_groups' ? ['A', 'B', 'C', 'D'] : state.groupMode === 'two_groups' ? ['A', 'B'] : ['A'];
+    activeGroups.forEach(group => {
         const groupStandings = state.getGroupStandings ? state.getGroupStandings(group) : [];
         standingsGroups.push({
             groupName: group,
@@ -114,7 +115,7 @@ function getTvData() {
 
     // Get current matches
     const currentMatches = [];
-    const fixtures = [...(state.groupAFixtures || []), ...(state.groupBFixtures || [])];
+    const fixtures = [...(state.groupAFixtures || []), ...(state.groupBFixtures || []), ...(state.groupCFixtures || []), ...(state.groupDFixtures || [])];
     fixtures.forEach((match, i) => {
         if (!match) return;
         const isScored = match.score1 != null && match.score1 >= 0;
@@ -151,7 +152,7 @@ function getCardData() {
         card.standings.sort((a, b) => (b.points || 0) - (a.points || 0));
         card.standings.forEach((s, i) => s.rank = i + 1);
     }
-    const fixtures = [...(state.groupAFixtures || []), ...(state.groupBFixtures || [])];
+    const fixtures = [...(state.groupAFixtures || []), ...(state.groupBFixtures || []), ...(state.groupCFixtures || []), ...(state.groupDFixtures || [])];
     const total = fixtures.length;
     const completed = fixtures.filter(m => m && m.score1 != null && m.score1 >= 0).length;
     return { ...card, totalMatches: total, completedMatches: completed };

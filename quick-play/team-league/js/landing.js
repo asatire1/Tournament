@@ -48,10 +48,11 @@ const WizardState = {
     
     // Step 3: Group Mode
     groupMode: 'two_groups',
-    
+    qualifiersPerGroup: 2, // For four_groups: 1, 2, or 4
+
     // Step 4: Options
     includeThirdPlace: true,
-    knockoutFormat: 'quarter_final', // 'final_only', 'semi_final', 'quarter_final'
+    knockoutFormat: 'quarter_final', // 'final_only', 'semi_final', 'quarter_final', 'round_of_16'
     
     // After creation - Team Entry
     tournamentId: null,
@@ -64,6 +65,7 @@ const WizardState = {
         this.passcode = '';
         this.teamCount = 8;
         this.groupMode = 'two_groups';
+        this.qualifiersPerGroup = 2;
         this.includeThirdPlace = true;
         this.knockoutFormat = 'quarter_final';
         this.tournamentId = null;
@@ -274,9 +276,9 @@ function renderWizardStep() {
     
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal()">
-            <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up">
+            <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-slide-up max-h-[90vh] flex flex-col">
                 <!-- Header with Progress -->
-                <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
+                <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5 flex-shrink-0">
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="text-xl font-bold text-white">✨ Create Team Tournament</h2>
                         <span class="text-white/80 text-sm">Step ${step} of ${WizardState.totalSteps}</span>
@@ -286,8 +288,8 @@ function renderWizardStep() {
                         <div class="h-full bg-white rounded-full transition-all duration-300" style="width: ${(step / WizardState.totalSteps) * 100}%"></div>
                     </div>
                 </div>
-                
-                <div class="p-6">
+
+                <div class="p-6 overflow-y-auto">
                     ${step === 1 ? renderWizardStep1() : ''}
                     ${step === 2 ? renderWizardStep2() : ''}
                     ${step === 3 ? renderWizardStep3() : ''}
@@ -372,9 +374,9 @@ function renderWizardStep2() {
                 <div class="flex items-center justify-center gap-4">
                     <button onclick="adjustTeamCount(-2)" class="w-12 h-12 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xl transition-colors">−</button>
                     <div class="text-center">
-                        <input 
-                            type="number" 
-                            id="wizard-team-count" 
+                        <input
+                            type="number"
+                            id="wizard-team-count"
                             value="${WizardState.teamCount}"
                             min="4"
                             max="32"
@@ -389,7 +391,7 @@ function renderWizardStep2() {
             
             <!-- Quick Select -->
             <div class="flex flex-wrap justify-center gap-2 mb-6">
-                ${[6, 8, 10, 12, 16, 20, 24].map(n => `
+                ${[6, 8, 10, 12, 16, 20, 24, 28].map(n => `
                     <button 
                         onclick="setTeamCount(${n})" 
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${WizardState.teamCount === n ? 'bg-purple-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}"
@@ -402,9 +404,11 @@ function renderWizardStep2() {
             <div class="bg-purple-50 rounded-xl p-4">
                 <p class="text-sm text-purple-800">
                     <span class="font-semibold">💡 Tip:</span> 
-                    ${WizardState.teamCount % 2 === 0 
-                        ? `${WizardState.teamCount} teams can be split evenly into 2 groups of ${WizardState.teamCount / 2}.`
-                        : `Odd number - one group will have ${Math.ceil(WizardState.teamCount / 2)} teams, the other ${Math.floor(WizardState.teamCount / 2)}.`
+                    ${WizardState.teamCount % 4 === 0
+                        ? `${WizardState.teamCount} teams can be split into 4 groups of ${WizardState.teamCount / 4}, or 2 groups of ${WizardState.teamCount / 2}.`
+                        : WizardState.teamCount % 2 === 0
+                            ? `${WizardState.teamCount} teams can be split evenly into 2 groups of ${WizardState.teamCount / 2}.`
+                            : `Odd number - one group will have ${Math.ceil(WizardState.teamCount / 2)} teams, the other ${Math.floor(WizardState.teamCount / 2)}.`
                     }
                 </p>
             </div>
@@ -426,25 +430,91 @@ function renderWizardStep2() {
 }
 
 function renderWizardStep3() {
+    const perGroup4 = Math.floor(WizardState.teamCount / 4);
+    const remainder4 = WizardState.teamCount % 4;
+
     return `
         <div id="wizard-content">
             <h3 class="text-lg font-bold text-gray-800 mb-1">Group Format</h3>
             <p class="text-gray-500 text-sm mb-6">Choose how to organize the group stage</p>
-            
+
             <div class="space-y-4">
+                <!-- Four Groups Option -->
+                <label class="block cursor-pointer">
+                    <div class="flex items-start gap-4 p-4 rounded-xl border-2 transition-colors ${WizardState.groupMode === 'four_groups' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
+                        <input
+                            type="radio"
+                            name="group-mode"
+                            value="four_groups"
+                            ${WizardState.groupMode === 'four_groups' ? 'checked' : ''}
+                            onchange="setGroupMode('four_groups')"
+                            class="mt-1 w-5 h-5 text-purple-500"
+                        />
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800 mb-1">Four Groups ${WizardState.teamCount >= 16 ? '(Recommended)' : ''}</div>
+                            <p class="text-sm text-gray-600">Teams split into Groups A, B, C and D. Top teams from each group advance to knockout.</p>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">A: ${perGroup4 + (remainder4 > 0 ? 1 : 0)}</span>
+                                <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">B: ${perGroup4 + (remainder4 > 1 ? 1 : 0)}</span>
+                                <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">C: ${perGroup4 + (remainder4 > 2 ? 1 : 0)}</span>
+                                <span class="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">D: ${perGroup4}</span>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+
+                ${WizardState.groupMode === 'four_groups' ? `
+                <!-- Qualifiers per group (only shown when four groups selected) -->
+                <div class="ml-9 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <label class="block text-sm font-semibold text-purple-800 mb-3">Teams qualifying per group</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
+                            <input type="radio" name="qualifiers" value="4"
+                                ${WizardState.qualifiersPerGroup === 4 ? 'checked' : ''}
+                                onchange="setQualifiersPerGroup(4)"
+                                class="w-4 h-4 text-purple-500" />
+                            <div>
+                                <span class="font-medium text-sm text-gray-800">4 per group</span>
+                                <span class="text-xs text-gray-500 ml-1">- 16 teams: R16 → QF → SF → Final</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
+                            <input type="radio" name="qualifiers" value="2"
+                                ${WizardState.qualifiersPerGroup === 2 ? 'checked' : ''}
+                                onchange="setQualifiersPerGroup(2)"
+                                class="w-4 h-4 text-purple-500" />
+                            <div>
+                                <span class="font-medium text-sm text-gray-800">2 per group (Recommended)</span>
+                                <span class="text-xs text-gray-500 ml-1">- 8 teams: QF → SF → Final</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
+                            <input type="radio" name="qualifiers" value="1"
+                                ${WizardState.qualifiersPerGroup === 1 ? 'checked' : ''}
+                                onchange="setQualifiersPerGroup(1)"
+                                class="w-4 h-4 text-purple-500" />
+                            <div>
+                                <span class="font-medium text-sm text-gray-800">1 per group</span>
+                                <span class="text-xs text-gray-500 ml-1">- 4 teams: SF → Final directly</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                ` : ''}
+
                 <!-- Two Groups Option -->
                 <label class="block cursor-pointer">
                     <div class="flex items-start gap-4 p-4 rounded-xl border-2 transition-colors ${WizardState.groupMode === 'two_groups' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
-                        <input 
-                            type="radio" 
-                            name="group-mode" 
-                            value="two_groups" 
+                        <input
+                            type="radio"
+                            name="group-mode"
+                            value="two_groups"
                             ${WizardState.groupMode === 'two_groups' ? 'checked' : ''}
                             onchange="setGroupMode('two_groups')"
                             class="mt-1 w-5 h-5 text-purple-500"
                         />
                         <div class="flex-1">
-                            <div class="font-semibold text-gray-800 mb-1">Two Groups (Recommended)</div>
+                            <div class="font-semibold text-gray-800 mb-1">Two Groups</div>
                             <p class="text-sm text-gray-600">Teams split into Group A and Group B. Top 4 from each group advance to quarter finals.</p>
                             <div class="mt-2 flex gap-2">
                                 <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Group A: ${Math.ceil(WizardState.teamCount / 2)} teams</span>
@@ -453,14 +523,14 @@ function renderWizardStep3() {
                         </div>
                     </div>
                 </label>
-                
+
                 <!-- Single Group Option -->
                 <label class="block cursor-pointer">
                     <div class="flex items-start gap-4 p-4 rounded-xl border-2 transition-colors ${WizardState.groupMode === 'single_group' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
-                        <input 
-                            type="radio" 
-                            name="group-mode" 
-                            value="single_group" 
+                        <input
+                            type="radio"
+                            name="group-mode"
+                            value="single_group"
                             ${WizardState.groupMode === 'single_group' ? 'checked' : ''}
                             onchange="setGroupMode('single_group')"
                             class="mt-1 w-5 h-5 text-purple-500"
@@ -475,12 +545,12 @@ function renderWizardStep3() {
                     </div>
                 </label>
             </div>
-            
+
             <div id="wizard-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
                 <p id="wizard-error-text" class="text-sm text-red-600 font-medium"></p>
             </div>
         </div>
-        
+
         <div class="flex gap-3 mt-6">
             <button onclick="wizardBack()" class="flex-1 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors">
                 ← Back
@@ -496,7 +566,8 @@ function renderWizardStep4() {
     const knockoutLabels = {
         'final_only': 'Final Only',
         'semi_final': 'Semi-Finals → Final',
-        'quarter_final': 'Quarter-Finals → Semi-Finals → Final'
+        'quarter_final': 'Quarter-Finals → Semi-Finals → Final',
+        'round_of_16': 'R16 → Quarter-Finals → Semi-Finals → Final'
     };
     
     // Check user permissions for mode selection
@@ -569,12 +640,13 @@ function renderWizardStep4() {
                     </div>
                 </div>
                 
-                <!-- Knockout Format -->
+                <!-- Knockout Format (hidden for four_groups — already set by qualifiers per group) -->
+                ${WizardState.groupMode !== 'four_groups' ? `
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-3">Knockout Format</label>
                     <div class="space-y-2">
                         <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${WizardState.knockoutFormat === 'quarter_final' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
-                            <input type="radio" name="knockout-format" value="quarter_final" 
+                            <input type="radio" name="knockout-format" value="quarter_final"
                                 ${WizardState.knockoutFormat === 'quarter_final' ? 'checked' : ''}
                                 onchange="setKnockoutFormat('quarter_final')"
                                 class="w-4 h-4 text-purple-500" />
@@ -584,7 +656,7 @@ function renderWizardStep4() {
                             </div>
                         </label>
                         <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${WizardState.knockoutFormat === 'semi_final' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
-                            <input type="radio" name="knockout-format" value="semi_final" 
+                            <input type="radio" name="knockout-format" value="semi_final"
                                 ${WizardState.knockoutFormat === 'semi_final' ? 'checked' : ''}
                                 onchange="setKnockoutFormat('semi_final')"
                                 class="w-4 h-4 text-purple-500" />
@@ -594,7 +666,7 @@ function renderWizardStep4() {
                             </div>
                         </label>
                         <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${WizardState.knockoutFormat === 'final_only' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}">
-                            <input type="radio" name="knockout-format" value="final_only" 
+                            <input type="radio" name="knockout-format" value="final_only"
                                 ${WizardState.knockoutFormat === 'final_only' ? 'checked' : ''}
                                 onchange="setKnockoutFormat('final_only')"
                                 class="w-4 h-4 text-purple-500" />
@@ -605,6 +677,7 @@ function renderWizardStep4() {
                         </label>
                     </div>
                 </div>
+                ` : ''}
                 
                 <!-- 3rd Place Playoff (only if semi_final or quarter_final) -->
                 ${WizardState.knockoutFormat !== 'final_only' ? `
@@ -639,8 +712,14 @@ function renderWizardStep4() {
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Group Format</span>
-                        <span class="font-medium text-gray-800">${WizardState.groupMode === 'two_groups' ? 'Two Groups' : 'Single Group'}</span>
+                        <span class="font-medium text-gray-800">${WizardState.groupMode === 'four_groups' ? 'Four Groups' : WizardState.groupMode === 'two_groups' ? 'Two Groups' : 'Single Group'}</span>
                     </div>
+                    ${WizardState.groupMode === 'four_groups' ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Qualifiers per Group</span>
+                        <span class="font-medium text-gray-800">${WizardState.qualifiersPerGroup}</span>
+                    </div>
+                    ` : ''}
                     <div class="flex justify-between">
                         <span class="text-gray-600">Access</span>
                         <span class="font-medium text-gray-800">${{'anyone': '🌍 Open', 'registered': '👥 Registered', 'level-based': '🎯 Level'}[WizardState.accessMode] || '🌍 Open'}</span>
@@ -748,8 +827,8 @@ function wizardNext() {
             return;
         }
         
-        if (teamCount > 24) {
-            showWizardError('Maximum 24 teams allowed');
+        if (teamCount > 32) {
+            showWizardError('Maximum 32 teams allowed');
             return;
         }
         
@@ -782,7 +861,7 @@ function showWizardError(message) {
 
 function adjustTeamCount(delta) {
     const newCount = WizardState.teamCount + delta;
-    if (newCount >= 4 && newCount <= 24) {
+    if (newCount >= 4 && newCount <= 32) {
         WizardState.teamCount = newCount;
         renderWizardStep();
     }
@@ -795,13 +874,27 @@ function setTeamCount(count) {
 
 function updateTeamCount(value) {
     const count = parseInt(value);
-    if (!isNaN(count) && count >= 4 && count <= 24) {
+    if (!isNaN(count) && count >= 4 && count <= 32) {
         WizardState.teamCount = count;
     }
 }
 
 function setGroupMode(mode) {
     WizardState.groupMode = mode;
+    // Auto-set knockout format based on group mode
+    if (mode === 'four_groups') {
+        const q = WizardState.qualifiersPerGroup || 2;
+        WizardState.knockoutFormat = q === 4 ? 'round_of_16' : q === 1 ? 'semi_final' : 'quarter_final';
+    }
+    renderWizardStep();
+}
+
+function setQualifiersPerGroup(count) {
+    WizardState.qualifiersPerGroup = count;
+    // Auto-set knockout format
+    if (count === 4) WizardState.knockoutFormat = 'round_of_16';
+    else if (count === 2) WizardState.knockoutFormat = 'quarter_final';
+    else if (count === 1) WizardState.knockoutFormat = 'semi_final';
     renderWizardStep();
 }
 
@@ -845,15 +938,16 @@ async function createTournamentFromWizard() {
     
     try {
         await createTournamentInFirebase(
-            tournamentId, 
-            WizardState.passcode, 
+            tournamentId,
+            WizardState.passcode,
             WizardState.tournamentName,
             WizardState.teamCount,
             WizardState.groupMode,
             WizardState.includeThirdPlace,
             WizardState.knockoutFormat,
             modeSettings,
-            organizerUid
+            organizerUid,
+            WizardState.qualifiersPerGroup
         );
         
         WizardState.tournamentId = tournamentId;
@@ -994,8 +1088,8 @@ function skipTeamEntry() {
         team.player2Rating = 2.5;
         team.name = `Team ${team.id}`;
     });
-    
-    if (WizardState.groupMode === 'two_groups') {
+
+    if (WizardState.groupMode === 'two_groups' || WizardState.groupMode === 'four_groups') {
         showGroupAssignmentWizard();
     } else {
         finishWizardAndOpen();
@@ -1004,8 +1098,8 @@ function skipTeamEntry() {
 
 function saveTeamsAndContinue() {
     collectTeamData();
-    
-    if (WizardState.groupMode === 'two_groups') {
+
+    if (WizardState.groupMode === 'two_groups' || WizardState.groupMode === 'four_groups') {
         showGroupAssignmentWizard();
     } else {
         finishWizardAndOpen();
@@ -1035,8 +1129,8 @@ function showGroupAssignmentWizard() {
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl">⚖️</div>
                                 <div class="flex-1">
-                                    <div class="font-semibold text-gray-800">Auto Balance (Recommended)</div>
-                                    <p class="text-sm text-gray-600">Snake draft by rating for balanced groups</p>
+                                    <div class="font-semibold text-gray-800">${WizardState.groupMode === 'four_groups' ? 'Random Draw (Recommended)' : 'Auto Balance (Recommended)'}</div>
+                                    <p class="text-sm text-gray-600">${WizardState.groupMode === 'four_groups' ? 'Random draw into 4 groups' : 'Snake draft by rating for balanced groups'}</p>
                                 </div>
                                 <span class="text-purple-500">→</span>
                             </div>
@@ -1061,103 +1155,115 @@ function showGroupAssignmentWizard() {
 }
 
 function autoAssignGroups() {
-    const sorted = [...WizardState.teams].sort((a, b) => b.combinedRating - a.combinedRating);
-    
-    sorted.forEach((team, index) => {
-        const round = Math.floor(index / 2);
-        const isEvenRound = round % 2 === 0;
-        const isFirstInPair = index % 2 === 0;
-        
-        if ((isEvenRound && isFirstInPair) || (!isEvenRound && !isFirstInPair)) {
-            team.group = 'A';
-        } else {
-            team.group = 'B';
+    if (WizardState.groupMode === 'four_groups') {
+        // Random draw for four groups
+        const shuffled = [...WizardState.teams];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-    });
-    
-    WizardState.teams.forEach(team => {
-        const sortedTeam = sorted.find(t => t.id === team.id);
-        team.group = sortedTeam.group;
-    });
-    
+        const groups = ['A', 'B', 'C', 'D'];
+        shuffled.forEach((team, index) => {
+            team.group = groups[index % 4];
+        });
+        WizardState.teams.forEach(team => {
+            const shuffledTeam = shuffled.find(t => t.id === team.id);
+            team.group = shuffledTeam.group;
+        });
+    } else {
+        // Two groups: snake draft by rating
+        const sorted = [...WizardState.teams].sort((a, b) => b.combinedRating - a.combinedRating);
+        sorted.forEach((team, index) => {
+            const round = Math.floor(index / 2);
+            const isEvenRound = round % 2 === 0;
+            const isFirstInPair = index % 2 === 0;
+            if ((isEvenRound && isFirstInPair) || (!isEvenRound && !isFirstInPair)) {
+                team.group = 'A';
+            } else {
+                team.group = 'B';
+            }
+        });
+        WizardState.teams.forEach(team => {
+            const sortedTeam = sorted.find(t => t.id === team.id);
+            team.group = sortedTeam.group;
+        });
+    }
+
     finishWizardAndOpen();
 }
 
 function showManualGroupAssignment() {
-    WizardState.teams.forEach(team => {
-        if (!team.group) team.group = 'A';
+    // Assign default groups round-robin if not set
+    const groups = WizardState.groupMode === 'four_groups' ? ['A', 'B', 'C', 'D'] : ['A', 'B'];
+    WizardState.teams.forEach((team, idx) => {
+        if (!team.group || (WizardState.groupMode === 'four_groups' && !['A','B','C','D'].includes(team.group))) {
+            team.group = groups[idx % groups.length];
+        }
     });
-    
+
     renderManualGroupAssignment();
 }
 
 function renderManualGroupAssignment() {
-    const groupA = WizardState.teams.filter(t => t.group === 'A');
-    const groupB = WizardState.teams.filter(t => t.group === 'B');
-    const targetPerGroup = Math.ceil(WizardState.teams.length / 2);
-    
+    const isFourGroups = WizardState.groupMode === 'four_groups';
+    const allGroups = isFourGroups ? ['A', 'B', 'C', 'D'] : ['A', 'B'];
+    const groupData = {};
+    allGroups.forEach(g => { groupData[g] = WizardState.teams.filter(t => t.group === g); });
+    const targetPerGroup = Math.ceil(WizardState.teams.length / allGroups.length);
+
+    const groupColors = { A: 'blue', B: 'purple', C: 'emerald', D: 'amber' };
+    const nextGroup = { A: 'B', B: isFourGroups ? 'C' : 'A', C: 'D', D: 'A' };
+
+    const isBalanced = allGroups.every(g => Math.abs(groupData[g].length - targetPerGroup) <= 1);
+    const hasTeamsInAllGroups = allGroups.every(g => groupData[g].length > 0);
+
+    const renderGroupCol = (g) => {
+        const color = groupColors[g];
+        return `
+            <div>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-8 h-8 rounded-lg bg-${color}-500 text-white flex items-center justify-center font-bold">${g}</span>
+                    <span class="font-semibold text-gray-800">Group ${g}</span>
+                    <span class="text-sm text-gray-500">(${groupData[g].length})</span>
+                </div>
+                <div class="space-y-2 min-h-[150px] bg-${color}-50 rounded-xl p-3">
+                    ${groupData[g].map(team => `
+                        <button onclick="moveTeamToGroup(${team.id}, '${nextGroup[g]}')" class="w-full text-left p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                            <div class="font-medium text-gray-800 text-sm">${team.name}</div>
+                            <div class="text-xs text-gray-500">${team.player1Name} & ${team.player2Name}</div>
+                        </button>
+                    `).join('') || '<p class="text-center text-gray-400 py-4 text-sm">No teams</p>'}
+                </div>
+            </div>
+        `;
+    };
+
     document.getElementById('modal-container').innerHTML = `
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden animate-slide-up">
-                <!-- Header -->
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
-                    <h2 class="text-xl font-bold text-white">✋ Manual Group Assignment</h2>
-                    <p class="text-white/80 text-sm">Click teams to move them between groups</p>
+                    <h2 class="text-xl font-bold text-white">Manual Group Assignment</h2>
+                    <p class="text-white/80 text-sm">Click a team to move it to the next group</p>
                 </div>
-                
+
                 <div class="p-6">
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Group A -->
-                        <div>
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center font-bold">A</span>
-                                <span class="font-semibold text-gray-800">Group A</span>
-                                <span class="text-sm text-gray-500">(${groupA.length}/${targetPerGroup})</span>
-                            </div>
-                            <div class="space-y-2 min-h-[200px] bg-blue-50 rounded-xl p-3">
-                                ${groupA.map(team => `
-                                    <button onclick="moveTeamToGroup(${team.id}, 'B')" class="w-full text-left p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                                        <div class="font-medium text-gray-800">${team.name}</div>
-                                        <div class="text-xs text-gray-500">${team.player1Name} & ${team.player2Name} • ${team.combinedRating.toFixed(1)}</div>
-                                    </button>
-                                `).join('') || '<p class="text-center text-gray-400 py-8">No teams</p>'}
-                            </div>
-                        </div>
-                        
-                        <!-- Group B -->
-                        <div>
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="w-8 h-8 rounded-lg bg-purple-500 text-white flex items-center justify-center font-bold">B</span>
-                                <span class="font-semibold text-gray-800">Group B</span>
-                                <span class="text-sm text-gray-500">(${groupB.length}/${Math.floor(WizardState.teams.length / 2)})</span>
-                            </div>
-                            <div class="space-y-2 min-h-[200px] bg-purple-50 rounded-xl p-3">
-                                ${groupB.map(team => `
-                                    <button onclick="moveTeamToGroup(${team.id}, 'A')" class="w-full text-left p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                                        <div class="font-medium text-gray-800">${team.name}</div>
-                                        <div class="text-xs text-gray-500">${team.player1Name} & ${team.player2Name} • ${team.combinedRating.toFixed(1)}</div>
-                                    </button>
-                                `).join('') || '<p class="text-center text-gray-400 py-8">No teams</p>'}
-                            </div>
-                        </div>
+                    <div class="grid ${isFourGroups ? 'grid-cols-2 md:grid-cols-4' : 'md:grid-cols-2'} gap-4">
+                        ${allGroups.map(g => renderGroupCol(g)).join('')}
                     </div>
-                    
-                    <!-- Balance indicator -->
-                    <div class="mt-4 p-3 rounded-xl ${Math.abs(groupA.length - groupB.length) <= 1 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}">
+
+                    <div class="mt-4 p-3 rounded-xl ${isBalanced ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}">
                         <p class="text-sm font-medium">
-                            ${Math.abs(groupA.length - groupB.length) <= 1 
-                                ? '✓ Groups are balanced' 
-                                : '⚠️ Groups are unbalanced - try to even them out'}
+                            ${isBalanced ? 'Groups are balanced' : 'Groups are unbalanced - try to even them out'}
                         </p>
                     </div>
                 </div>
-                
+
                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3">
                     <button onclick="showGroupAssignmentWizard()" class="flex-1 px-5 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors">
-                        ← Back
+                        Back
                     </button>
-                    <button onclick="finishWizardAndOpen()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors" ${groupB.length === 0 ? 'disabled' : ''}>
-                        Continue →
+                    <button onclick="finishWizardAndOpen()" class="flex-1 px-5 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold transition-colors" ${!hasTeamsInAllGroups ? 'disabled' : ''}>
+                        Continue
                     </button>
                 </div>
             </div>
@@ -1190,20 +1296,32 @@ async function finishWizardAndOpen() {
         
         const groupA = teams.filter(t => t.group === 'A').map(t => t.id);
         const groupB = teams.filter(t => t.group === 'B').map(t => t.id);
-        
+        const groupC = teams.filter(t => t.group === 'C').map(t => t.id);
+        const groupD = teams.filter(t => t.group === 'D').map(t => t.id);
+
         const groupATeams = teams.filter(t => t.group === 'A');
         const groupBTeams = teams.filter(t => t.group === 'B');
-        
+        const groupCTeams = teams.filter(t => t.group === 'C');
+        const groupDTeams = teams.filter(t => t.group === 'D');
+
+        const isFourGroups = WizardState.groupMode === 'four_groups';
+        const isTwoOrMore = WizardState.groupMode === 'two_groups' || isFourGroups;
         const groupAFixtures = generateRoundRobinFixtures(groupATeams);
-        const groupBFixtures = WizardState.groupMode === 'two_groups' ? generateRoundRobinFixtures(groupBTeams) : [];
-        
+        const groupBFixtures = isTwoOrMore ? generateRoundRobinFixtures(groupBTeams) : [];
+        const groupCFixtures = isFourGroups ? generateRoundRobinFixtures(groupCTeams) : [];
+        const groupDFixtures = isFourGroups ? generateRoundRobinFixtures(groupDTeams) : [];
+
         const basePath = `team-tournaments/${WizardState.tournamentId}`;
         await database.ref(basePath).update({
             teams: teams,
             groupA: groupA,
             groupB: groupB,
+            groupC: groupC,
+            groupD: groupD,
             groupAFixtures: groupAFixtures,
-            groupBFixtures: groupBFixtures
+            groupBFixtures: groupBFixtures,
+            groupCFixtures: groupCFixtures,
+            groupDFixtures: groupDFixtures
         });
         
         closeModal();
@@ -1278,7 +1396,7 @@ async function removeFromMyTournaments(tournamentId) {
 
 // ===== FIREBASE OPERATIONS =====
 
-async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final', modeSettings = null, organizerUid = null) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final', modeSettings = null, organizerUid = null, qualifiersPerGroup = 2) {
     // Get current user for creator info
     const currentUser = getCurrentUser();
     
@@ -1312,14 +1430,27 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, team
         teamCount: teamCount,
         groupMode: groupMode,
         includeThirdPlace: includeThirdPlace,
-        knockoutFormat: knockoutFormat, // 'final_only', 'semi_final', 'quarter_final'
+        knockoutFormat: knockoutFormat,
+        qualifiersPerGroup: qualifiersPerGroup,
         teams: [],
         groupA: [],
         groupB: [],
+        groupC: [],
+        groupD: [],
         groupAFixtures: [],
         groupBFixtures: [],
-        groupMatchScores: { A: {}, B: {} },
+        groupCFixtures: [],
+        groupDFixtures: [],
+        groupMatchScores: { A: {}, B: {}, C: {}, D: {} },
         knockoutScores: {
+            r16_1: { team1Score: null, team2Score: null },
+            r16_2: { team1Score: null, team2Score: null },
+            r16_3: { team1Score: null, team2Score: null },
+            r16_4: { team1Score: null, team2Score: null },
+            r16_5: { team1Score: null, team2Score: null },
+            r16_6: { team1Score: null, team2Score: null },
+            r16_7: { team1Score: null, team2Score: null },
+            r16_8: { team1Score: null, team2Score: null },
             qf1: { team1Score: null, team2Score: null },
             qf2: { team1Score: null, team2Score: null },
             qf3: { team1Score: null, team2Score: null },
@@ -1330,6 +1461,14 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, team
             final: { team1Score: null, team2Score: null }
         },
         knockoutTeams: {
+            r16_1: { team1: null, team2: null },
+            r16_2: { team1: null, team2: null },
+            r16_3: { team1: null, team2: null },
+            r16_4: { team1: null, team2: null },
+            r16_5: { team1: null, team2: null },
+            r16_6: { team1: null, team2: null },
+            r16_7: { team1: null, team2: null },
+            r16_8: { team1: null, team2: null },
             qf1: { team1: null, team2: null },
             qf2: { team1: null, team2: null },
             qf3: { team1: null, team2: null },
@@ -1345,6 +1484,8 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, team
         thirdPlaceMaxScore: CONFIG.THIRD_PLACE_MAX_SCORE,
         finalMaxScore: CONFIG.FINAL_MAX_SCORE,
         knockoutNames: {
+            r16_1: 'R16-1', r16_2: 'R16-2', r16_3: 'R16-3', r16_4: 'R16-4',
+            r16_5: 'R16-5', r16_6: 'R16-6', r16_7: 'R16-7', r16_8: 'R16-8',
             qf1: 'QF1', qf2: 'QF2', qf3: 'QF3', qf4: 'QF4',
             sf1: 'SF1', sf2: 'SF2',
             thirdPlace: '3rd Place', final: 'Final'

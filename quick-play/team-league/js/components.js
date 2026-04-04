@@ -147,10 +147,7 @@ function KnockoutMatchCard(matchId, title, maxScore) {
                 <div class="ko-teams">
                     <div class="ko-team-row ${team1Winner ? 'winner' : ''}">
                         <div class="ko-team-info">
-                            ${team1 ? `
-                                <div class="ko-team-name">${team1.name}</div>
-                                <div class="ko-team-players">${team1.player1Name} & ${team1.player2Name}</div>
-                            ` : `
+                            ${team1 ? TeamBadge(team1, 'compact') : `
                                 <div class="ko-team-name text-gray-400">TBD</div>
                             `}
                         </div>
@@ -172,10 +169,7 @@ function KnockoutMatchCard(matchId, title, maxScore) {
                     
                     <div class="ko-team-row ${team2Winner ? 'winner' : ''}">
                         <div class="ko-team-info">
-                            ${team2 ? `
-                                <div class="ko-team-name">${team2.name}</div>
-                                <div class="ko-team-players">${team2.player1Name} & ${team2.player2Name}</div>
-                            ` : `
+                            ${team2 ? TeamBadge(team2, 'compact') : `
                                 <div class="ko-team-name text-gray-400">TBD</div>
                             `}
                         </div>
@@ -203,7 +197,8 @@ function KnockoutMatchCard(matchId, title, maxScore) {
 // ===== TAB COMPONENTS =====
 
 function GroupTab(group) {
-    const fixtures = group === 'A' ? state.groupAFixtures : state.groupBFixtures;
+    const fixtureMap = { A: state.groupAFixtures, B: state.groupBFixtures, C: state.groupCFixtures, D: state.groupDFixtures };
+    const fixtures = fixtureMap[group] || [];
     const teams = state.getTeamsInGroup(group);
     const totalMatches = state.getTotalGroupMatches(group);
     const completedMatches = state.getCompletedGroupMatches(group);
@@ -228,7 +223,8 @@ function GroupTab(group) {
         `;
     }
     
-    const headerClass = group === 'A' ? 'group-header-a' : 'group-header-b';
+    const headerClasses = { A: 'group-header-a', B: 'group-header-b', C: 'group-header-c', D: 'group-header-d' };
+    const headerClass = headerClasses[group] || 'group-header-a';
     
     return `
         <div class="group-card mb-6">
@@ -257,16 +253,23 @@ function GroupTab(group) {
 // ===== FIXTURES TAB (Side-by-Side View) =====
 
 function FixturesTab() {
+    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
     const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-    const fixturesA = state.groupAFixtures || [];
-    const fixturesB = state.groupBFixtures || [];
+    const hasMultipleGroups = isTwoGroups || isFourGroups;
+
+    const allFixtures = {
+        A: state.groupAFixtures || [],
+        B: state.groupBFixtures || [],
+        C: state.groupCFixtures || [],
+        D: state.groupDFixtures || []
+    };
+    const activeGroups = isFourGroups ? ['A', 'B', 'C', 'D'] : isTwoGroups ? ['A', 'B'] : ['A'];
+
     const teamsA = state.getTeamsInGroup('A');
     const teamsB = state.getTeamsInGroup('B');
-    
-    // View toggle state (stored in state object)
+
     const viewMode = state.fixturesViewMode || 'side-by-side';
-    
-    // Calculate completion stats
+
     const getCompletionStats = (fixtures, group) => {
         let completed = 0, total = 0;
         fixtures.forEach(round => {
@@ -278,13 +281,15 @@ function FixturesTab() {
         });
         return { completed, total };
     };
-    
-    const statsA = getCompletionStats(fixturesA, 'A');
-    const statsB = isTwoGroups ? getCompletionStats(fixturesB, 'B') : { completed: 0, total: 0 };
-    
-    // Get max rounds
-    const maxRounds = Math.max(fixturesA.length, fixturesB.length);
-    
+
+    const allStats = {};
+    let totalCompleted = 0, totalMatches = 0;
+    activeGroups.forEach(g => {
+        allStats[g] = getCompletionStats(allFixtures[g], g);
+        totalCompleted += allStats[g].completed;
+        totalMatches += allStats[g].total;
+    });
+
     if (teamsA.length === 0 && teamsB.length === 0) {
         return `
             <div class="text-center py-12">
@@ -294,8 +299,8 @@ function FixturesTab() {
             </div>
         `;
     }
-    
-    if (fixturesA.length === 0 && fixturesB.length === 0) {
+
+    if (activeGroups.every(g => allFixtures[g].length === 0)) {
         return `
             <div class="text-center py-12">
                 <div class="text-5xl mb-4 opacity-50">📋</div>
@@ -304,91 +309,83 @@ function FixturesTab() {
             </div>
         `;
     }
-    
-    // Single group - just show Group A
-    if (!isTwoGroups) {
+
+    // Single group
+    if (!hasMultipleGroups) {
         return `
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-xl font-bold text-gray-800">All Fixtures</h2>
-                <span class="text-sm text-gray-500">${statsA.completed}/${statsA.total} matches complete</span>
+                <span class="text-sm text-gray-500">${allStats.A.completed}/${allStats.A.total} matches complete</span>
             </div>
-            ${renderFixturesForGroup('A', fixturesA)}
+            ${renderFixturesForGroup('A', allFixtures.A)}
         `;
     }
-    
-    // Two groups - show view toggle and side-by-side or stacked view
+
+    // Multiple groups - view toggle with individual group tabs
+    const groupTabButtons = activeGroups.map(g =>
+        `<button onclick="setFixturesViewMode('group-${g.toLowerCase()}')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-' + g.toLowerCase() ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+            Group ${g}
+        </button>`
+    ).join('');
+
     return `
-        <!-- View Mode Toggle -->
         <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
             <h2 class="text-xl font-bold text-gray-800">All Fixtures</h2>
             <div class="flex items-center gap-2">
                 <span class="text-sm text-gray-500 mr-2">
-                    ${statsA.completed + statsB.completed}/${statsA.total + statsB.total} matches complete
+                    ${totalCompleted}/${totalMatches} matches complete
                 </span>
-                <div class="flex bg-gray-100 rounded-lg p-1">
+                <div class="flex bg-gray-100 rounded-lg p-1 flex-wrap">
                     <button onclick="setFixturesViewMode('side-by-side')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'side-by-side' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-                        Side by Side
+                        All
                     </button>
-                    <button onclick="setFixturesViewMode('group-a')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-a' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-                        Group A
-                    </button>
-                    <button onclick="setFixturesViewMode('group-b')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-b' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-                        Group B
-                    </button>
+                    ${groupTabButtons}
                 </div>
             </div>
         </div>
-        
-        ${viewMode === 'side-by-side' ? renderSideBySideFixtures(fixturesA, fixturesB, maxRounds) : ''}
-        ${viewMode === 'group-a' ? renderFixturesForGroup('A', fixturesA) : ''}
-        ${viewMode === 'group-b' ? renderFixturesForGroup('B', fixturesB) : ''}
+
+        ${viewMode === 'side-by-side' ? renderSideBySideFixtures(allFixtures, activeGroups) : ''}
+        ${activeGroups.map(g => viewMode === 'group-' + g.toLowerCase() ? renderFixturesForGroup(g, allFixtures[g]) : '').join('')}
     `;
 }
 
-function renderSideBySideFixtures(fixturesA, fixturesB, maxRounds) {
+function renderSideBySideFixtures(allFixtures, activeGroups) {
+    const maxRounds = Math.max(...activeGroups.map(g => allFixtures[g].length));
+    const groupColors = { A: 'blue', B: 'purple', C: 'emerald', D: 'amber' };
+    const gridCols = 'md:grid-cols-2';
     let html = '';
-    
+
     for (let roundIdx = 0; roundIdx < maxRounds; roundIdx++) {
-        const roundA = fixturesA[roundIdx];
-        const roundB = fixturesB[roundIdx];
         const roundNum = roundIdx + 1;
-        
+
         html += `
             <div class="mb-8">
                 <h3 class="text-lg font-bold text-gray-700 mb-4 pb-2 border-b border-gray-200">
                     Round ${roundNum}
                 </h3>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <!-- Group A -->
-                    <div>
-                        <div class="flex items-center gap-2 mb-3">
-                            <span class="w-6 h-6 rounded bg-blue-500 text-white flex items-center justify-center text-xs font-bold">A</span>
-                            <span class="text-sm font-semibold text-gray-600">Group A</span>
-                        </div>
-                        <div class="space-y-3">
-                            ${roundA ? roundA.matches.map((match, idx) => 
-                                GroupMatchCard(match, 'A', roundNum, idx + 1)
-                            ).join('') : '<p class="text-gray-400 text-sm">No matches</p>'}
-                        </div>
-                    </div>
-                    
-                    <!-- Group B -->
-                    <div>
-                        <div class="flex items-center gap-2 mb-3">
-                            <span class="w-6 h-6 rounded bg-purple-500 text-white flex items-center justify-center text-xs font-bold">B</span>
-                            <span class="text-sm font-semibold text-gray-600">Group B</span>
-                        </div>
-                        <div class="space-y-3">
-                            ${roundB ? roundB.matches.map((match, idx) => 
-                                GroupMatchCard(match, 'B', roundNum, idx + 1)
-                            ).join('') : '<p class="text-gray-400 text-sm">No matches</p>'}
-                        </div>
-                    </div>
+                <div class="grid ${gridCols} gap-6">
+                    ${activeGroups.map(g => {
+                        const round = allFixtures[g][roundIdx];
+                        const color = groupColors[g];
+                        return `
+                            <div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="w-6 h-6 rounded bg-${color}-500 text-white flex items-center justify-center text-xs font-bold">${g}</span>
+                                    <span class="text-sm font-semibold text-gray-600">Group ${g}</span>
+                                </div>
+                                <div class="space-y-3">
+                                    ${round ? round.matches.map((match, idx) =>
+                                        GroupMatchCard(match, g, roundNum, idx + 1)
+                                    ).join('') : '<p class="text-gray-400 text-sm">No matches</p>'}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>
         `;
     }
-    
+
     return html;
 }
 
@@ -397,7 +394,8 @@ function renderFixturesForGroup(group, fixtures) {
         return `<p class="text-gray-400 text-center py-8">No fixtures for Group ${group}</p>`;
     }
     
-    const headerClass = group === 'A' ? 'group-header-a' : 'group-header-b';
+    const headerClasses = { A: 'group-header-a', B: 'group-header-b', C: 'group-header-c', D: 'group-header-d' };
+    const headerClass = headerClasses[group] || 'group-header-a';
     
     return `
         <div class="group-card mb-4">
@@ -423,17 +421,30 @@ function renderFixturesForGroup(group, fixtures) {
 }
 
 function StandingsTab() {
-    const groupAStandings = state.getGroupStandings('A');
-    const groupBStandings = state.getGroupStandings('B');
-    const qualifyCount = state.groupMode === CONFIG.GROUP_MODES.SINGLE 
-        ? CONFIG.KNOCKOUT_QUALIFIERS.SINGLE_GROUP 
-        : CONFIG.KNOCKOUT_QUALIFIERS.TWO_GROUPS;
-    
+    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
+    const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
+    const activeGroups = isFourGroups ? ['A', 'B', 'C', 'D'] : isTwoGroups ? ['A', 'B'] : ['A'];
+
+    // Determine qualify count
+    let qualifyCount;
+    if (state.groupMode === CONFIG.GROUP_MODES.SINGLE) {
+        qualifyCount = CONFIG.KNOCKOUT_QUALIFIERS.SINGLE_GROUP;
+    } else if (isFourGroups) {
+        qualifyCount = state.qualifiersPerGroup || CONFIG.KNOCKOUT_QUALIFIERS.FOUR_GROUPS;
+    } else {
+        qualifyCount = CONFIG.KNOCKOUT_QUALIFIERS.TWO_GROUPS;
+    }
+
+    const allStandings = {};
+    activeGroups.forEach(g => { allStandings[g] = state.getGroupStandings(g); });
+
+    const headerClasses = { A: 'group-header-a', B: 'group-header-b', C: 'group-header-c', D: 'group-header-d' };
+
     const renderStandingsTable = (standings, group) => {
         if (standings.length === 0) {
             return `<p class="text-gray-400 text-center py-8">No teams in group</p>`;
         }
-        
+
         return `
             <div class="overflow-x-auto">
                 <table class="standings-table">
@@ -482,92 +493,61 @@ function StandingsTab() {
                 </table>
             </div>
             <div class="mt-4 flex items-center gap-2">
-                <span class="qualification-badge qualified">✓ Top ${qualifyCount} qualify</span>
+                <span class="qualification-badge qualified">Top ${qualifyCount} qualify</span>
             </div>
         `;
     };
-    
+
     if (state.groupMode === CONFIG.GROUP_MODES.SINGLE) {
         return `
             <div class="group-card">
                 <div class="group-header group-header-single">
-                    <span>📊</span>
                     <span>Standings</span>
                 </div>
                 <div class="p-4">
-                    ${renderStandingsTable(groupAStandings, 'A')}
+                    ${renderStandingsTable(allStandings.A, 'A')}
                 </div>
             </div>
         `;
     }
-    
-    // Two groups - show view toggle
+
+    // Multiple groups - view toggle
     const viewMode = state.standingsViewMode || 'both';
-    
-    return `
-        <!-- View Mode Toggle -->
-        <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
-            <h2 class="text-xl font-bold text-gray-800">Standings</h2>
-            <div class="flex bg-gray-100 rounded-lg p-1">
-                <button onclick="setStandingsViewMode('both')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'both' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-                    Both Groups
-                </button>
-                <button onclick="setStandingsViewMode('group-a')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-a' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-                    Group A
-                </button>
-                <button onclick="setStandingsViewMode('group-b')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-b' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-                    Group B
-                </button>
+    const groupTabButtons = activeGroups.map(g =>
+        `<button onclick="setStandingsViewMode('group-${g.toLowerCase()}')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-' + g.toLowerCase() ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+            Group ${g}
+        </button>`
+    ).join('');
+
+    const renderGroupCard = (g) => `
+        <div class="group-card">
+            <div class="group-header ${headerClasses[g] || 'group-header-a'}">
+                <span>Group ${g} Standings</span>
+            </div>
+            <div class="p-4">
+                ${renderStandingsTable(allStandings[g], g)}
             </div>
         </div>
-        
+    `;
+
+    return `
+        <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
+            <h2 class="text-xl font-bold text-gray-800">Standings</h2>
+            <div class="flex bg-gray-100 rounded-lg p-1 flex-wrap">
+                <button onclick="setStandingsViewMode('both')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'both' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
+                    All Groups
+                </button>
+                ${groupTabButtons}
+            </div>
+        </div>
+
         ${viewMode === 'both' ? `
-            <div class="grid gap-6 lg:grid-cols-2">
-                <div class="group-card">
-                    <div class="group-header group-header-a">
-                        <span>📊</span>
-                        <span>Group A Standings</span>
-                    </div>
-                    <div class="p-4">
-                        ${renderStandingsTable(groupAStandings, 'A')}
-                    </div>
-                </div>
-                
-                <div class="group-card">
-                    <div class="group-header group-header-b">
-                        <span>📊</span>
-                        <span>Group B Standings</span>
-                    </div>
-                    <div class="p-4">
-                        ${renderStandingsTable(groupBStandings, 'B')}
-                    </div>
-                </div>
+            <div class="grid gap-6 ${isFourGroups ? 'lg:grid-cols-2' : 'lg:grid-cols-2'}">
+                ${activeGroups.map(g => renderGroupCard(g)).join('')}
             </div>
         ` : ''}
-        
-        ${viewMode === 'group-a' ? `
-            <div class="group-card">
-                <div class="group-header group-header-a">
-                    <span>📊</span>
-                    <span>Group A Standings</span>
-                </div>
-                <div class="p-4">
-                    ${renderStandingsTable(groupAStandings, 'A')}
-                </div>
-            </div>
-        ` : ''}
-        
-        ${viewMode === 'group-b' ? `
-            <div class="group-card">
-                <div class="group-header group-header-b">
-                    <span>📊</span>
-                    <span>Group B Standings</span>
-                </div>
-                <div class="p-4">
-                    ${renderStandingsTable(groupBStandings, 'B')}
-                </div>
-            </div>
-        ` : ''}
+
+        ${activeGroups.map(g => viewMode === 'group-' + g.toLowerCase() ? renderGroupCard(g) : '').join('')}
 
         <!-- Share Result Card Buttons -->
         <div class="mt-4 flex flex-wrap gap-2 justify-center">
@@ -593,6 +573,8 @@ function KnockoutTab() {
         hasKnockoutTeams = state.knockoutTeams.final.team1 !== null;
     } else if (knockoutFormat === 'semi_final') {
         hasKnockoutTeams = state.knockoutTeams.sf1.team1 !== null;
+    } else if (knockoutFormat === 'round_of_16') {
+        hasKnockoutTeams = state.knockoutTeams.r16_1?.team1 !== null;
     } else {
         hasKnockoutTeams = state.knockoutTeams.qf1.team1 !== null;
     }
@@ -663,6 +645,75 @@ function KnockoutTab() {
         `;
     }
     
+    // Round of 16 Format
+    if (knockoutFormat === 'round_of_16') {
+        return `
+            <div class="space-y-8">
+                <!-- Round of 16 -->
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span>🔥</span> Round of 16
+                    </h3>
+                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        ${KnockoutMatchCard('r16_1', 'R16-1', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('r16_2', 'R16-2', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('r16_3', 'R16-3', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('r16_4', 'R16-4', state.knockoutMaxScore)}
+                    </div>
+                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
+                        ${KnockoutMatchCard('r16_5', 'R16-5', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('r16_6', 'R16-6', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('r16_7', 'R16-7', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('r16_8', 'R16-8', state.knockoutMaxScore)}
+                    </div>
+                </div>
+
+                <!-- Quarter Finals -->
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span>🎯</span> Quarter Finals
+                    </h3>
+                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        ${KnockoutMatchCard('qf1', 'QF1', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('qf2', 'QF2', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('qf3', 'QF3', state.knockoutMaxScore)}
+                        ${KnockoutMatchCard('qf4', 'QF4', state.knockoutMaxScore)}
+                    </div>
+                </div>
+
+                <!-- Semi Finals -->
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span>⚡</span> Semi Finals
+                    </h3>
+                    <div class="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
+                        ${KnockoutMatchCard('sf1', 'SF1', state.semiMaxScore)}
+                        ${KnockoutMatchCard('sf2', 'SF2', state.semiMaxScore)}
+                    </div>
+                </div>
+
+                <!-- 3rd Place & Final -->
+                <div class="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
+                    ${state.includeThirdPlace ? `
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <span>🥉</span> 3rd Place Playoff
+                            </h3>
+                            ${KnockoutMatchCard('thirdPlace', '3rd Place', state.thirdPlaceMaxScore)}
+                        </div>
+                    ` : ''}
+
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <span>🏆</span> Final
+                        </h3>
+                        ${KnockoutMatchCard('final', 'Final', state.finalMaxScore)}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     // Quarter Final + Semi Final + Final Format (default)
     return `
         <div class="space-y-8">
@@ -678,7 +729,7 @@ function KnockoutTab() {
                     ${KnockoutMatchCard('qf4', 'QF4', state.knockoutMaxScore)}
                 </div>
             </div>
-            
+
             <!-- Semi Finals -->
             <div>
                 <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -933,69 +984,68 @@ function TeamsSettingsSection() {
 }
 
 function GroupsSettingsSection() {
+    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
     const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-    
+
+    const groupConfigs = [
+        { key: 'A', data: state.groupA, color: 'blue' },
+        { key: 'B', data: state.groupB, color: 'purple' },
+        { key: 'C', data: state.groupC, color: 'emerald' },
+        { key: 'D', data: state.groupD, color: 'amber' }
+    ];
+    const activeGroupConfigs = isFourGroups ? groupConfigs : isTwoGroups ? groupConfigs.slice(0, 2) : groupConfigs.slice(0, 1);
+
     return `
         <h3 class="text-lg font-bold text-gray-800 mb-4">Group Settings</h3>
-        
+
         <!-- Group Mode -->
         <div class="mb-6">
             <label class="block text-sm font-medium text-gray-600 mb-2">Group Mode</label>
-            <div class="flex gap-4">
+            <div class="flex flex-wrap gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="group-mode" value="four_groups" ${isFourGroups ? 'checked' : ''} onchange="setGroupMode('four_groups')" class="w-4 h-4 text-purple-500" />
+                    <span>Four Groups (A, B, C, D)</span>
+                </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="radio" name="group-mode" value="two_groups" ${isTwoGroups ? 'checked' : ''} onchange="setGroupMode('two_groups')" class="w-4 h-4 text-purple-500" />
                     <span>Two Groups (A & B)</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="group-mode" value="single_group" ${!isTwoGroups ? 'checked' : ''} onchange="setGroupMode('single_group')" class="w-4 h-4 text-purple-500" />
+                    <input type="radio" name="group-mode" value="single_group" ${state.groupMode === CONFIG.GROUP_MODES.SINGLE ? 'checked' : ''} onchange="setGroupMode('single_group')" class="w-4 h-4 text-purple-500" />
                     <span>Single Group</span>
                 </label>
             </div>
         </div>
-        
+
         <!-- Split & Generate Buttons -->
         <div class="flex flex-wrap gap-4 mb-6">
             <button onclick="splitTeams()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors" ${state.teams.length < 2 ? 'disabled' : ''}>
-                🔀 Split Teams into Groups
+                Split Teams into Groups
             </button>
             <button onclick="generateFixtures()" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors" ${state.groupA.length === 0 ? 'disabled' : ''}>
-                📋 Generate Fixtures
+                Generate Fixtures
             </button>
         </div>
-        
+
         <!-- Current Groups -->
-        <div class="grid gap-4 md:grid-cols-2">
-            <div class="bg-blue-50 rounded-xl p-4">
-                <h4 class="font-semibold text-blue-800 mb-2">Group A (${state.groupA.length} teams)</h4>
-                ${state.groupA.length === 0 ? `
-                    <p class="text-blue-400 text-sm">No teams assigned</p>
-                ` : `
-                    <ul class="text-sm text-blue-700 space-y-1">
-                        ${state.groupA.map(id => {
-                            const team = state.getTeamById(id);
-                            return `<li>• ${team?.name || 'Unknown'}</li>`;
-                        }).join('')}
-                    </ul>
-                `}
-            </div>
-            
-            ${isTwoGroups ? `
-                <div class="bg-purple-50 rounded-xl p-4">
-                    <h4 class="font-semibold text-purple-800 mb-2">Group B (${state.groupB.length} teams)</h4>
-                    ${state.groupB.length === 0 ? `
-                        <p class="text-purple-400 text-sm">No teams assigned</p>
+        <div class="grid gap-4 ${isFourGroups ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2'}">
+            ${activeGroupConfigs.map(({ key, data, color }) => `
+                <div class="bg-${color}-50 rounded-xl p-4">
+                    <h4 class="font-semibold text-${color}-800 mb-2">Group ${key} (${data.length} teams)</h4>
+                    ${data.length === 0 ? `
+                        <p class="text-${color}-400 text-sm">No teams assigned</p>
                     ` : `
-                        <ul class="text-sm text-purple-700 space-y-1">
-                            ${state.groupB.map(id => {
+                        <ul class="text-sm text-${color}-700 space-y-1">
+                            ${data.map(id => {
                                 const team = state.getTeamById(id);
-                                return `<li>• ${team?.name || 'Unknown'}</li>`;
+                                return `<li>${team?.name || 'Unknown'}</li>`;
                             }).join('')}
                         </ul>
                     `}
                 </div>
-            ` : ''}
+            `).join('')}
         </div>
-        
+
         <!-- 3rd Place Toggle -->
         <div class="mt-6">
             <label class="flex items-center gap-3 cursor-pointer">
@@ -1007,10 +1057,17 @@ function GroupsSettingsSection() {
 }
 
 function FixturesSettingsSection() {
-    const fixturesA = state.groupAFixtures || [];
-    const fixturesB = state.groupBFixtures || [];
+    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
     const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-    
+    const allFixtures = {
+        A: state.groupAFixtures || [],
+        B: state.groupBFixtures || [],
+        C: state.groupCFixtures || [],
+        D: state.groupDFixtures || []
+    };
+    const activeGroups = isFourGroups ? ['A', 'B', 'C', 'D'] : isTwoGroups ? ['A', 'B'] : ['A'];
+    const groupColors = { A: 'blue', B: 'purple', C: 'emerald', D: 'amber' };
+
     const renderFixtureList = (fixtures, group) => {
         if (fixtures.length === 0) {
             return `<p class="text-gray-400 text-sm py-4">No fixtures generated for Group ${group}</p>`;
@@ -1073,26 +1130,16 @@ function FixturesSettingsSection() {
             </button>
         </div>
         
-        <div class="grid gap-6 ${isTwoGroups ? 'md:grid-cols-2' : ''}">
-            <!-- Group A Fixtures -->
-            <div class="bg-blue-50 rounded-xl p-4">
-                <h4 class="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                    <span class="w-6 h-6 rounded bg-blue-500 text-white flex items-center justify-center text-xs font-bold">A</span>
-                    Group A Fixtures
-                </h4>
-                ${renderFixtureList(fixturesA, 'A')}
-            </div>
-            
-            ${isTwoGroups ? `
-                <!-- Group B Fixtures -->
-                <div class="bg-purple-50 rounded-xl p-4">
-                    <h4 class="font-semibold text-purple-800 mb-3 flex items-center gap-2">
-                        <span class="w-6 h-6 rounded bg-purple-500 text-white flex items-center justify-center text-xs font-bold">B</span>
-                        Group B Fixtures
+        <div class="grid gap-6 ${isFourGroups ? 'md:grid-cols-2' : isTwoGroups ? 'md:grid-cols-2' : ''}">
+            ${activeGroups.map(g => `
+                <div class="bg-${groupColors[g]}-50 rounded-xl p-4">
+                    <h4 class="font-semibold text-${groupColors[g]}-800 mb-3 flex items-center gap-2">
+                        <span class="w-6 h-6 rounded bg-${groupColors[g]}-500 text-white flex items-center justify-center text-xs font-bold">${g}</span>
+                        Group ${g} Fixtures
                     </h4>
-                    ${renderFixtureList(fixturesB, 'B')}
+                    ${renderFixtureList(allFixtures[g], g)}
                 </div>
-            ` : ''}
+            `).join('')}
         </div>
     `;
 }
@@ -1358,7 +1405,8 @@ const TeamLeagueApp = {
         
         const currentTab = state.currentTab || 'fixtures';
         const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-        
+        const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
+
         document.getElementById('app').innerHTML = `
             <div class="min-h-screen">
                 <!-- Shared Header -->
@@ -1367,7 +1415,7 @@ const TeamLeagueApp = {
                     tournamentId: state.tournamentId,
                     tournamentName: state.tournamentName || 'Team Tournament',
                     isOrganiser: state.isOrganiser,
-                    subtitle: (state.teams?.length || 0) + ' teams • ' + (isTwoGroups ? '2 groups' : '1 group')
+                    subtitle: (state.teams?.length || 0) + ' teams • ' + (isFourGroups ? '4 groups' : isTwoGroups ? '2 groups' : '1 group')
                 })}
                 
                 <!-- Tabs -->

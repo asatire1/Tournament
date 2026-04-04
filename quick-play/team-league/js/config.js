@@ -10,19 +10,21 @@ const CONFIG = {
     // Team Settings (from shared config)
     DEFAULT_TEAM_COUNT: 22,
     MIN_TEAMS: _sharedTeamConfig?.minTeams ?? 4,
-    MAX_TEAMS: _sharedTeamConfig?.maxTeams ?? 24,
+    MAX_TEAMS: _sharedTeamConfig?.maxTeams ?? 32,
     
     // Group Settings
     GROUP_MODES: {
         SINGLE: 'single_group',
-        TWO_GROUPS: 'two_groups'
+        TWO_GROUPS: 'two_groups',
+        FOUR_GROUPS: 'four_groups'
     },
     DEFAULT_GROUP_MODE: 'two_groups',
     
     // Knockout Qualification
     KNOCKOUT_QUALIFIERS: {
         SINGLE_GROUP: 8,    // Top 8 from single group
-        TWO_GROUPS: 4       // Top 4 from each group
+        TWO_GROUPS: 4,      // Top 4 from each group
+        FOUR_GROUPS: 2      // Default: Top 2 from each group (can be 1, 2, or 4)
     },
     
     // Match Settings (from shared config)
@@ -53,13 +55,49 @@ const CONFIG = {
         qf4: { team1: 4, team2: 5 }
     },
     
+    // Knockout Seeding (Four Groups - 2 per group, 8 teams → QF)
+    FOUR_GROUP_SEEDING_QF: {
+        qf1: { team1: 'A1', team2: 'D2' },
+        qf2: { team1: 'C1', team2: 'B2' },
+        qf3: { team1: 'B1', team2: 'C2' },
+        qf4: { team1: 'D1', team2: 'A2' }
+    },
+
+    // Knockout Seeding (Four Groups - 1 per group, 4 teams → SF)
+    FOUR_GROUP_SEEDING_SF: {
+        sf1: { team1: 'A1', team2: 'D1' },
+        sf2: { team1: 'B1', team2: 'C1' }
+    },
+
+    // Knockout Seeding (Four Groups - 4 per group, 16 teams → R16)
+    FOUR_GROUP_SEEDING_R16: {
+        r16_1: { team1: 'A1', team2: 'D4' },
+        r16_2: { team1: 'B2', team2: 'C3' },
+        r16_3: { team1: 'C1', team2: 'B4' },
+        r16_4: { team1: 'D2', team2: 'A3' },
+        r16_5: { team1: 'B1', team2: 'C4' },
+        r16_6: { team1: 'A2', team2: 'D3' },
+        r16_7: { team1: 'D1', team2: 'A4' },
+        r16_8: { team1: 'C2', team2: 'B3' }
+    },
+
+    // R16 → QF progression mapping
+    R16_TO_QF: {
+        qf1: ['r16_1', 'r16_2'],
+        qf2: ['r16_3', 'r16_4'],
+        qf3: ['r16_5', 'r16_6'],
+        qf4: ['r16_7', 'r16_8']
+    },
+
     // Optional Features
     INCLUDE_THIRD_PLACE: true,
     
     // Display Settings
     GROUP_LABELS: {
         A: 'Group A',
-        B: 'Group B'
+        B: 'Group B',
+        C: 'Group C',
+        D: 'Group D'
     },
     
     // Team Tiers (based on combined rating, 0-10 scale)
@@ -143,6 +181,10 @@ const TEAM_COLOURS = [
     'team-color-22',  // Blue Light
     'team-color-23',  // Green Light
     'team-color-24',  // Purple Light
+    'team-color-25',  // Coral
+    'team-color-26',  // Teal Light
+    'team-color-27',  // Bronze
+    'team-color-28',  // Plum
 ];
 
 /**
@@ -150,7 +192,7 @@ const TEAM_COLOURS = [
  * Team 1 gets the "strongest" colour (red), Team 24 gets the last colour
  */
 function getTeamColourClass(teamId) {
-    const index = ((teamId - 1) % 24);
+    const index = ((teamId - 1) % TEAM_COLOURS.length);
     return TEAM_COLOURS[index];
 }
 
@@ -195,6 +237,33 @@ function splitTeamsIntoGroups(teams) {
     });
     
     return { groupA, groupB };
+}
+
+/**
+ * Split teams into four balanced groups using random draw
+ * Shuffles teams randomly, then deals round-robin into 4 groups
+ */
+function splitTeamsIntoFourGroups(teams) {
+    // Shuffle teams randomly
+    const shuffled = [...teams];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const groupA = [];
+    const groupB = [];
+    const groupC = [];
+    const groupD = [];
+    const groups = [groupA, groupB, groupC, groupD];
+
+    // Deal round-robin into 4 groups
+    shuffled.forEach((team, index) => {
+        const groupIndex = index % 4;
+        groups[groupIndex].push({ ...team, group: ['A', 'B', 'C', 'D'][groupIndex] });
+    });
+
+    return { groupA, groupB, groupC, groupD };
 }
 
 /**
@@ -357,6 +426,12 @@ function calculateGroupStandings(teams, matchScores) {
  * Validate team count for group mode
  */
 function validateTeamCount(teamCount, groupMode) {
+    if (groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS) {
+        if (teamCount < 8) {
+            return { valid: false, message: 'Need at least 8 teams for four groups (2 per group)' };
+        }
+        return { valid: true };
+    }
     if (groupMode === CONFIG.GROUP_MODES.TWO_GROUPS) {
         if (teamCount % 2 !== 0) {
             return { valid: false, message: 'Team count must be even for two groups' };

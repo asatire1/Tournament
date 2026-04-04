@@ -109,6 +109,10 @@ body {
 .team-color-22 { background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); } /* Blue Light */
 .team-color-23 { background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); } /* Green Light */
 .team-color-24 { background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%); } /* Purple Light */
+.team-color-25 { background: linear-gradient(135deg, #FB7185 0%, #E11D48 100%); } /* Coral */
+.team-color-26 { background: linear-gradient(135deg, #5EEAD4 0%, #0D9488 100%); } /* Teal Light */
+.team-color-27 { background: linear-gradient(135deg, #D97706 0%, #92400E 100%); } /* Bronze */
+.team-color-28 { background: linear-gradient(135deg, #A855F7 0%, #6B21A8 100%); } /* Plum */
 
 /* ===== TEAM BADGE (Full size) ===== */
 .team-badge {
@@ -218,6 +222,16 @@ body {
 
 .group-header-b {
     background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+    color: white;
+}
+
+.group-header-c {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+}
+
+.group-header-d {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
     color: white;
 }
 

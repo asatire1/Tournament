@@ -44,27 +44,42 @@ class TeamLeagueState {
         this.teamCount = CONFIG.DEFAULT_TEAM_COUNT;
         this.groupMode = CONFIG.DEFAULT_GROUP_MODE;
         this.includeThirdPlace = CONFIG.INCLUDE_THIRD_PLACE;
-        this.knockoutFormat = 'quarter_final'; // 'final_only', 'semi_final', 'quarter_final'
-        
+        this.knockoutFormat = 'quarter_final'; // 'final_only', 'semi_final', 'quarter_final', 'round_of_16'
+        this.qualifiersPerGroup = 2; // For four_groups: 1, 2, or 4
+
         // Teams data: { id, name, player1Name, player1Rating, player2Name, player2Rating, combinedRating, group }
         this.teams = [];
-        
+
         // Group assignments (team IDs)
         this.groupA = [];
         this.groupB = [];
-        
+        this.groupC = [];
+        this.groupD = [];
+
         // Generated fixtures per group
         this.groupAFixtures = [];
         this.groupBFixtures = [];
-        
+        this.groupCFixtures = [];
+        this.groupDFixtures = [];
+
         // Match scores
         this.groupMatchScores = {
             A: {},
-            B: {}
+            B: {},
+            C: {},
+            D: {}
         };
-        
+
         // Knockout scores
         this.knockoutScores = {
+            r16_1: { team1Score: null, team2Score: null },
+            r16_2: { team1Score: null, team2Score: null },
+            r16_3: { team1Score: null, team2Score: null },
+            r16_4: { team1Score: null, team2Score: null },
+            r16_5: { team1Score: null, team2Score: null },
+            r16_6: { team1Score: null, team2Score: null },
+            r16_7: { team1Score: null, team2Score: null },
+            r16_8: { team1Score: null, team2Score: null },
             qf1: { team1Score: null, team2Score: null },
             qf2: { team1Score: null, team2Score: null },
             qf3: { team1Score: null, team2Score: null },
@@ -74,12 +89,20 @@ class TeamLeagueState {
             thirdPlace: { team1Score: null, team2Score: null },
             final: { team1Score: null, team2Score: null }
         };
-        
+
         // Registered players (Phase 4 - Browse & Join)
         this.registeredPlayers = {};
-        
+
         // Knockout team assignments
         this.knockoutTeams = {
+            r16_1: { team1: null, team2: null },
+            r16_2: { team1: null, team2: null },
+            r16_3: { team1: null, team2: null },
+            r16_4: { team1: null, team2: null },
+            r16_5: { team1: null, team2: null },
+            r16_6: { team1: null, team2: null },
+            r16_7: { team1: null, team2: null },
+            r16_8: { team1: null, team2: null },
             qf1: { team1: null, team2: null },
             qf2: { team1: null, team2: null },
             qf3: { team1: null, team2: null },
@@ -101,15 +124,19 @@ class TeamLeagueState {
         this.courtNames = {
             group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
             knockout: {
+                r16_1: 'Court 1', r16_2: 'Court 2', r16_3: 'Court 3', r16_4: 'Court 4',
+                r16_5: 'Court 5', r16_6: 'Court 6', r16_7: 'Court 7', r16_8: 'Court 8',
                 qf1: 'Court 1', qf2: 'Court 2', qf3: 'Court 3', qf4: 'Court 4',
                 sf1: 'Centre Court', sf2: 'Court 1',
                 thirdPlace: 'Court 1',
                 final: 'Centre Court'
             }
         };
-        
+
         // Match naming
         this.knockoutNames = {
+            r16_1: 'R16-1', r16_2: 'R16-2', r16_3: 'R16-3', r16_4: 'R16-4',
+            r16_5: 'R16-5', r16_6: 'R16-6', r16_7: 'R16-7', r16_8: 'R16-8',
             qf1: 'QF1',
             qf2: 'QF2',
             qf3: 'QF3',
@@ -188,15 +215,20 @@ class TeamLeagueState {
         this.groupMode = data.groupMode || CONFIG.DEFAULT_GROUP_MODE;
         this.includeThirdPlace = data.includeThirdPlace !== undefined ? data.includeThirdPlace : CONFIG.INCLUDE_THIRD_PLACE;
         this.knockoutFormat = data.knockoutFormat || 'quarter_final';
-        
+        this.qualifiersPerGroup = data.qualifiersPerGroup || 2;
+
         // Teams (static)
         this.teams = data.teams || [];
         this.groupA = data.groupA || [];
         this.groupB = data.groupB || [];
-        
+        this.groupC = data.groupC || [];
+        this.groupD = data.groupD || [];
+
         // Fixtures (static)
         this.groupAFixtures = data.groupAFixtures || [];
         this.groupBFixtures = data.groupBFixtures || [];
+        this.groupCFixtures = data.groupCFixtures || [];
+        this.groupDFixtures = data.groupDFixtures || [];
         
         // Max scores (static)
         this.groupMaxScore = data.groupMaxScore || CONFIG.DEFAULT_MAX_SCORE;
@@ -223,7 +255,10 @@ class TeamLeagueState {
         this.savedVersions = data.savedVersions || [];
         
         // Also load initial scores
-        this.groupMatchScores = data.groupMatchScores || { A: {}, B: {} };
+        this.groupMatchScores = data.groupMatchScores || { A: {}, B: {}, C: {}, D: {} };
+        // Ensure C and D exist for older tournaments
+        if (!this.groupMatchScores.C) this.groupMatchScores.C = {};
+        if (!this.groupMatchScores.D) this.groupMatchScores.D = {};
         this.knockoutScores = data.knockoutScores || this.knockoutScores;
         this.knockoutTeams = data.knockoutTeams || this.knockoutTeams;
         
@@ -241,10 +276,12 @@ class TeamLeagueState {
             return;
         }
         
-        this.groupMatchScores = groupMatchScores || { A: {}, B: {} };
+        this.groupMatchScores = groupMatchScores || { A: {}, B: {}, C: {}, D: {} };
+        if (!this.groupMatchScores.C) this.groupMatchScores.C = {};
+        if (!this.groupMatchScores.D) this.groupMatchScores.D = {};
         this.knockoutScores = knockoutScores || this.knockoutScores;
         this.knockoutTeams = knockoutTeams || this.knockoutTeams;
-        
+
         renderTeamLeague();
     }
 
@@ -295,7 +332,9 @@ class TeamLeagueState {
         
         database.ref(`${basePath}/groupMatchScores`).on('value', (snapshot) => {
             if (!this.isSaving) {
-                const newData = snapshot.val() || { A: {}, B: {} };
+                const newData = snapshot.val() || { A: {}, B: {}, C: {}, D: {} };
+                if (!newData.C) newData.C = {};
+                if (!newData.D) newData.D = {};
                 const newDataStr = JSON.stringify(newData);
                 if (newDataStr !== lastGroupScores) {
                     lastGroupScores = newDataStr;
@@ -490,28 +529,33 @@ class TeamLeagueState {
         database.ref(`${basePath}/meta/updatedAt`).set(new Date().toISOString());
         
         const updates = {};
-        updates[`${basePath}/teamCount`] = this.teamCount;
-        updates[`${basePath}/groupMode`] = this.groupMode;
-        updates[`${basePath}/includeThirdPlace`] = this.includeThirdPlace;
-        updates[`${basePath}/teams`] = this.teams;
-        updates[`${basePath}/groupA`] = this.groupA;
-        updates[`${basePath}/groupB`] = this.groupB;
-        updates[`${basePath}/groupAFixtures`] = this.groupAFixtures;
-        updates[`${basePath}/groupBFixtures`] = this.groupBFixtures;
-        updates[`${basePath}/groupMatchScores`] = this.groupMatchScores;
-        updates[`${basePath}/knockoutScores`] = this.knockoutScores;
-        updates[`${basePath}/knockoutTeams`] = this.knockoutTeams;
-        updates[`${basePath}/groupMaxScore`] = this.groupMaxScore;
-        updates[`${basePath}/knockoutMaxScore`] = this.knockoutMaxScore;
-        updates[`${basePath}/semiMaxScore`] = this.semiMaxScore;
-        updates[`${basePath}/thirdPlaceMaxScore`] = this.thirdPlaceMaxScore;
-        updates[`${basePath}/finalMaxScore`] = this.finalMaxScore;
-        updates[`${basePath}/knockoutNames`] = this.knockoutNames;
-        updates[`${basePath}/courtNames`] = this.courtNames;
-        updates[`${basePath}/savedVersions`] = this.savedVersions;
-        updates[`${basePath}/registeredPlayers`] = this.registeredPlayers || {};
-        
-        database.ref().update(updates).then(() => {
+        updates['teamCount'] = this.teamCount;
+        updates['groupMode'] = this.groupMode;
+        updates['includeThirdPlace'] = this.includeThirdPlace;
+        updates['teams'] = this.teams;
+        updates['groupA'] = this.groupA;
+        updates['groupB'] = this.groupB;
+        updates['groupC'] = this.groupC;
+        updates['groupD'] = this.groupD;
+        updates['groupAFixtures'] = this.groupAFixtures;
+        updates['groupBFixtures'] = this.groupBFixtures;
+        updates['groupCFixtures'] = this.groupCFixtures;
+        updates['groupDFixtures'] = this.groupDFixtures;
+        updates['qualifiersPerGroup'] = this.qualifiersPerGroup;
+        updates['groupMatchScores'] = this.groupMatchScores;
+        updates['knockoutScores'] = this.knockoutScores;
+        updates['knockoutTeams'] = this.knockoutTeams;
+        updates['groupMaxScore'] = this.groupMaxScore;
+        updates['knockoutMaxScore'] = this.knockoutMaxScore;
+        updates['semiMaxScore'] = this.semiMaxScore;
+        updates['thirdPlaceMaxScore'] = this.thirdPlaceMaxScore;
+        updates['finalMaxScore'] = this.finalMaxScore;
+        updates['knockoutNames'] = this.knockoutNames;
+        updates['courtNames'] = this.courtNames;
+        updates['savedVersions'] = this.savedVersions;
+        updates['registeredPlayers'] = this.registeredPlayers || {};
+
+        database.ref(basePath).update(updates).then(() => {
             setTimeout(() => {
                 this.isSaving = false;
             }, 100);
@@ -576,31 +620,31 @@ class TeamLeagueState {
         // Add pending group scores
         for (const key in this.pendingGroupScores) {
             const { group, matchKey, team1Score, team2Score } = this.pendingGroupScores[key];
-            updates[`${basePath}/groupMatchScores/${group}/${matchKey}`] = { team1Score, team2Score };
+            updates[`groupMatchScores/${group}/${matchKey}`] = { team1Score, team2Score };
             hasUpdates = true;
         }
-        
+
         // Add pending knockout scores
         for (const matchId in this.pendingKnockoutScores) {
             const { team1Score, team2Score } = this.pendingKnockoutScores[matchId];
-            updates[`${basePath}/knockoutScores/${matchId}`] = { team1Score, team2Score };
+            updates[`knockoutScores/${matchId}`] = { team1Score, team2Score };
             hasUpdates = true;
         }
-        
-        if (hasUpdates) {
-            // meta/updatedAt write removed — score writes are open to all users but meta writes
-            // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
 
-            database.ref().update(updates)
+        if (hasUpdates) {
+            const groupCount = Object.keys(this.pendingGroupScores).length;
+            const knockoutCount = Object.keys(this.pendingKnockoutScores).length;
+
+            this.pendingGroupScores = {};
+            this.pendingKnockoutScores = {};
+
+            database.ref(basePath).update(updates)
                 .then(() => {
-                    console.log(`✅ Saved ${Object.keys(this.pendingGroupScores).length} group + ${Object.keys(this.pendingKnockoutScores).length} knockout scores`);
+                    console.log(`✅ Saved ${groupCount} group + ${knockoutCount} knockout scores`);
                 })
                 .catch(err => {
                     console.error('❌ Error saving scores:', err);
                 });
-            
-            this.pendingGroupScores = {};
-            this.pendingKnockoutScores = {};
         }
         
         this.scoreDebounceTimer = null;
@@ -631,20 +675,24 @@ class TeamLeagueState {
 
     saveGroupsToFirebase() {
         if (!this.canEdit()) return;
-        
+
         const basePath = this.getBasePath();
         database.ref(`${basePath}/groupA`).set(this.groupA);
         database.ref(`${basePath}/groupB`).set(this.groupB);
+        database.ref(`${basePath}/groupC`).set(this.groupC);
+        database.ref(`${basePath}/groupD`).set(this.groupD);
         database.ref(`${basePath}/teams`).set(this.teams);
         database.ref(`${basePath}/meta/updatedAt`).set(new Date().toISOString());
     }
 
     saveFixturesToFirebase() {
         if (!this.canEdit()) return;
-        
+
         const basePath = this.getBasePath();
         database.ref(`${basePath}/groupAFixtures`).set(this.groupAFixtures);
         database.ref(`${basePath}/groupBFixtures`).set(this.groupBFixtures);
+        database.ref(`${basePath}/groupCFixtures`).set(this.groupCFixtures);
+        database.ref(`${basePath}/groupDFixtures`).set(this.groupDFixtures);
         database.ref(`${basePath}/meta/updatedAt`).set(new Date().toISOString());
     }
 
@@ -721,10 +769,14 @@ class TeamLeagueState {
         // Clear groups and fixtures
         this.groupA = [];
         this.groupB = [];
+        this.groupC = [];
+        this.groupD = [];
         this.groupAFixtures = [];
         this.groupBFixtures = [];
-        this.groupMatchScores = { A: {}, B: {} };
-        
+        this.groupCFixtures = [];
+        this.groupDFixtures = [];
+        this.groupMatchScores = { A: {}, B: {}, C: {}, D: {} };
+
         this.saveToFirebase();
     }
 
@@ -732,47 +784,74 @@ class TeamLeagueState {
 
     setGroupMode(mode) {
         if (!this.canEdit()) return;
-        
-        if (mode !== CONFIG.GROUP_MODES.SINGLE && mode !== CONFIG.GROUP_MODES.TWO_GROUPS) {
+
+        if (mode !== CONFIG.GROUP_MODES.SINGLE && mode !== CONFIG.GROUP_MODES.TWO_GROUPS && mode !== CONFIG.GROUP_MODES.FOUR_GROUPS) {
             console.error('Invalid group mode');
             return;
         }
-        
+
         this.groupMode = mode;
-        
+
         // Clear existing groups and fixtures
         this.groupA = [];
         this.groupB = [];
+        this.groupC = [];
+        this.groupD = [];
         this.groupAFixtures = [];
         this.groupBFixtures = [];
-        this.groupMatchScores = { A: {}, B: {} };
+        this.groupCFixtures = [];
+        this.groupDFixtures = [];
+        this.groupMatchScores = { A: {}, B: {}, C: {}, D: {} };
         
         this.saveToFirebase();
     }
 
     splitIntoGroups() {
         if (!this.canEdit()) return false;
-        
+
         if (this.teams.length < 2) {
             console.error('Need at least 2 teams to split into groups');
             return false;
         }
-        
+
         if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
             // All teams in group A
             this.groupA = this.teams.map(t => t.id);
             this.groupB = [];
-            
+            this.groupC = [];
+            this.groupD = [];
+
             this.teams.forEach(team => {
                 team.group = 'A';
             });
+        } else if (this.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS) {
+            // Split into four groups using random draw
+            const { groupA, groupB, groupC, groupD } = splitTeamsIntoFourGroups(this.teams);
+
+            this.groupA = groupA.map(t => t.id);
+            this.groupB = groupB.map(t => t.id);
+            this.groupC = groupC.map(t => t.id);
+            this.groupD = groupD.map(t => t.id);
+
+            const assignGroup = (groupTeams) => {
+                groupTeams.forEach(t => {
+                    const team = this.teams.find(team => team.id === t.id);
+                    if (team) team.group = t.group;
+                });
+            };
+            assignGroup(groupA);
+            assignGroup(groupB);
+            assignGroup(groupC);
+            assignGroup(groupD);
         } else {
             // Split into two balanced groups
             const { groupA, groupB } = splitTeamsIntoGroups(this.teams);
-            
+
             this.groupA = groupA.map(t => t.id);
             this.groupB = groupB.map(t => t.id);
-            
+            this.groupC = [];
+            this.groupD = [];
+
             groupA.forEach(t => {
                 const team = this.teams.find(team => team.id === t.id);
                 if (team) team.group = 'A';
@@ -782,33 +861,41 @@ class TeamLeagueState {
                 if (team) team.group = 'B';
             });
         }
-        
+
         this.saveToFirebase();
         return true;
     }
 
     generateFixtures() {
         if (!this.canEdit()) return false;
-        
+
         if (this.groupA.length === 0) {
             console.error('Split teams into groups first');
             return false;
         }
-        
+
         const groupATeams = this.groupA.map(id => this.teams.find(t => t.id === id)).filter(Boolean);
         const groupBTeams = this.groupB.map(id => this.teams.find(t => t.id === id)).filter(Boolean);
-        
+        const groupCTeams = this.groupC.map(id => this.teams.find(t => t.id === id)).filter(Boolean);
+        const groupDTeams = this.groupD.map(id => this.teams.find(t => t.id === id)).filter(Boolean);
+
         this.groupAFixtures = generateRoundRobinFixtures(groupATeams);
-        
+
         if (this.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS && groupBTeams.length > 0) {
             this.groupBFixtures = generateRoundRobinFixtures(groupBTeams);
+        } else if (this.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS) {
+            this.groupBFixtures = groupBTeams.length > 0 ? generateRoundRobinFixtures(groupBTeams) : [];
+            this.groupCFixtures = groupCTeams.length > 0 ? generateRoundRobinFixtures(groupCTeams) : [];
+            this.groupDFixtures = groupDTeams.length > 0 ? generateRoundRobinFixtures(groupDTeams) : [];
         } else {
             this.groupBFixtures = [];
+            this.groupCFixtures = [];
+            this.groupDFixtures = [];
         }
-        
+
         // Clear existing scores
-        this.groupMatchScores = { A: {}, B: {} };
-        
+        this.groupMatchScores = { A: {}, B: {}, C: {}, D: {} };
+
         this.saveToFirebase();
         return true;
     }
@@ -845,8 +932,12 @@ class TeamLeagueState {
     autoUpdateKnockoutBracket() {
         const groupAStandings = this.getGroupStandings('A');
         const groupBStandings = this.getGroupStandings('B');
-        
-        if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
+        const groupCStandings = this.getGroupStandings('C');
+        const groupDStandings = this.getGroupStandings('D');
+
+        if (this.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS) {
+            this._autoUpdateFourGroupKnockout(groupAStandings, groupBStandings, groupCStandings, groupDStandings);
+        } else if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
             if (groupAStandings.length >= 8) {
                 const seeding = CONFIG.SINGLE_GROUP_SEEDING;
                 this.knockoutTeams.qf1 = { team1: groupAStandings[seeding.qf1.team1 - 1]?.teamId || null, team2: groupAStandings[seeding.qf1.team2 - 1]?.teamId || null };
@@ -863,9 +954,49 @@ class TeamLeagueState {
                 this.knockoutTeams.qf4 = { team1: groupAStandings[3]?.teamId || null, team2: groupBStandings[0]?.teamId || null };
             }
         }
-        
+
         // Save knockout teams to Firebase
-        database.ref(`${this.getBasePath()}/knockoutTeams`).set(this.knockoutTeams);
+        this.isSaving = true;
+        database.ref(`${this.getBasePath()}/knockoutTeams`).set(this.knockoutTeams).then(() => {
+            this.isSaving = false;
+        }).catch(() => {
+            this.isSaving = false;
+        });
+
+        // Re-render to reflect updated bracket
+        renderTeamLeague();
+    }
+
+    _autoUpdateFourGroupKnockout(aStandings, bStandings, cStandings, dStandings) {
+        const standings = { A: aStandings, B: bStandings, C: cStandings, D: dStandings };
+        const get = (code) => {
+            // code like 'A1' means group A, position 1
+            const group = code[0];
+            const pos = parseInt(code.slice(1)) - 1;
+            return standings[group]?.[pos]?.teamId || null;
+        };
+
+        const q = this.qualifiersPerGroup || 2;
+
+        if (q === 4) {
+            // R16 seeding
+            const seeding = CONFIG.FOUR_GROUP_SEEDING_R16;
+            for (const [matchId, s] of Object.entries(seeding)) {
+                this.knockoutTeams[matchId] = { team1: get(s.team1), team2: get(s.team2) };
+            }
+        } else if (q === 2) {
+            // QF seeding
+            const seeding = CONFIG.FOUR_GROUP_SEEDING_QF;
+            for (const [matchId, s] of Object.entries(seeding)) {
+                this.knockoutTeams[matchId] = { team1: get(s.team1), team2: get(s.team2) };
+            }
+        } else if (q === 1) {
+            // SF seeding
+            const seeding = CONFIG.FOUR_GROUP_SEEDING_SF;
+            for (const [matchId, s] of Object.entries(seeding)) {
+                this.knockoutTeams[matchId] = { team1: get(s.team1), team2: get(s.team2) };
+            }
+        }
     }
 
     clearGroupScore(group, team1Id, team2Id) {
@@ -956,39 +1087,44 @@ class TeamLeagueState {
 
     setKnockoutTeamsFromStandings() {
         if (!this.canEdit()) return;
-        
+
         const groupAStandings = this.getGroupStandings('A');
         const groupBStandings = this.getGroupStandings('B');
+        const groupCStandings = this.getGroupStandings('C');
+        const groupDStandings = this.getGroupStandings('D');
         const knockoutFormat = this.knockoutFormat || 'quarter_final';
-        
+
+        // Four groups mode — delegate to helper
+        if (this.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS) {
+            this._autoUpdateFourGroupKnockout(groupAStandings, groupBStandings, groupCStandings, groupDStandings);
+            this.saveToFirebase();
+            return;
+        }
+
         // Final Only - top 2 overall
         if (knockoutFormat === 'final_only') {
             if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
-                // Single group: 1st vs 2nd
                 this.knockoutTeams.final = { team1: groupAStandings[0]?.teamId, team2: groupAStandings[1]?.teamId };
             } else {
-                // Two groups: winner of A vs winner of B
                 this.knockoutTeams.final = { team1: groupAStandings[0]?.teamId, team2: groupBStandings[0]?.teamId };
             }
             this.saveToFirebase();
             return;
         }
-        
+
         // Semi Final - top 4
         if (knockoutFormat === 'semi_final') {
             if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
-                // Single group: 1v4, 2v3
                 this.knockoutTeams.sf1 = { team1: groupAStandings[0]?.teamId, team2: groupAStandings[3]?.teamId };
                 this.knockoutTeams.sf2 = { team1: groupAStandings[1]?.teamId, team2: groupAStandings[2]?.teamId };
             } else {
-                // Two groups: A1vB2, A2vB1
                 this.knockoutTeams.sf1 = { team1: groupAStandings[0]?.teamId, team2: groupBStandings[1]?.teamId };
                 this.knockoutTeams.sf2 = { team1: groupAStandings[1]?.teamId, team2: groupBStandings[0]?.teamId };
             }
             this.saveToFirebase();
             return;
         }
-        
+
         // Quarter Final (default) - top 8
         if (this.groupMode === CONFIG.GROUP_MODES.SINGLE) {
             if (groupAStandings.length >= 8) {
@@ -1006,79 +1142,92 @@ class TeamLeagueState {
                 this.knockoutTeams.qf4 = { team1: groupAStandings[3]?.teamId, team2: groupBStandings[0]?.teamId };
             }
         }
-        
+
         this.saveToFirebase();
     }
 
     updateKnockoutProgression() {
         const knockoutFormat = this.knockoutFormat || 'quarter_final';
-        
+
         // Final only has no progression
         if (knockoutFormat === 'final_only') {
             return;
         }
-        
+
         // Semi final format - just progress SF winners to final
         if (knockoutFormat === 'semi_final') {
             const sf1Winner = this.getKnockoutMatchWinner('sf1');
             const sf1Loser = this.getKnockoutMatchLoser('sf1');
             const sf2Winner = this.getKnockoutMatchWinner('sf2');
             const sf2Loser = this.getKnockoutMatchLoser('sf2');
-            
-            // 3rd place playoff
+
             if (this.includeThirdPlace && sf1Loser && sf2Loser) {
                 this.knockoutTeams.thirdPlace = { team1: sf1Loser, team2: sf2Loser };
             }
-            
-            // Final
             if (sf1Winner && sf2Winner) {
                 this.knockoutTeams.final = { team1: sf1Winner, team2: sf2Winner };
             }
-            
+
             this.saveToFirebase();
             return;
         }
-        
-        // Quarter final format (default) - full progression
-        // QF winners to SF
+
+        // Round of 16 format — R16 winners feed into QF
+        if (knockoutFormat === 'round_of_16') {
+            const r16Map = CONFIG.R16_TO_QF;
+            for (const [qfId, [r16a, r16b]] of Object.entries(r16Map)) {
+                const winnerA = this.getKnockoutMatchWinner(r16a);
+                const winnerB = this.getKnockoutMatchWinner(r16b);
+                if (winnerA && winnerB) {
+                    this.knockoutTeams[qfId] = { team1: winnerA, team2: winnerB };
+                }
+            }
+        }
+
+        // Quarter final progression (shared by QF and R16 formats)
         const qf1Winner = this.getKnockoutMatchWinner('qf1');
         const qf2Winner = this.getKnockoutMatchWinner('qf2');
         const qf3Winner = this.getKnockoutMatchWinner('qf3');
         const qf4Winner = this.getKnockoutMatchWinner('qf4');
-        
-        if (qf1Winner && qf4Winner) {
-            this.knockoutTeams.sf1 = { team1: qf1Winner, team2: qf4Winner };
+
+        if (qf1Winner && qf2Winner) {
+            this.knockoutTeams.sf1 = { team1: qf1Winner, team2: qf2Winner };
         }
-        
-        if (qf2Winner && qf3Winner) {
-            this.knockoutTeams.sf2 = { team1: qf2Winner, team2: qf3Winner };
+
+        if (qf3Winner && qf4Winner) {
+            this.knockoutTeams.sf2 = { team1: qf3Winner, team2: qf4Winner };
         }
-        
+
         // SF results
         const sf1Winner = this.getKnockoutMatchWinner('sf1');
         const sf1Loser = this.getKnockoutMatchLoser('sf1');
         const sf2Winner = this.getKnockoutMatchWinner('sf2');
         const sf2Loser = this.getKnockoutMatchLoser('sf2');
-        
-        // 3rd place playoff
+
         if (this.includeThirdPlace && sf1Loser && sf2Loser) {
             this.knockoutTeams.thirdPlace = { team1: sf1Loser, team2: sf2Loser };
         }
-        
-        // Final
         if (sf1Winner && sf2Winner) {
             this.knockoutTeams.final = { team1: sf1Winner, team2: sf2Winner };
         }
-        
+
         this.saveToFirebase();
     }
 
     clearKnockoutProgression(fromMatchId) {
         const clearOrder = {
+            'r16_1': ['qf1', 'sf1', 'thirdPlace', 'final'],
+            'r16_2': ['qf1', 'sf1', 'thirdPlace', 'final'],
+            'r16_3': ['qf2', 'sf1', 'thirdPlace', 'final'],
+            'r16_4': ['qf2', 'sf1', 'thirdPlace', 'final'],
+            'r16_5': ['qf3', 'sf2', 'thirdPlace', 'final'],
+            'r16_6': ['qf3', 'sf2', 'thirdPlace', 'final'],
+            'r16_7': ['qf4', 'sf2', 'thirdPlace', 'final'],
+            'r16_8': ['qf4', 'sf2', 'thirdPlace', 'final'],
             'qf1': ['sf1', 'thirdPlace', 'final'],
-            'qf2': ['sf2', 'thirdPlace', 'final'],
+            'qf2': ['sf1', 'thirdPlace', 'final'],
             'qf3': ['sf2', 'thirdPlace', 'final'],
-            'qf4': ['sf1', 'thirdPlace', 'final'],
+            'qf4': ['sf2', 'thirdPlace', 'final'],
             'sf1': ['thirdPlace', 'final'],
             'sf2': ['thirdPlace', 'final'],
             'thirdPlace': [],
@@ -1097,7 +1246,8 @@ class TeamLeagueState {
     // ===== STANDINGS =====
 
     getGroupStandings(group) {
-        const teamIds = group === 'A' ? this.groupA : this.groupB;
+        const groupMap = { A: this.groupA, B: this.groupB, C: this.groupC, D: this.groupD };
+        const teamIds = groupMap[group] || [];
         const scores = this.groupMatchScores[group] || {};
         
         const standings = teamIds.map(teamId => {
@@ -1182,12 +1332,14 @@ class TeamLeagueState {
     }
 
     getTeamsInGroup(group) {
-        const teamIds = group === 'A' ? this.groupA : this.groupB;
+        const groupMap = { A: this.groupA, B: this.groupB, C: this.groupC, D: this.groupD };
+        const teamIds = groupMap[group] || [];
         return teamIds.map(id => this.getTeamById(id)).filter(Boolean);
     }
 
     getTotalGroupMatches(group) {
-        const fixtures = group === 'A' ? this.groupAFixtures : this.groupBFixtures;
+        const fixtureMap = { A: this.groupAFixtures, B: this.groupBFixtures, C: this.groupCFixtures, D: this.groupDFixtures };
+        const fixtures = fixtureMap[group] || [];
         return fixtures.reduce((total, round) => total + round.matches.length, 0);
     }
 
@@ -1233,8 +1385,12 @@ class TeamLeagueState {
             teams: JSON.parse(JSON.stringify(this.teams)),
             groupA: [...this.groupA],
             groupB: [...this.groupB],
+            groupC: [...this.groupC],
+            groupD: [...this.groupD],
             groupAFixtures: JSON.parse(JSON.stringify(this.groupAFixtures)),
             groupBFixtures: JSON.parse(JSON.stringify(this.groupBFixtures)),
+            groupCFixtures: JSON.parse(JSON.stringify(this.groupCFixtures)),
+            groupDFixtures: JSON.parse(JSON.stringify(this.groupDFixtures)),
             groupMatchScores: JSON.parse(JSON.stringify(this.groupMatchScores)),
             knockoutScores: JSON.parse(JSON.stringify(this.knockoutScores)),
             knockoutTeams: JSON.parse(JSON.stringify(this.knockoutTeams))

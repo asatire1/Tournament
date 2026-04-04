@@ -224,13 +224,22 @@
             ".write": true
           }
         },
+        "groupMatchScores": {
+          ".write": "auth != null"
+        },
+        "knockoutScores": {
+          ".write": "auth != null"
+        },
+        "knockoutTeams": {
+          ".write": "auth != null"
+        },
         "meta": {
           "name": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
           }
         },
         "teamCount": {
-          ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 16"
+          ".validate": "newData.isNumber() && newData.val() >= 2 && newData.val() <= 32"
         }
       }
     },

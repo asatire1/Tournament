@@ -224,36 +224,48 @@ function saveTeamEdit(teamId) {
 
 function moveTeamGroup(teamId) {
     if (!state || !state.canEdit()) return;
-    
+
     const team = state.getTeamById(teamId);
     if (!team) return;
-    
+
     const currentGroup = team.group;
-    const newGroup = currentGroup === 'A' ? 'B' : 'A';
-    
-    // Move team
-    if (currentGroup === 'A') {
-        state.groupA = state.groupA.filter(id => id !== teamId);
-        state.groupB.push(teamId);
+    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
+
+    // Determine next group (cycle: A→B→C→D→A for four groups, A↔B for two)
+    let newGroup;
+    if (isFourGroups) {
+        const cycle = { A: 'B', B: 'C', C: 'D', D: 'A' };
+        newGroup = cycle[currentGroup] || 'A';
     } else {
-        state.groupB = state.groupB.filter(id => id !== teamId);
-        state.groupA.push(teamId);
+        newGroup = currentGroup === 'A' ? 'B' : 'A';
     }
-    
+
+    // Remove from current group
+    const groupArrays = { A: 'groupA', B: 'groupB', C: 'groupC', D: 'groupD' };
+    state[groupArrays[currentGroup]] = state[groupArrays[currentGroup]].filter(id => id !== teamId);
+
+    // Add to new group
+    state[groupArrays[newGroup]].push(teamId);
+
     team.group = newGroup;
-    
+
     state.saveGroupsToFirebase();
-    showToast(`✅ Team moved to Group ${newGroup}`);
+    showToast(`Team moved to Group ${newGroup}`);
     renderTeamLeague();
 }
 
 // ===== FIXTURE MANAGEMENT =====
 
+function _getGroupFixtures(group) {
+    const map = { A: 'groupAFixtures', B: 'groupBFixtures', C: 'groupCFixtures', D: 'groupDFixtures' };
+    return state[map[group]] || [];
+}
+
 function moveFixtureUp(group, roundIdx, matchIdx) {
     if (!state || !state.canEdit()) return;
     if (roundIdx === 0) return;
-    
-    const fixtures = group === 'A' ? state.groupAFixtures : state.groupBFixtures;
+
+    const fixtures = _getGroupFixtures(group);
     const currentRound = fixtures[roundIdx];
     const prevRound = fixtures[roundIdx - 1];
     
@@ -269,8 +281,8 @@ function moveFixtureUp(group, roundIdx, matchIdx) {
 
 function moveFixtureDown(group, roundIdx, matchIdx) {
     if (!state || !state.canEdit()) return;
-    
-    const fixtures = group === 'A' ? state.groupAFixtures : state.groupBFixtures;
+
+    const fixtures = _getGroupFixtures(group);
     if (roundIdx >= fixtures.length - 1) return;
     
     const currentRound = fixtures[roundIdx];
@@ -302,8 +314,7 @@ function regenerateFixtures() {
 
 function shuffleFixtureOrder() {
     if (!state || !state.canEdit()) return;
-    
-    // Shuffle matches within each round
+
     const shuffle = (array) => {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -311,17 +322,17 @@ function shuffleFixtureOrder() {
         }
         return array;
     };
-    
-    state.groupAFixtures.forEach(round => {
-        round.matches = shuffle(round.matches);
+
+    [state.groupAFixtures, state.groupBFixtures, state.groupCFixtures, state.groupDFixtures].forEach(fixtures => {
+        if (fixtures) {
+            fixtures.forEach(round => {
+                round.matches = shuffle(round.matches);
+            });
+        }
     });
-    
-    state.groupBFixtures.forEach(round => {
-        round.matches = shuffle(round.matches);
-    });
-    
+
     state.saveFixturesToFirebase();
-    showToast('✅ Match order shuffled');
+    showToast('Match order shuffled');
     renderTeamLeague();
 }
 
@@ -357,15 +368,16 @@ function updateCourtName(type, key, value) {
 function setGroupMode(mode) {
     if (!state || !state.canEdit()) return;
     
-    if (state.groupA.length > 0 || state.groupB.length > 0) {
+    if (state.groupA.length > 0 || state.groupB.length > 0 || state.groupC.length > 0 || state.groupD.length > 0) {
         if (!confirm('Changing group mode will clear existing groups and fixtures. Continue?')) {
             renderTeamLeague();
             return;
         }
     }
-    
+
+    const modeLabels = { 'single': 'Single Group', 'two_groups': 'Two Groups', 'four_groups': 'Four Groups' };
     state.setGroupMode(mode);
-    showToast(`✅ Group mode set to ${mode === 'two_groups' ? 'Two Groups' : 'Single Group'}`);
+    showToast(`✅ Group mode set to ${modeLabels[mode] || mode}`);
     renderTeamLeague();
 }
 
@@ -425,8 +437,10 @@ function setKnockoutFromStandings() {
     
     const groupAComplete = state.isGroupStageComplete('A');
     const groupBComplete = state.groupMode === CONFIG.GROUP_MODES.SINGLE || state.isGroupStageComplete('B');
-    
-    if (!groupAComplete || !groupBComplete) {
+    const groupCComplete = state.groupMode !== CONFIG.GROUP_MODES.FOUR_GROUPS || state.isGroupStageComplete('C');
+    const groupDComplete = state.groupMode !== CONFIG.GROUP_MODES.FOUR_GROUPS || state.isGroupStageComplete('D');
+
+    if (!groupAComplete || !groupBComplete || !groupCComplete || !groupDComplete) {
         if (!confirm('Group stage is not complete. Set knockout teams from current standings anyway?')) {
             return;
         }
