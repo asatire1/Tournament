@@ -1219,6 +1219,7 @@ function renderManualGroupAssignment() {
 
     const renderGroupCol = (g) => {
         const color = groupColors[g];
+        const otherGroups = allGroups.filter(og => og !== g);
         return `
             <div>
                 <div class="flex items-center gap-2 mb-3">
@@ -1228,10 +1229,17 @@ function renderManualGroupAssignment() {
                 </div>
                 <div class="space-y-2 min-h-[150px] bg-${color}-50 rounded-xl p-3">
                     ${groupData[g].map(team => `
-                        <button onclick="moveTeamToGroup(${team.id}, '${nextGroup[g]}')" class="w-full text-left p-3 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                            <div class="font-medium text-gray-800 text-sm">${team.name}</div>
-                            <div class="text-xs text-gray-500">${team.player1Name} & ${team.player2Name}</div>
-                        </button>
+                        <div class="flex items-center gap-2 p-2 bg-white rounded-lg shadow-sm">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-gray-800 text-sm truncate">${team.name}</div>
+                                <div class="text-xs text-gray-500 truncate">${team.player1Name} & ${team.player2Name}</div>
+                            </div>
+                            <div class="flex gap-1 flex-shrink-0">
+                                ${otherGroups.map(og => `
+                                    <button onclick="moveTeamToGroup(${team.id}, '${og}')" class="w-7 h-7 rounded-md bg-${groupColors[og]}-100 hover:bg-${groupColors[og]}-500 text-${groupColors[og]}-700 hover:text-white text-xs font-bold transition-colors" title="Move to Group ${og}">${og}</button>
+                                `).join('')}
+                            </div>
+                        </div>
                     `).join('') || '<p class="text-center text-gray-400 py-4 text-sm">No teams</p>'}
                 </div>
             </div>
@@ -1243,7 +1251,7 @@ function renderManualGroupAssignment() {
             <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full my-8 overflow-hidden animate-slide-up">
                 <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5">
                     <h2 class="text-xl font-bold text-white">Manual Group Assignment</h2>
-                    <p class="text-white/80 text-sm">Click a team to move it to the next group</p>
+                    <p class="text-white/80 text-sm">Use the buttons to move teams between groups</p>
                 </div>
 
                 <div class="p-6">
