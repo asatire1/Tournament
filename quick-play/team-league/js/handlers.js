@@ -423,6 +423,72 @@ function generateFixtures() {
     }
 }
 
+// ===== SWAP TEAMS BETWEEN GROUPS =====
+
+function handleTeamClickForSwap(teamId) {
+    if (!state || !state.canEdit()) return;
+
+    // First click: select source team
+    if (!state.swapSourceTeamId) {
+        state.swapSourceTeamId = teamId;
+        renderTeamLeague();
+        return;
+    }
+
+    // Click on the same team again: deselect
+    if (state.swapSourceTeamId === teamId) {
+        state.swapSourceTeamId = null;
+        renderTeamLeague();
+        return;
+    }
+
+    // Second click: swap with target
+    const sourceId = state.swapSourceTeamId;
+    const targetId = teamId;
+    const source = state.getTeamById(sourceId);
+    const target = state.getTeamById(targetId);
+    if (!source || !target) {
+        state.swapSourceTeamId = null;
+        renderTeamLeague();
+        return;
+    }
+
+    const sourceGroup = source.group;
+    const targetGroup = target.group;
+
+    if (sourceGroup === targetGroup) {
+        // Same group — nothing to swap, but reorder array (place source where target was and vice versa)
+        const arr = state[`group${sourceGroup}`];
+        const i = arr.indexOf(sourceId);
+        const j = arr.indexOf(targetId);
+        if (i !== -1 && j !== -1) {
+            arr[i] = targetId;
+            arr[j] = sourceId;
+        }
+    } else {
+        // Different groups — swap group membership
+        const sourceArr = state[`group${sourceGroup}`];
+        const targetArr = state[`group${targetGroup}`];
+        const i = sourceArr.indexOf(sourceId);
+        const j = targetArr.indexOf(targetId);
+        if (i !== -1) sourceArr[i] = targetId;
+        if (j !== -1) targetArr[j] = sourceId;
+        source.group = targetGroup;
+        target.group = sourceGroup;
+    }
+
+    state.swapSourceTeamId = null;
+    state.saveGroupsToFirebase();
+    showToast(`✅ Swapped ${source.name} ↔ ${target.name}`);
+    renderTeamLeague();
+}
+
+function cancelSwap() {
+    if (!state) return;
+    state.swapSourceTeamId = null;
+    renderTeamLeague();
+}
+
 function setQualifiersPerGroup(count) {
     // If we're inside a tournament (state exists), update tournament state
     if (typeof state !== 'undefined' && state && state.canEdit && state.canEdit()) {

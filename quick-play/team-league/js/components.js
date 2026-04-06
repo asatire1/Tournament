@@ -1013,6 +1013,21 @@ function GroupsSettingsSection() {
             </button>
         </div>
 
+        <!-- Swap mode banner -->
+        ${state.swapSourceTeamId ? (() => {
+            const t = state.getTeamById(state.swapSourceTeamId);
+            return `
+                <div class="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-xl flex items-center justify-between">
+                    <div class="text-sm text-amber-800">
+                        🔄 <strong>${t?.name || '?'}</strong> selected — click another team to swap, or
+                    </div>
+                    <button onclick="cancelSwap()" class="px-3 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 text-xs font-semibold rounded-lg">Cancel</button>
+                </div>
+            `;
+        })() : `
+            <p class="mb-3 text-sm text-gray-500">💡 Click any team to swap it with another team in any group.</p>
+        `}
+
         <!-- Current Groups -->
         <div class="grid gap-4 ${groupCount <= 2 ? 'md:grid-cols-2' : groupCount <= 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3 lg:grid-cols-3'}">
             ${activeGroups.map(g => {
@@ -1024,10 +1039,14 @@ function GroupsSettingsSection() {
                         ${data.length === 0 ? `
                             <p class="text-${color}-400 text-sm">No teams assigned</p>
                         ` : `
-                            <ul class="text-sm text-${color}-700 space-y-1">
+                            <ul class="text-sm space-y-1">
                                 ${data.map(id => {
                                     const team = state.getTeamById(id);
-                                    return `<li>${team?.name || 'Unknown'}</li>`;
+                                    const isSelected = state.swapSourceTeamId === id;
+                                    const cls = isSelected
+                                        ? `bg-amber-300 text-amber-900 ring-2 ring-amber-500`
+                                        : `text-${color}-700 hover:bg-${color}-100`;
+                                    return `<li><button onclick="handleTeamClickForSwap(${id})" class="w-full text-left px-2 py-1 rounded transition-colors ${cls}">${team?.name || 'Unknown'}</button></li>`;
                                 }).join('')}
                             </ul>
                         `}

@@ -11,6 +11,7 @@ class TeamLeagueState {
         this.fixturesViewMode = localStorage.getItem('teamLeague_fixturesViewMode') || 'side-by-side'; // side-by-side, group-a, group-b
         this.standingsViewMode = localStorage.getItem('teamLeague_standingsViewMode') || 'both'; // both, group-a, group-b
         this.editingTeamId = null;
+        this.swapSourceTeamId = null; // For team swap UI in groups settings
         this.isInitialized = false;
         this.isSaving = false;
         
