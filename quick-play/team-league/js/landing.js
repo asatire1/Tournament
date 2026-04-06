@@ -48,7 +48,7 @@ const WizardState = {
     
     // Step 3: Group Mode
     groupMode: 'two_groups',
-    qualifiersPerGroup: 2, // For four_groups: 1, 2, or 4
+    qualifiersPerGroup: 4, // For four_groups: 1, 2, or 4 (default 4)
 
     // Step 4: Options
     includeThirdPlace: true,
@@ -65,7 +65,7 @@ const WizardState = {
         this.passcode = '';
         this.teamCount = 8;
         this.groupMode = 'two_groups';
-        this.qualifiersPerGroup = 2;
+        this.qualifiersPerGroup = 4;
         this.includeThirdPlace = true;
         this.knockoutFormat = 'quarter_final';
         this.tournamentId = null;
@@ -472,45 +472,6 @@ function renderWizardStep3() {
                 ${tc >= 12 ? renderGroupOption('six_groups', 'Six Groups (A-F)', 'Teams split into 6 groups. Group stage only — set knockout teams manually.', 6, tc >= 18 && tc < 27) : ''}
                 ${renderGroupOption('four_groups', 'Four Groups (A-D)', 'Teams split into Groups A, B, C and D. Top teams from each group advance to knockout.', 4, tc >= 12 && tc < 18)}
 
-                ${WizardState.groupMode === 'four_groups' && tc <= 16 ? `
-                <!-- Qualifiers per group (only when groups are small enough for clean knockout) -->
-                <div class="ml-9 p-4 bg-purple-50 rounded-xl border border-purple-200">
-                    <label class="block text-sm font-semibold text-purple-800 mb-3">Teams qualifying per group</label>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
-                            <input type="radio" name="qualifiers" value="4"
-                                ${WizardState.qualifiersPerGroup === 4 ? 'checked' : ''}
-                                onchange="setQualifiersPerGroup(4)"
-                                class="w-4 h-4 text-purple-500" />
-                            <div>
-                                <span class="font-medium text-sm text-gray-800">4 per group</span>
-                                <span class="text-xs text-gray-500 ml-1">- 16 teams: R16 → QF → SF → Final</span>
-                            </div>
-                        </label>
-                        <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
-                            <input type="radio" name="qualifiers" value="2"
-                                ${WizardState.qualifiersPerGroup === 2 ? 'checked' : ''}
-                                onchange="setQualifiersPerGroup(2)"
-                                class="w-4 h-4 text-purple-500" />
-                            <div>
-                                <span class="font-medium text-sm text-gray-800">2 per group (Recommended)</span>
-                                <span class="text-xs text-gray-500 ml-1">- 8 teams: QF → SF → Final</span>
-                            </div>
-                        </label>
-                        <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
-                            <input type="radio" name="qualifiers" value="1"
-                                ${WizardState.qualifiersPerGroup === 1 ? 'checked' : ''}
-                                onchange="setQualifiersPerGroup(1)"
-                                class="w-4 h-4 text-purple-500" />
-                            <div>
-                                <span class="font-medium text-sm text-gray-800">1 per group</span>
-                                <span class="text-xs text-gray-500 ml-1">- 4 teams: SF → Final directly</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-                ` : ''}
-
                 ${renderGroupOption('two_groups', 'Two Groups (A & B)', 'Teams split into Group A and Group B. Top 4 from each group advance to quarter finals.', 2)}
                 ${renderGroupOption('single_group', 'Single Group', 'All teams in one group. Top 8 advance to quarter finals.', 1)}
             </div>
@@ -860,14 +821,7 @@ function setGroupMode(mode) {
     renderWizardStep();
 }
 
-function setQualifiersPerGroup(count) {
-    WizardState.qualifiersPerGroup = count;
-    // Auto-set knockout format
-    if (count === 4) WizardState.knockoutFormat = 'round_of_16';
-    else if (count === 2) WizardState.knockoutFormat = 'quarter_final';
-    else if (count === 1) WizardState.knockoutFormat = 'semi_final';
-    renderWizardStep();
-}
+// setQualifiersPerGroup is defined in handlers.js (handles both wizard and tournament context)
 
 // ===== CREATE TOURNAMENT =====
 
@@ -1372,7 +1326,7 @@ async function removeFromMyTournaments(tournamentId) {
 
 // ===== FIREBASE OPERATIONS =====
 
-async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final', modeSettings = null, organizerUid = null, qualifiersPerGroup = 2) {
+async function createTournamentInFirebase(tournamentId, organiserKey, name, teamCount, groupMode, includeThirdPlace, knockoutFormat = 'quarter_final', modeSettings = null, organizerUid = null, qualifiersPerGroup = 4) {
     // Get current user for creator info
     const currentUser = getCurrentUser();
     

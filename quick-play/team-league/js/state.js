@@ -45,7 +45,7 @@ class TeamLeagueState {
         this.groupMode = CONFIG.DEFAULT_GROUP_MODE;
         this.includeThirdPlace = CONFIG.INCLUDE_THIRD_PLACE;
         this.knockoutFormat = 'quarter_final'; // 'final_only', 'semi_final', 'quarter_final', 'round_of_16'
-        this.qualifiersPerGroup = 2; // For four_groups: 1, 2, or 4
+        this.qualifiersPerGroup = 4; // For four_groups: 1, 2, or 4 (default 4)
 
         // Teams data: { id, name, player1Name, player1Rating, player2Name, player2Rating, combinedRating, group }
         this.teams = [];
@@ -223,7 +223,7 @@ class TeamLeagueState {
         this.groupMode = data.groupMode || CONFIG.DEFAULT_GROUP_MODE;
         this.includeThirdPlace = data.includeThirdPlace !== undefined ? data.includeThirdPlace : CONFIG.INCLUDE_THIRD_PLACE;
         this.knockoutFormat = data.knockoutFormat || 'quarter_final';
-        this.qualifiersPerGroup = data.qualifiersPerGroup || 2;
+        this.qualifiersPerGroup = data.qualifiersPerGroup || 4;
 
         // Teams (static)
         this.teams = data.teams || [];

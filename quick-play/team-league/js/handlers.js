@@ -423,6 +423,32 @@ function generateFixtures() {
     }
 }
 
+function setQualifiersPerGroup(count) {
+    // If we're inside a tournament (state exists), update tournament state
+    if (typeof state !== 'undefined' && state && state.canEdit && state.canEdit()) {
+        state.qualifiersPerGroup = parseInt(count);
+        // Auto-set knockout format to match
+        if (count == 4) state.knockoutFormat = 'round_of_16';
+        else if (count == 2) state.knockoutFormat = 'quarter_final';
+        else if (count == 1) state.knockoutFormat = 'semi_final';
+        state.saveSettingToFirebase('qualifiersPerGroup', state.qualifiersPerGroup);
+        state.saveSettingToFirebase('knockoutFormat', state.knockoutFormat);
+        // Recompute knockout bracket if group stage data exists
+        if (state.autoUpdateKnockoutBracket) state.autoUpdateKnockoutBracket();
+        showToast(`✅ Qualifiers set to ${count} per group`);
+        renderTeamLeague();
+        return;
+    }
+    // Otherwise we're in the wizard - delegate to WizardState
+    if (typeof WizardState !== 'undefined') {
+        WizardState.qualifiersPerGroup = parseInt(count);
+        if (count == 4) WizardState.knockoutFormat = 'round_of_16';
+        else if (count == 2) WizardState.knockoutFormat = 'quarter_final';
+        else if (count == 1) WizardState.knockoutFormat = 'semi_final';
+        if (typeof renderWizardStep === 'function') renderWizardStep();
+    }
+}
+
 function toggleThirdPlace(include) {
     if (!state || !state.canEdit()) return;
     state.setIncludeThirdPlace(include);

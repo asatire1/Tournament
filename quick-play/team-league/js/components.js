@@ -1036,6 +1036,31 @@ function GroupsSettingsSection() {
             }).join('')}
         </div>
 
+        <!-- Qualifiers per Group (only relevant for four_groups) -->
+        ${state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS ? `
+        <div class="mt-6 p-4 bg-purple-50 rounded-xl border border-purple-200">
+            <label class="block text-sm font-semibold text-purple-800 mb-3">Teams qualifying per group</label>
+            <div class="space-y-2">
+                ${[
+                    { v: 4, label: '4 per group', hint: '16 teams: R16 → QF → SF → Final' },
+                    { v: 2, label: '2 per group', hint: '8 teams: QF → SF → Final' },
+                    { v: 1, label: '1 per group', hint: '4 teams: SF → Final' }
+                ].map(opt => `
+                    <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-purple-100 transition-colors">
+                        <input type="radio" name="qualifiers-per-group" value="${opt.v}"
+                            ${state.qualifiersPerGroup === opt.v ? 'checked' : ''}
+                            onchange="setQualifiersPerGroup(${opt.v})"
+                            class="w-4 h-4 text-purple-500" />
+                        <div>
+                            <span class="font-medium text-sm text-gray-800">${opt.label}</span>
+                            <span class="text-xs text-gray-500 ml-1">- ${opt.hint}</span>
+                        </div>
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+        ` : ''}
+
         <!-- 3rd Place Toggle -->
         <div class="mt-6">
             <label class="flex items-center gap-3 cursor-pointer">
