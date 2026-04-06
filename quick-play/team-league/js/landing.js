@@ -472,8 +472,8 @@ function renderWizardStep3() {
                 ${tc >= 12 ? renderGroupOption('six_groups', 'Six Groups (A-F)', 'Teams split into 6 groups. Group stage only — set knockout teams manually.', 6, tc >= 18 && tc < 27) : ''}
                 ${renderGroupOption('four_groups', 'Four Groups (A-D)', 'Teams split into Groups A, B, C and D. Top teams from each group advance to knockout.', 4, tc >= 12 && tc < 18)}
 
-                ${WizardState.groupMode === 'four_groups' ? `
-                <!-- Qualifiers per group (only shown when four groups selected) -->
+                ${WizardState.groupMode === 'four_groups' && tc <= 16 ? `
+                <!-- Qualifiers per group (only when groups are small enough for clean knockout) -->
                 <div class="ml-9 p-4 bg-purple-50 rounded-xl border border-purple-200">
                     <label class="block text-sm font-semibold text-purple-800 mb-3">Teams qualifying per group</label>
                     <div class="space-y-2">
