@@ -379,7 +379,7 @@ function renderWizardStep2() {
                             id="wizard-team-count"
                             value="${WizardState.teamCount}"
                             min="4"
-                            max="32"
+                            max="${CONFIG.MAX_TEAMS}"
                             class="w-24 text-center text-4xl font-bold text-purple-600 border-none focus:outline-none bg-transparent"
                             onchange="updateTeamCount(this.value)"
                         />
@@ -391,7 +391,7 @@ function renderWizardStep2() {
             
             <!-- Quick Select -->
             <div class="flex flex-wrap justify-center gap-2 mb-6">
-                ${[6, 8, 10, 12, 16, 20, 24, 28].map(n => `
+                ${[6, 8, 10, 12, 16, 20, 24, 28, 32, 36].map(n => `
                     <button 
                         onclick="setTeamCount(${n})" 
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${WizardState.teamCount === n ? 'bg-purple-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}"
@@ -830,7 +830,7 @@ function showWizardError(message) {
 
 function adjustTeamCount(delta) {
     const newCount = WizardState.teamCount + delta;
-    if (newCount >= 4 && newCount <= 32) {
+    if (newCount >= 4 && newCount <= CONFIG.MAX_TEAMS) {
         WizardState.teamCount = newCount;
         renderWizardStep();
     }
@@ -843,7 +843,7 @@ function setTeamCount(count) {
 
 function updateTeamCount(value) {
     const count = parseInt(value);
-    if (!isNaN(count) && count >= 4 && count <= 32) {
+    if (!isNaN(count) && count >= 4 && count <= CONFIG.MAX_TEAMS) {
         WizardState.teamCount = count;
     }
 }
