@@ -178,26 +178,49 @@ class TeamLeagueState {
         return this.isOrganiser;
     }
 
+    /**
+     * Claim Firebase write ownership for the current anonymous session.
+     * Anonymous auth issues a new UID per browser session, so a returning
+     * organiser may not match the original creator's UID. Once the URL key
+     * has been verified client-side, we re-anchor `meta/organizerUid` to the
+     * current auth.uid so subsequent writes pass the rule's UID-equality
+     * check. The Firebase rule allows this rewrite only when organiserKey
+     * is unchanged in the new payload.
+     */
+    async claimOwnership() {
+        if (!this.tournamentId) return;
+        const currentUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null;
+        if (!currentUid) return;
+        try {
+            await database.ref(`${this.getBasePath()}/meta/organizerUid`).set(currentUid);
+            console.log('🔑 Ownership claimed for current session');
+        } catch (e) {
+            console.warn('Could not claim ownership:', e.message);
+        }
+    }
+
     async verifyOrganiserKey(key) {
         if (!this.tournamentId || !key) {
             this.isOrganiser = false;
             return false;
         }
-        
+
         try {
             const snapshot = await database.ref(`${this.getBasePath()}/meta/organiserKey`).once('value');
             const storedKey = snapshot.val();
             this.isOrganiser = (storedKey === key);
             this.organiserKey = key;
-            
+
             if (this.isOrganiser) {
                 console.log('✅ Organiser access granted');
                 // Upgrade from polling to real-time sync
                 this.upgradeToRealtime();
+                // Re-anchor Firebase ownership to this session's anon UID so writes succeed
+                await this.claimOwnership();
             } else {
                 console.log('❌ Invalid organiser key');
             }
-            
+
             return this.isOrganiser;
         } catch (error) {
             console.error('Error verifying organiser key:', error);
