@@ -82,24 +82,24 @@ const FORMAT_CONFIG = {
         
         // Team limits (not players)
         minTeams: 4,
-        maxTeams: 24,
+        maxTeams: 36,
         playersPerTeam: 2,
-        
+
         // Computed player limits
         get minPlayers() { return this.minTeams * this.playersPerTeam; },
         get maxPlayers() { return this.maxTeams * this.playersPerTeam; },
-        
+
         // Validation rule
         rule: 'teams',
-        
+
         // Default settings
         defaults: {
             courts: 2,
             pointsPerMatch: 16
         },
-        
+
         // Help text
-        hint: 'Uses fixed teams of 2 players each (4-24 teams)'
+        hint: 'Uses fixed teams of 2 players each (4-36 teams)'
     },
 
     mixicano: {

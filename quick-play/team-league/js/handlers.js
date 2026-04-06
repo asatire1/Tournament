@@ -222,30 +222,29 @@ function saveTeamEdit(teamId) {
     renderTeamLeague();
 }
 
-function moveTeamGroup(teamId) {
+function moveTeamGroup(teamId, targetGroup) {
     if (!state || !state.canEdit()) return;
 
     const team = state.getTeamById(teamId);
     if (!team) return;
 
     const currentGroup = team.group;
-    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
 
-    // Determine next group (cycle: A→B→C→D→A for four groups, A↔B for two)
-    let newGroup;
-    if (isFourGroups) {
-        const cycle = { A: 'B', B: 'C', C: 'D', D: 'A' };
-        newGroup = cycle[currentGroup] || 'A';
-    } else {
-        newGroup = currentGroup === 'A' ? 'B' : 'A';
+    // If no target specified, cycle to next group (legacy behavior)
+    let newGroup = targetGroup;
+    if (!newGroup) {
+        const activeGroups = state.getActiveGroupLetters();
+        const currentIdx = activeGroups.indexOf(currentGroup);
+        newGroup = activeGroups[(currentIdx + 1) % activeGroups.length];
     }
 
+    if (newGroup === currentGroup) return;
+
     // Remove from current group
-    const groupArrays = { A: 'groupA', B: 'groupB', C: 'groupC', D: 'groupD' };
-    state[groupArrays[currentGroup]] = state[groupArrays[currentGroup]].filter(id => id !== teamId);
+    state[`group${currentGroup}`] = state[`group${currentGroup}`].filter(id => id !== teamId);
 
     // Add to new group
-    state[groupArrays[newGroup]].push(teamId);
+    state[`group${newGroup}`].push(teamId);
 
     team.group = newGroup;
 
@@ -257,8 +256,7 @@ function moveTeamGroup(teamId) {
 // ===== FIXTURE MANAGEMENT =====
 
 function _getGroupFixtures(group) {
-    const map = { A: 'groupAFixtures', B: 'groupBFixtures', C: 'groupCFixtures', D: 'groupDFixtures' };
-    return state[map[group]] || [];
+    return state[`group${group}Fixtures`] || [];
 }
 
 function moveFixtureUp(group, roundIdx, matchIdx) {
@@ -323,7 +321,8 @@ function shuffleFixtureOrder() {
         return array;
     };
 
-    [state.groupAFixtures, state.groupBFixtures, state.groupCFixtures, state.groupDFixtures].forEach(fixtures => {
+    CONFIG.ALL_GROUP_LETTERS.forEach(letter => {
+        const fixtures = state[`group${letter}Fixtures`];
         if (fixtures) {
             fixtures.forEach(round => {
                 round.matches = shuffle(round.matches);
@@ -367,15 +366,16 @@ function updateCourtName(type, key, value) {
 
 function setGroupMode(mode) {
     if (!state || !state.canEdit()) return;
-    
-    if (state.groupA.length > 0 || state.groupB.length > 0 || state.groupC.length > 0 || state.groupD.length > 0) {
+
+    const hasTeamsInGroups = CONFIG.ALL_GROUP_LETTERS.some(letter => state[`group${letter}`].length > 0);
+    if (hasTeamsInGroups) {
         if (!confirm('Changing group mode will clear existing groups and fixtures. Continue?')) {
             renderTeamLeague();
             return;
         }
     }
 
-    const modeLabels = { 'single': 'Single Group', 'two_groups': 'Two Groups', 'four_groups': 'Four Groups' };
+    const modeLabels = { 'single_group': 'Single Group', 'two_groups': 'Two Groups', 'four_groups': 'Four Groups', 'six_groups': 'Six Groups', 'nine_groups': 'Nine Groups' };
     state.setGroupMode(mode);
     showToast(`✅ Group mode set to ${modeLabels[mode] || mode}`);
     renderTeamLeague();
@@ -434,18 +434,23 @@ function toggleThirdPlace(include) {
 
 function setKnockoutFromStandings() {
     if (!state || !state.canEdit()) return;
-    
-    const groupAComplete = state.isGroupStageComplete('A');
-    const groupBComplete = state.groupMode === CONFIG.GROUP_MODES.SINGLE || state.isGroupStageComplete('B');
-    const groupCComplete = state.groupMode !== CONFIG.GROUP_MODES.FOUR_GROUPS || state.isGroupStageComplete('C');
-    const groupDComplete = state.groupMode !== CONFIG.GROUP_MODES.FOUR_GROUPS || state.isGroupStageComplete('D');
 
-    if (!groupAComplete || !groupBComplete || !groupCComplete || !groupDComplete) {
+    // 6/9 groups: no auto seeding
+    const groupCount = CONFIG.GROUP_COUNT[state.groupMode] || 1;
+    if (groupCount > 4) {
+        showToast('⚠️ Auto knockout seeding not available for 6+ groups. Set knockout teams manually.');
+        return;
+    }
+
+    const activeGroups = state.getActiveGroupLetters();
+    const allComplete = activeGroups.every(g => state.isGroupStageComplete(g));
+
+    if (!allComplete) {
         if (!confirm('Group stage is not complete. Set knockout teams from current standings anyway?')) {
             return;
         }
     }
-    
+
     state.setKnockoutTeamsFromStandings();
     showToast('✅ Knockout teams set from standings');
     renderTeamLeague();

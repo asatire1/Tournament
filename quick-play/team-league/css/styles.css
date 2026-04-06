@@ -235,6 +235,31 @@ body {
     color: white;
 }
 
+.group-header-e {
+    background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
+    color: white;
+}
+
+.group-header-f {
+    background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+    color: white;
+}
+
+.group-header-g {
+    background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+    color: white;
+}
+
+.group-header-h {
+    background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%);
+    color: white;
+}
+
+.group-header-i {
+    background: linear-gradient(135deg, #64748B 0%, #475569 100%);
+    color: white;
+}
+
 .group-header-single {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
     color: white;

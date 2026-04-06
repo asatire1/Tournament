@@ -197,8 +197,7 @@ function KnockoutMatchCard(matchId, title, maxScore) {
 // ===== TAB COMPONENTS =====
 
 function GroupTab(group) {
-    const fixtureMap = { A: state.groupAFixtures, B: state.groupBFixtures, C: state.groupCFixtures, D: state.groupDFixtures };
-    const fixtures = fixtureMap[group] || [];
+    const fixtures = state[`group${group}Fixtures`] || [];
     const teams = state.getTeamsInGroup(group);
     const totalMatches = state.getTotalGroupMatches(group);
     const completedMatches = state.getCompletedGroupMatches(group);
@@ -223,12 +222,9 @@ function GroupTab(group) {
         `;
     }
     
-    const headerClasses = { A: 'group-header-a', B: 'group-header-b', C: 'group-header-c', D: 'group-header-d' };
-    const headerClass = headerClasses[group] || 'group-header-a';
-    
     return `
         <div class="group-card mb-6">
-            <div class="group-header ${headerClass}">
+            <div class="group-header group-header-${group.toLowerCase()}">
                 <span>⚽</span>
                 <span>Group ${group} Matches</span>
                 <span class="ml-auto text-sm opacity-80">${completedMatches}/${totalMatches} complete</span>
@@ -253,20 +249,13 @@ function GroupTab(group) {
 // ===== FIXTURES TAB (Side-by-Side View) =====
 
 function FixturesTab() {
-    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
-    const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-    const hasMultipleGroups = isTwoGroups || isFourGroups;
+    const activeGroups = state.getActiveGroupLetters();
+    const hasMultipleGroups = activeGroups.length > 1;
 
-    const allFixtures = {
-        A: state.groupAFixtures || [],
-        B: state.groupBFixtures || [],
-        C: state.groupCFixtures || [],
-        D: state.groupDFixtures || []
-    };
-    const activeGroups = isFourGroups ? ['A', 'B', 'C', 'D'] : isTwoGroups ? ['A', 'B'] : ['A'];
+    const allFixtures = {};
+    activeGroups.forEach(g => { allFixtures[g] = state[`group${g}Fixtures`] || []; });
 
-    const teamsA = state.getTeamsInGroup('A');
-    const teamsB = state.getTeamsInGroup('B');
+    const hasAnyTeams = activeGroups.some(g => state.getTeamsInGroup(g).length > 0);
 
     const viewMode = state.fixturesViewMode || 'side-by-side';
 
@@ -290,7 +279,7 @@ function FixturesTab() {
         totalMatches += allStats[g].total;
     });
 
-    if (teamsA.length === 0 && teamsB.length === 0) {
+    if (!hasAnyTeams) {
         return `
             <div class="text-center py-12">
                 <div class="text-5xl mb-4 opacity-50">📋</div>
@@ -351,8 +340,8 @@ function FixturesTab() {
 
 function renderSideBySideFixtures(allFixtures, activeGroups) {
     const maxRounds = Math.max(...activeGroups.map(g => allFixtures[g].length));
-    const groupColors = { A: 'blue', B: 'purple', C: 'emerald', D: 'amber' };
-    const gridCols = 'md:grid-cols-2';
+    const groupColors = CONFIG.GROUP_COLORS;
+    const gridCols = activeGroups.length <= 2 ? 'md:grid-cols-2' : activeGroups.length <= 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3 lg:grid-cols-3';
     let html = '';
 
     for (let roundIdx = 0; roundIdx < maxRounds; roundIdx++) {
@@ -394,8 +383,7 @@ function renderFixturesForGroup(group, fixtures) {
         return `<p class="text-gray-400 text-center py-8">No fixtures for Group ${group}</p>`;
     }
     
-    const headerClasses = { A: 'group-header-a', B: 'group-header-b', C: 'group-header-c', D: 'group-header-d' };
-    const headerClass = headerClasses[group] || 'group-header-a';
+    const headerClass = `group-header-${group.toLowerCase()}`;
     
     return `
         <div class="group-card mb-4">
@@ -421,24 +409,23 @@ function renderFixturesForGroup(group, fixtures) {
 }
 
 function StandingsTab() {
-    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
-    const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-    const activeGroups = isFourGroups ? ['A', 'B', 'C', 'D'] : isTwoGroups ? ['A', 'B'] : ['A'];
+    const activeGroups = state.getActiveGroupLetters();
+    const groupCount = activeGroups.length;
 
     // Determine qualify count
     let qualifyCount;
     if (state.groupMode === CONFIG.GROUP_MODES.SINGLE) {
         qualifyCount = CONFIG.KNOCKOUT_QUALIFIERS.SINGLE_GROUP;
-    } else if (isFourGroups) {
+    } else if (state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS) {
         qualifyCount = state.qualifiersPerGroup || CONFIG.KNOCKOUT_QUALIFIERS.FOUR_GROUPS;
+    } else if (groupCount > 4) {
+        qualifyCount = 1; // For 6/9 groups, default 1 qualifier per group
     } else {
         qualifyCount = CONFIG.KNOCKOUT_QUALIFIERS.TWO_GROUPS;
     }
 
     const allStandings = {};
     activeGroups.forEach(g => { allStandings[g] = state.getGroupStandings(g); });
-
-    const headerClasses = { A: 'group-header-a', B: 'group-header-b', C: 'group-header-c', D: 'group-header-d' };
 
     const renderStandingsTable = (standings, group) => {
         if (standings.length === 0) {
@@ -521,7 +508,7 @@ function StandingsTab() {
 
     const renderGroupCard = (g) => `
         <div class="group-card">
-            <div class="group-header ${headerClasses[g] || 'group-header-a'}">
+            <div class="group-header group-header-${g.toLowerCase()}">
                 <span>Group ${g} Standings</span>
             </div>
             <div class="p-4">
@@ -542,7 +529,7 @@ function StandingsTab() {
         </div>
 
         ${viewMode === 'both' ? `
-            <div class="grid gap-6 ${isFourGroups ? 'lg:grid-cols-2' : 'lg:grid-cols-2'}">
+            <div class="grid gap-6 ${groupCount <= 2 ? 'lg:grid-cols-2' : groupCount <= 4 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'}">
                 ${activeGroups.map(g => renderGroupCard(g)).join('')}
             </div>
         ` : ''}
@@ -964,13 +951,17 @@ function TeamsSettingsSection() {
                                 <div class="text-sm text-gray-500">${team.player1Name} (${team.player1Rating}) & ${team.player2Name} (${team.player2Rating})</div>
                                 <div class="text-xs text-gray-400">Combined: ${team.combinedRating.toFixed(1)} • Group ${team.group || 'Unassigned'}</div>
                             </div>
-                            <div class="flex gap-1">
+                            <div class="flex gap-1 items-center">
                                 <button onclick="startTeamEdit(${team.id})" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Edit team">
                                     ✏️
                                 </button>
-                                <button onclick="moveTeamGroup(${team.id})" class="p-2 text-purple-500 hover:bg-purple-50 rounded-lg transition-colors" title="Move to other group">
-                                    🔀
-                                </button>
+                                ${state.getActiveGroupLetters().length > 1 ? `
+                                    <div class="flex gap-0.5">
+                                        ${state.getActiveGroupLetters().filter(g => g !== team.group).map(g => `
+                                            <button onclick="moveTeamGroup(${team.id}, '${g}')" class="w-7 h-7 rounded-md bg-${CONFIG.GROUP_COLORS[g]}-100 hover:bg-${CONFIG.GROUP_COLORS[g]}-500 text-${CONFIG.GROUP_COLORS[g]}-700 hover:text-white text-xs font-bold transition-colors" title="Move to Group ${g}">${g}</button>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
                                 <button onclick="removeTeam(${team.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove team">
                                     🗑️
                                 </button>
@@ -984,16 +975,17 @@ function TeamsSettingsSection() {
 }
 
 function GroupsSettingsSection() {
-    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
-    const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
+    const activeGroups = state.getActiveGroupLetters();
+    const groupCount = activeGroups.length;
+    const groupColors = CONFIG.GROUP_COLORS;
 
-    const groupConfigs = [
-        { key: 'A', data: state.groupA, color: 'blue' },
-        { key: 'B', data: state.groupB, color: 'purple' },
-        { key: 'C', data: state.groupC, color: 'emerald' },
-        { key: 'D', data: state.groupD, color: 'amber' }
+    const modeOptions = [
+        { value: 'nine_groups', label: 'Nine Groups (A-I)' },
+        { value: 'six_groups', label: 'Six Groups (A-F)' },
+        { value: 'four_groups', label: 'Four Groups (A-D)' },
+        { value: 'two_groups', label: 'Two Groups (A & B)' },
+        { value: 'single_group', label: 'Single Group' }
     ];
-    const activeGroupConfigs = isFourGroups ? groupConfigs : isTwoGroups ? groupConfigs.slice(0, 2) : groupConfigs.slice(0, 1);
 
     return `
         <h3 class="text-lg font-bold text-gray-800 mb-4">Group Settings</h3>
@@ -1002,18 +994,12 @@ function GroupsSettingsSection() {
         <div class="mb-6">
             <label class="block text-sm font-medium text-gray-600 mb-2">Group Mode</label>
             <div class="flex flex-wrap gap-4">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="group-mode" value="four_groups" ${isFourGroups ? 'checked' : ''} onchange="setGroupMode('four_groups')" class="w-4 h-4 text-purple-500" />
-                    <span>Four Groups (A, B, C, D)</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="group-mode" value="two_groups" ${isTwoGroups ? 'checked' : ''} onchange="setGroupMode('two_groups')" class="w-4 h-4 text-purple-500" />
-                    <span>Two Groups (A & B)</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="group-mode" value="single_group" ${state.groupMode === CONFIG.GROUP_MODES.SINGLE ? 'checked' : ''} onchange="setGroupMode('single_group')" class="w-4 h-4 text-purple-500" />
-                    <span>Single Group</span>
-                </label>
+                ${modeOptions.map(opt => `
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="group-mode" value="${opt.value}" ${state.groupMode === opt.value ? 'checked' : ''} onchange="setGroupMode('${opt.value}')" class="w-4 h-4 text-purple-500" />
+                        <span>${opt.label}</span>
+                    </label>
+                `).join('')}
             </div>
         </div>
 
@@ -1028,22 +1014,26 @@ function GroupsSettingsSection() {
         </div>
 
         <!-- Current Groups -->
-        <div class="grid gap-4 ${isFourGroups ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2'}">
-            ${activeGroupConfigs.map(({ key, data, color }) => `
-                <div class="bg-${color}-50 rounded-xl p-4">
-                    <h4 class="font-semibold text-${color}-800 mb-2">Group ${key} (${data.length} teams)</h4>
-                    ${data.length === 0 ? `
-                        <p class="text-${color}-400 text-sm">No teams assigned</p>
-                    ` : `
-                        <ul class="text-sm text-${color}-700 space-y-1">
-                            ${data.map(id => {
-                                const team = state.getTeamById(id);
-                                return `<li>${team?.name || 'Unknown'}</li>`;
-                            }).join('')}
-                        </ul>
-                    `}
-                </div>
-            `).join('')}
+        <div class="grid gap-4 ${groupCount <= 2 ? 'md:grid-cols-2' : groupCount <= 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3 lg:grid-cols-3'}">
+            ${activeGroups.map(g => {
+                const data = state[`group${g}`];
+                const color = groupColors[g];
+                return `
+                    <div class="bg-${color}-50 rounded-xl p-4">
+                        <h4 class="font-semibold text-${color}-800 mb-2">Group ${g} (${data.length} teams)</h4>
+                        ${data.length === 0 ? `
+                            <p class="text-${color}-400 text-sm">No teams assigned</p>
+                        ` : `
+                            <ul class="text-sm text-${color}-700 space-y-1">
+                                ${data.map(id => {
+                                    const team = state.getTeamById(id);
+                                    return `<li>${team?.name || 'Unknown'}</li>`;
+                                }).join('')}
+                            </ul>
+                        `}
+                    </div>
+                `;
+            }).join('')}
         </div>
 
         <!-- 3rd Place Toggle -->
@@ -1057,16 +1047,10 @@ function GroupsSettingsSection() {
 }
 
 function FixturesSettingsSection() {
-    const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
-    const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-    const allFixtures = {
-        A: state.groupAFixtures || [],
-        B: state.groupBFixtures || [],
-        C: state.groupCFixtures || [],
-        D: state.groupDFixtures || []
-    };
-    const activeGroups = isFourGroups ? ['A', 'B', 'C', 'D'] : isTwoGroups ? ['A', 'B'] : ['A'];
-    const groupColors = { A: 'blue', B: 'purple', C: 'emerald', D: 'amber' };
+    const activeGroups = state.getActiveGroupLetters();
+    const allFixtures = {};
+    activeGroups.forEach(g => { allFixtures[g] = state[`group${g}Fixtures`] || []; });
+    const groupColors = CONFIG.GROUP_COLORS;
 
     const renderFixtureList = (fixtures, group) => {
         if (fixtures.length === 0) {
@@ -1130,7 +1114,7 @@ function FixturesSettingsSection() {
             </button>
         </div>
         
-        <div class="grid gap-6 ${isFourGroups ? 'md:grid-cols-2' : isTwoGroups ? 'md:grid-cols-2' : ''}">
+        <div class="grid gap-6 ${activeGroups.length >= 2 ? 'md:grid-cols-2' : ''}">
             ${activeGroups.map(g => `
                 <div class="bg-${groupColors[g]}-50 rounded-xl p-4">
                     <h4 class="font-semibold text-${groupColors[g]}-800 mb-3 flex items-center gap-2">
@@ -1404,8 +1388,7 @@ const TeamLeagueApp = {
         }
         
         const currentTab = state.currentTab || 'fixtures';
-        const isTwoGroups = state.groupMode === CONFIG.GROUP_MODES.TWO_GROUPS;
-        const isFourGroups = state.groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS;
+        const activeGroupCount = state.getActiveGroupLetters().length;
 
         document.getElementById('app').innerHTML = `
             <div class="min-h-screen">
@@ -1415,7 +1398,7 @@ const TeamLeagueApp = {
                     tournamentId: state.tournamentId,
                     tournamentName: state.tournamentName || 'Team Tournament',
                     isOrganiser: state.isOrganiser,
-                    subtitle: (state.teams?.length || 0) + ' teams • ' + (isFourGroups ? '4 groups' : isTwoGroups ? '2 groups' : '1 group')
+                    subtitle: (state.teams?.length || 0) + ' teams • ' + activeGroupCount + ' group' + (activeGroupCount !== 1 ? 's' : '')
                 })}
                 
                 <!-- Tabs -->

@@ -10,13 +10,15 @@ const CONFIG = {
     // Team Settings (from shared config)
     DEFAULT_TEAM_COUNT: 22,
     MIN_TEAMS: _sharedTeamConfig?.minTeams ?? 4,
-    MAX_TEAMS: _sharedTeamConfig?.maxTeams ?? 32,
+    MAX_TEAMS: _sharedTeamConfig?.maxTeams ?? 36,
     
     // Group Settings
     GROUP_MODES: {
         SINGLE: 'single_group',
         TWO_GROUPS: 'two_groups',
-        FOUR_GROUPS: 'four_groups'
+        FOUR_GROUPS: 'four_groups',
+        SIX_GROUPS: 'six_groups',
+        NINE_GROUPS: 'nine_groups'
     },
     DEFAULT_GROUP_MODE: 'two_groups',
     
@@ -97,7 +99,30 @@ const CONFIG = {
         A: 'Group A',
         B: 'Group B',
         C: 'Group C',
-        D: 'Group D'
+        D: 'Group D',
+        E: 'Group E',
+        F: 'Group F',
+        G: 'Group G',
+        H: 'Group H',
+        I: 'Group I'
+    },
+
+    // All possible group letters
+    ALL_GROUP_LETTERS: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+
+    // Group colors for UI
+    GROUP_COLORS: {
+        A: 'blue', B: 'purple', C: 'emerald', D: 'amber',
+        E: 'rose', F: 'cyan', G: 'orange', H: 'teal', I: 'slate'
+    },
+
+    // Number of groups per mode
+    GROUP_COUNT: {
+        'single_group': 1,
+        'two_groups': 2,
+        'four_groups': 4,
+        'six_groups': 6,
+        'nine_groups': 9
     },
     
     // Team Tiers (based on combined rating, 0-10 scale)
@@ -244,6 +269,16 @@ function splitTeamsIntoGroups(teams) {
  * Shuffles teams randomly, then deals round-robin into 4 groups
  */
 function splitTeamsIntoFourGroups(teams) {
+    return splitTeamsIntoNGroups(teams, 4);
+}
+
+/**
+ * Split teams into N balanced groups using random draw
+ * Shuffles teams randomly, then deals round-robin into N groups
+ */
+function splitTeamsIntoNGroups(teams, n) {
+    const groupLetters = CONFIG.ALL_GROUP_LETTERS.slice(0, n);
+
     // Shuffle teams randomly
     const shuffled = [...teams];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -251,19 +286,17 @@ function splitTeamsIntoFourGroups(teams) {
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    const groupA = [];
-    const groupB = [];
-    const groupC = [];
-    const groupD = [];
-    const groups = [groupA, groupB, groupC, groupD];
+    const result = {};
+    groupLetters.forEach(letter => { result[letter] = []; });
 
-    // Deal round-robin into 4 groups
+    // Deal round-robin into N groups
     shuffled.forEach((team, index) => {
-        const groupIndex = index % 4;
-        groups[groupIndex].push({ ...team, group: ['A', 'B', 'C', 'D'][groupIndex] });
+        const groupIndex = index % n;
+        const letter = groupLetters[groupIndex];
+        result[letter].push({ ...team, group: letter });
     });
 
-    return { groupA, groupB, groupC, groupD };
+    return result;
 }
 
 /**
@@ -426,25 +459,29 @@ function calculateGroupStandings(teams, matchScores) {
  * Validate team count for group mode
  */
 function validateTeamCount(teamCount, groupMode) {
-    if (groupMode === CONFIG.GROUP_MODES.FOUR_GROUPS) {
-        if (teamCount < 8) {
-            return { valid: false, message: 'Need at least 8 teams for four groups (2 per group)' };
+    const groupCount = CONFIG.GROUP_COUNT[groupMode] || 1;
+
+    if (groupCount > 1) {
+        const minTeams = groupCount * 2;
+        if (teamCount < minTeams) {
+            return { valid: false, message: `Need at least ${minTeams} teams for ${groupCount} groups (2 per group)` };
         }
         return { valid: true };
     }
-    if (groupMode === CONFIG.GROUP_MODES.TWO_GROUPS) {
-        if (teamCount % 2 !== 0) {
-            return { valid: false, message: 'Team count must be even for two groups' };
-        }
-        if (teamCount < 8) {
-            return { valid: false, message: 'Need at least 8 teams for two groups (4 per group)' };
-        }
-    } else {
-        if (teamCount < 8) {
-            return { valid: false, message: 'Need at least 8 teams for knockout stage' };
-        }
+
+    // Single group
+    if (teamCount < 8) {
+        return { valid: false, message: 'Need at least 8 teams for knockout stage' };
     }
     return { valid: true };
+}
+
+/**
+ * Get active group letters for a given group mode
+ */
+function getActiveGroups(groupMode) {
+    const count = CONFIG.GROUP_COUNT[groupMode] || 1;
+    return CONFIG.ALL_GROUP_LETTERS.slice(0, count);
 }
 
 console.log('✅ Team Tournament Config loaded');
