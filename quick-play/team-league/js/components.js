@@ -55,11 +55,15 @@ function GroupMatchCard(match, group, roundNum, matchNum) {
     const inputId1 = `score-${group}-${match.team1Id}-${match.team2Id}-1`;
     const inputId2 = `score-${group}-${match.team1Id}-${match.team2Id}-2`;
     
+    const groupColor = (CONFIG.GROUP_COLORS && CONFIG.GROUP_COLORS[group]) || 'blue';
+
     return `
         <div class="team-match-card ${isComplete ? 'complete' : ''}" data-group="${group}" data-team1="${match.team1Id}" data-team2="${match.team2Id}">
             <div class="match-header">
-                <div class="match-info">
-                    <span class="match-round">Round ${roundNum}</span>
+                <div class="match-info flex items-center gap-2">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-${groupColor}-500 text-white text-xs font-bold">${group}</span>
+                    <span class="match-round">R${roundNum}</span>
+                    <span class="text-gray-300">•</span>
                     <span class="match-number">Match ${matchNum}</span>
                 </div>
                 ${isComplete && canEdit ? `
@@ -299,42 +303,76 @@ function FixturesTab() {
         `;
     }
 
-    // Single group
-    if (!hasMultipleGroups) {
-        return `
-            <div class="mb-4 flex items-center justify-between">
-                <h2 class="text-xl font-bold text-gray-800">All Fixtures</h2>
-                <span class="text-sm text-gray-500">${allStats.A.completed}/${allStats.A.total} matches complete</span>
-            </div>
-            ${renderFixturesForGroup('A', allFixtures.A)}
-        `;
-    }
+    // ===== NEW UNIFIED LAYOUT: Round/Group filters + flat match grid =====
+    const filterRound = state.fixturesFilterRound || 'all';
+    const filterGroup = state.fixturesFilterGroup || 'all';
+    const groupColors = CONFIG.GROUP_COLORS;
 
-    // Multiple groups - view toggle with individual group tabs
-    const groupTabButtons = activeGroups.map(g =>
-        `<button onclick="setFixturesViewMode('group-${g.toLowerCase()}')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'group-' + g.toLowerCase() ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-            Group ${g}
-        </button>`
-    ).join('');
+    // Compute max rounds across all active groups
+    const maxRounds = Math.max(0, ...activeGroups.map(g => allFixtures[g].length));
+
+    // Flatten all matches across groups, applying filters
+    const allMatches = [];
+    activeGroups.forEach(g => {
+        if (filterGroup !== 'all' && filterGroup !== g) return;
+        (allFixtures[g] || []).forEach((round, roundIdx) => {
+            const roundNum = round.round || (roundIdx + 1);
+            if (filterRound !== 'all' && parseInt(filterRound) !== roundNum) return;
+            round.matches.forEach((match, matchIdx) => {
+                allMatches.push({ group: g, roundNum, matchIdx, match });
+            });
+        });
+    });
+
+    const hasFilters = filterRound !== 'all' || filterGroup !== 'all';
 
     return `
-        <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
-            <h2 class="text-xl font-bold text-gray-800">All Fixtures</h2>
-            <div class="flex items-center gap-2">
-                <span class="text-sm text-gray-500 mr-2">
-                    ${totalCompleted}/${totalMatches} matches complete
-                </span>
-                <div class="flex bg-gray-100 rounded-lg p-1 flex-wrap">
-                    <button onclick="setFixturesViewMode('side-by-side')" class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'side-by-side' ? 'bg-white shadow text-purple-600' : 'text-gray-600 hover:text-gray-800'}">
-                        All
-                    </button>
-                    ${groupTabButtons}
+        <div class="space-y-6">
+            <!-- Filter section -->
+            <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
+                <div class="flex flex-wrap items-end gap-3 mb-4">
+                    <div class="w-36">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Round</label>
+                        <select onchange="state.fixturesFilterRound = this.value; renderTeamLeague();" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-50 transition-all text-sm font-medium">
+                            <option value="all" ${filterRound === 'all' ? 'selected' : ''}>All Rounds</option>
+                            ${Array.from({length: maxRounds}, (_, i) => `<option value="${i + 1}" ${filterRound == (i + 1) ? 'selected' : ''}>Round ${i + 1}</option>`).join('')}
+                        </select>
+                    </div>
+                    ${hasMultipleGroups ? `
+                    <div class="w-44">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Group</label>
+                        <select onchange="state.fixturesFilterGroup = this.value; renderTeamLeague();" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-50 transition-all text-sm font-medium">
+                            <option value="all" ${filterGroup === 'all' ? 'selected' : ''}>All Groups</option>
+                            ${activeGroups.map(g => `<option value="${g}" ${filterGroup === g ? 'selected' : ''}>Group ${g}</option>`).join('')}
+                        </select>
+                    </div>
+                    ` : ''}
+                    ${hasFilters ? `<button onclick="state.fixturesFilterRound = 'all'; state.fixturesFilterGroup = 'all'; renderTeamLeague();" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors text-gray-600">Clear</button>` : ''}
+                    <div class="ml-auto text-sm text-gray-500 py-2.5">${allMatches.length} ${allMatches.length === 1 ? 'match' : 'matches'} • ${totalCompleted}/${totalMatches} complete</div>
                 </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="state.fixturesFilterRound = 'all'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterRound === 'all' ? 'bg-purple-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">All</button>
+                    ${Array.from({length: maxRounds}, (_, i) => `<button onclick="state.fixturesFilterRound = '${i + 1}'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterRound == (i + 1) ? 'bg-purple-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">R${i + 1}</button>`).join('')}
+                </div>
+                ${hasMultipleGroups ? `
+                <div class="flex flex-wrap gap-2 mt-2">
+                    <button onclick="state.fixturesFilterGroup = 'all'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterGroup === 'all' ? 'bg-gray-700 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">All Groups</button>
+                    ${activeGroups.map(g => {
+                        const c = groupColors[g];
+                        const isActive = filterGroup === g;
+                        return `<button onclick="state.fixturesFilterGroup = '${g}'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${isActive ? `bg-${c}-500 text-white shadow-md` : `bg-${c}-50 hover:bg-${c}-100 text-${c}-700 border border-${c}-200`}">Group ${g}</button>`;
+                    }).join('')}
+                </div>
+                ` : ''}
             </div>
-        </div>
 
-        ${viewMode === 'side-by-side' ? renderSideBySideFixtures(allFixtures, activeGroups) : ''}
-        ${activeGroups.map(g => viewMode === 'group-' + g.toLowerCase() ? renderFixturesForGroup(g, allFixtures[g]) : '').join('')}
+            <!-- Match grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                ${allMatches.map(m => GroupMatchCard(m.match, m.group, m.roundNum, m.matchIdx + 1)).join('')}
+            </div>
+
+            ${allMatches.length === 0 ? `<div class="text-center py-20"><div class="text-7xl mb-5 opacity-20">🔍</div><div class="text-xl font-semibold text-gray-400 mb-2">No matches found</div><div class="text-sm text-gray-400">Try adjusting your filters</div></div>` : ''}
+        </div>
     `;
 }
 

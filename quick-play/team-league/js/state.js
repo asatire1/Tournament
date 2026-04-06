@@ -12,6 +12,8 @@ class TeamLeagueState {
         this.standingsViewMode = localStorage.getItem('teamLeague_standingsViewMode') || 'both'; // both, group-a, group-b
         this.editingTeamId = null;
         this.swapSourceTeamId = null; // For team swap UI in groups settings
+        this.fixturesFilterRound = 'all'; // 'all' or round number
+        this.fixturesFilterGroup = 'all'; // 'all' or group letter
         this.isInitialized = false;
         this.isSaving = false;
         
