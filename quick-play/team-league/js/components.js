@@ -993,13 +993,6 @@ function TeamsSettingsSection() {
                                 <button onclick="startTeamEdit(${team.id})" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Edit team">
                                     ✏️
                                 </button>
-                                ${state.getActiveGroupLetters().length > 1 ? `
-                                    <div class="flex gap-0.5">
-                                        ${state.getActiveGroupLetters().filter(g => g !== team.group).map(g => `
-                                            <button onclick="moveTeamGroup(${team.id}, '${g}')" class="w-7 h-7 rounded-md bg-${CONFIG.GROUP_COLORS[g]}-100 hover:bg-${CONFIG.GROUP_COLORS[g]}-500 text-${CONFIG.GROUP_COLORS[g]}-700 hover:text-white text-xs font-bold transition-colors" title="Move to Group ${g}">${g}</button>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
                                 <button onclick="removeTeam(${team.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove team">
                                     🗑️
                                 </button>
