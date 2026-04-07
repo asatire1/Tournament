@@ -37,7 +37,7 @@ function TeamBadge(team, size = 'full') {
 
 // ===== MATCH CARD COMPONENTS =====
 
-function GroupMatchCard(match, group, roundNum, matchNum) {
+function GroupMatchCard(match, group, roundNum, matchNum, slot, courtName) {
     const team1 = state.getTeamById(match.team1Id);
     const team2 = state.getTeamById(match.team2Id);
     const score = state.getGroupScore(group, match.team1Id, match.team2Id);
@@ -60,11 +60,12 @@ function GroupMatchCard(match, group, roundNum, matchNum) {
     return `
         <div class="team-match-card ${isComplete ? 'complete' : ''}" data-group="${group}" data-team1="${match.team1Id}" data-team2="${match.team2Id}">
             <div class="match-header">
-                <div class="match-info flex items-center gap-2">
+                <div class="match-info flex items-center gap-2 flex-wrap">
                     <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-${groupColor}-500 text-white text-xs font-bold">${group}</span>
                     <span class="match-round">R${roundNum}</span>
                     <span class="text-gray-300">•</span>
                     <span class="match-number">Match ${matchNum}</span>
+                    ${courtName ? `<span class="text-gray-300">•</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">${courtName}</span>` : ''}
                 </div>
                 ${isComplete && canEdit ? `
                     <button class="clear-score-btn-small" onclick="clearGroupScore('${group}', ${match.team1Id}, ${match.team2Id})" title="Clear score">×</button>
@@ -307,20 +308,38 @@ function FixturesTab() {
     const filterRound = state.fixturesFilterRound || 'all';
     const filterGroup = state.fixturesFilterGroup || 'all';
     const groupColors = CONFIG.GROUP_COLORS;
+    const courtCount = Math.max(1, state.courtCount || 4);
+    const courtNamesArr = (state.courtNames && state.courtNames.group) || [];
 
     // Compute max rounds across all active groups
     const maxRounds = Math.max(0, ...activeGroups.map(g => allFixtures[g].length));
 
-    // Flatten all matches across groups, applying filters
-    const allMatches = [];
+    // Step 1: collect ALL matches in every active group, keyed by round
+    // (we need the unfiltered set per round to compute slot indices consistently)
+    const matchesByRound = {};
     activeGroups.forEach(g => {
-        if (filterGroup !== 'all' && filterGroup !== g) return;
         (allFixtures[g] || []).forEach((round, roundIdx) => {
             const roundNum = round.round || (roundIdx + 1);
-            if (filterRound !== 'all' && parseInt(filterRound) !== roundNum) return;
+            if (!matchesByRound[roundNum]) matchesByRound[roundNum] = [];
             round.matches.forEach((match, matchIdx) => {
-                allMatches.push({ group: g, roundNum, matchIdx, match });
+                matchesByRound[roundNum].push({ group: g, roundNum, matchIdx, match });
             });
+        });
+    });
+
+    // Step 2: assign slot + court within each round, then apply filters
+    const allMatches = [];
+    Object.keys(matchesByRound).map(Number).sort((a, b) => a - b).forEach(roundNum => {
+        if (filterRound !== 'all' && parseInt(filterRound) !== roundNum) return;
+        const matches = matchesByRound[roundNum];
+        matches.forEach((m, idx) => {
+            m.slot = Math.floor(idx / courtCount) + 1;
+            m.courtIdx = idx % courtCount;
+            m.courtName = courtNamesArr[m.courtIdx] || `Court ${m.courtIdx + 1}`;
+        });
+        matches.forEach(m => {
+            if (filterGroup !== 'all' && filterGroup !== m.group) return;
+            allMatches.push(m);
         });
     });
 
@@ -348,7 +367,10 @@ function FixturesTab() {
                     </div>
                     ` : ''}
                     ${hasFilters ? `<button onclick="state.fixturesFilterRound = 'all'; state.fixturesFilterGroup = 'all'; renderTeamLeague();" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors text-gray-600">Clear</button>` : ''}
-                    <div class="ml-auto text-sm text-gray-500 py-2.5">${allMatches.length} ${allMatches.length === 1 ? 'match' : 'matches'} • ${totalCompleted}/${totalMatches} complete</div>
+                    <button onclick="exportFixturesCsv()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5" title="Download all fixtures as CSV">
+                        ⬇ CSV
+                    </button>
+                    <div class="text-sm text-gray-500 py-2.5">${allMatches.length} ${allMatches.length === 1 ? 'match' : 'matches'} • ${totalCompleted}/${totalMatches} complete • ${courtCount} ${courtCount === 1 ? 'court' : 'courts'}</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="state.fixturesFilterRound = 'all'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterRound === 'all' ? 'bg-purple-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">All</button>
@@ -366,10 +388,33 @@ function FixturesTab() {
                 ` : ''}
             </div>
 
-            <!-- Match grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                ${allMatches.map(m => GroupMatchCard(m.match, m.group, m.roundNum, m.matchIdx + 1)).join('')}
-            </div>
+            <!-- Match grid grouped by Round → Slot -->
+            ${(() => {
+                if (allMatches.length === 0) return '';
+                // Group by round → slot
+                const buckets = {};
+                allMatches.forEach(m => {
+                    const k = `${m.roundNum}__${m.slot}`;
+                    if (!buckets[k]) buckets[k] = { roundNum: m.roundNum, slot: m.slot, matches: [] };
+                    buckets[k].matches.push(m);
+                });
+                const ordered = Object.values(buckets).sort((a, b) =>
+                    a.roundNum - b.roundNum || a.slot - b.slot
+                );
+                return ordered.map(b => `
+                    <div class="mb-6">
+                        <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded">Round ${b.roundNum}</span>
+                            <span class="text-gray-400">•</span>
+                            <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded">Court Round ${b.slot}</span>
+                            <span class="text-gray-400 text-xs font-normal normal-case">${b.matches.length} ${b.matches.length === 1 ? 'match' : 'matches'} on ${Math.min(b.matches.length, courtCount)} ${Math.min(b.matches.length, courtCount) === 1 ? 'court' : 'courts'}</span>
+                        </h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            ${b.matches.map(m => GroupMatchCard(m.match, m.group, m.roundNum, m.matchIdx + 1, m.slot, m.courtName)).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            })()}
 
             ${allMatches.length === 0 ? `<div class="text-center py-20"><div class="text-7xl mb-5 opacity-20">🔍</div><div class="text-xl font-semibold text-gray-400 mb-2">No matches found</div><div class="text-sm text-gray-400">Try adjusting your filters</div></div>` : ''}
         </div>
@@ -1222,12 +1267,26 @@ function CourtsSettingsSection() {
             Assign court names to matches. These will be displayed on the fixtures page.
         </p>
         
+        <!-- Number of Courts -->
+        <div class="mb-8 p-4 bg-purple-50 rounded-xl border border-purple-200">
+            <label class="block text-sm font-semibold text-purple-800 mb-2">Number of courts available</label>
+            <p class="text-xs text-purple-700 mb-3">How many group-stage matches can be played at the same time. Fixtures will be split into "court rounds" of this many concurrent matches.</p>
+            <input
+                type="number"
+                min="1"
+                max="16"
+                value="${state.courtCount || 4}"
+                onchange="updateCourtCount(this.value)"
+                class="w-24 px-3 py-2 border-2 border-purple-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg font-semibold text-center"
+            />
+        </div>
+
         <!-- Group Stage Courts -->
         <div class="mb-8">
-            <h4 class="font-semibold text-gray-700 mb-3">Group Stage Courts</h4>
-            <p class="text-xs text-gray-500 mb-3">Enter names for up to 4 courts used during group matches</p>
+            <h4 class="font-semibold text-gray-700 mb-3">Group Stage Court Names</h4>
+            <p class="text-xs text-gray-500 mb-3">Optional friendly names for each court (used in fixtures display)</p>
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                ${[0, 1, 2, 3].map(i => `
+                ${Array.from({length: Math.min(state.courtCount || 4, 16)}, (_, i) => i).map(i => `
                     <div>
                         <label class="block text-sm font-medium text-gray-600 mb-1">Court ${i + 1}</label>
                         <input 

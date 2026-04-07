@@ -131,6 +131,10 @@ class TeamLeagueState {
         this.thirdPlaceMaxScore = CONFIG.THIRD_PLACE_MAX_SCORE;
         this.finalMaxScore = CONFIG.FINAL_MAX_SCORE;
         
+        // Number of courts available simultaneously for group-stage matches.
+        // Used to slot fixtures into "court rounds" of N concurrent matches each.
+        this.courtCount = 4;
+
         // Court names
         this.courtNames = {
             group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
@@ -250,6 +254,7 @@ class TeamLeagueState {
         this.includeThirdPlace = data.includeThirdPlace !== undefined ? data.includeThirdPlace : CONFIG.INCLUDE_THIRD_PLACE;
         this.knockoutFormat = data.knockoutFormat || 'quarter_final';
         this.qualifiersPerGroup = data.qualifiersPerGroup || 4;
+        this.courtCount = (typeof data.courtCount === 'number' && data.courtCount > 0) ? data.courtCount : 4;
 
         // Teams (static)
         this.teams = data.teams || [];
@@ -570,6 +575,7 @@ class TeamLeagueState {
             updates[`group${letter}Fixtures`] = this[`group${letter}Fixtures`];
         });
         updates['qualifiersPerGroup'] = this.qualifiersPerGroup;
+        updates['courtCount'] = this.courtCount;
         updates['groupMatchScores'] = this.groupMatchScores;
         updates['knockoutScores'] = this.knockoutScores;
         updates['knockoutTeams'] = this.knockoutTeams;

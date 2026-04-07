@@ -489,6 +489,93 @@ function cancelSwap() {
     renderTeamLeague();
 }
 
+function exportFixturesCsv() {
+    if (!state) return;
+    const courtCount = Math.max(1, state.courtCount || 4);
+    const courtNamesArr = (state.courtNames && state.courtNames.group) || [];
+    const activeGroups = state.getActiveGroupLetters();
+
+    // Collect all matches grouped by round, then assign slot/court (mirrors FixturesTab logic)
+    const matchesByRound = {};
+    activeGroups.forEach(g => {
+        const fixtures = state[`group${g}Fixtures`] || [];
+        fixtures.forEach((round, roundIdx) => {
+            const roundNum = round.round || (roundIdx + 1);
+            if (!matchesByRound[roundNum]) matchesByRound[roundNum] = [];
+            round.matches.forEach((match, matchIdx) => {
+                matchesByRound[roundNum].push({ group: g, roundNum, matchIdx, match });
+            });
+        });
+    });
+
+    const rows = [];
+    rows.push(['Round', 'Court Round', 'Court', 'Group', 'Match #', 'Team 1', 'Team 2', 'Score 1', 'Score 2', 'Status']);
+
+    Object.keys(matchesByRound).map(Number).sort((a, b) => a - b).forEach(roundNum => {
+        const list = matchesByRound[roundNum];
+        list.forEach((m, idx) => {
+            const slot = Math.floor(idx / courtCount) + 1;
+            const courtIdx = idx % courtCount;
+            const courtName = courtNamesArr[courtIdx] || `Court ${courtIdx + 1}`;
+            const t1 = state.getTeamById(m.match.team1Id);
+            const t2 = state.getTeamById(m.match.team2Id);
+            const score = state.getGroupScore(m.group, m.match.team1Id, m.match.team2Id);
+            const s1 = score.team1Score !== null ? score.team1Score : '';
+            const s2 = score.team2Score !== null ? score.team2Score : '';
+            const status = (s1 !== '' && s2 !== '') ? 'Complete' : 'Pending';
+            rows.push([
+                roundNum,
+                slot,
+                courtName,
+                m.group,
+                m.matchIdx + 1,
+                t1?.name || `Team ${m.match.team1Id}`,
+                t2?.name || `Team ${m.match.team2Id}`,
+                s1,
+                s2,
+                status
+            ]);
+        });
+    });
+
+    // Build CSV (RFC 4180: quote any field containing comma, quote, or newline; escape quotes by doubling)
+    const escape = v => {
+        const s = String(v ?? '');
+        return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = rows.map(r => r.map(escape).join(',')).join('\r\n');
+
+    // Trigger download
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const tname = (state.tournamentName || 'tournament').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    a.href = url;
+    a.download = `${tname}-fixtures-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`✅ Exported ${rows.length - 1} fixtures to CSV`);
+}
+
+function updateCourtCount(value) {
+    if (!state || !state.canEdit()) return;
+    const n = Math.max(1, Math.min(16, parseInt(value) || 1));
+    state.courtCount = n;
+    // Ensure we have enough court name slots; pad with defaults if needed
+    if (!state.courtNames) state.courtNames = { group: [], knockout: {} };
+    if (!Array.isArray(state.courtNames.group)) state.courtNames.group = [];
+    while (state.courtNames.group.length < n) {
+        state.courtNames.group.push(`Court ${state.courtNames.group.length + 1}`);
+    }
+    state.saveSettingToFirebase('courtCount', n);
+    state.saveCourtNamesToFirebase();
+    showToast(`✅ Court count set to ${n}`);
+    renderTeamLeague();
+}
+
 function setQualifiersPerGroup(count) {
     // If we're inside a tournament (state exists), update tournament state
     if (typeof state !== 'undefined' && state && state.canEdit && state.canEdit()) {
