@@ -497,6 +497,103 @@ function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
         }
     }
 
+    // Second-pass swap-merge:
+    // Sometimes the plain merge pass can't fold an under-capacity "orphan" CR
+    // because every destination already has the orphan's group on a different
+    // genRound. Example: orphan holds A-R9, and the only CR with room holds
+    // A-R8. A single-match swap can unblock this: pick an A-R9 match from any
+    // *full* CR, swap it with the orphan, then re-attempt the merge. After the
+    // swap, the orphan now holds a match that CAN merge into the destination.
+    //
+    // O(n³·k) worst case but n and k (matches per CR) are tiny, so it runs
+    // instantly for any realistic tournament.
+    const tryOneSwap = () => {
+        for (let oi = schedule.length - 1; oi >= 0; oi--) {
+            const orphan = schedule[oi];
+            if (orphan.length >= courtCount) continue; // not an orphan
+
+            for (let pi = 0; pi < orphan.length; pi++) {
+                const oref = orphan[pi];
+
+                // Candidate destination: any other CR that is *full* (swap with
+                // a match inside it) AND contains a match from the same group
+                // on a DIFFERENT genRound (exactly the case that would block a
+                // plain merge), AND after the swap, our orphan ref could
+                // actually merge into it.
+                for (let di = 0; di < schedule.length; di++) {
+                    if (di === oi) continue;
+                    const dst = schedule[di];
+
+                    for (let xi = 0; xi < dst.length; xi++) {
+                        const xref = dst[xi];
+                        // Candidate: same group, different genRound as the
+                        // orphan ref. Swap would send xref to the orphan and
+                        // oref to dst.
+                        if (xref.group !== oref.group) continue;
+                        if (xref.genRound === oref.genRound) continue;
+
+                        // After swap, would the orphan (with xref added) still
+                        // contain no same-group-different-genRound conflict?
+                        // And would dst (with oref added instead of xref) be
+                        // similarly clean? Both conditions must hold.
+                        const orphanAfter = orphan.slice();
+                        orphanAfter.splice(pi, 1); // remove oref
+                        orphanAfter.push(xref);
+
+                        const dstAfter = dst.slice();
+                        dstAfter.splice(xi, 1); // remove xref
+                        dstAfter.push(oref);
+
+                        const validCR = (cr) => {
+                            const byGroup = new Map();
+                            for (const r of cr) {
+                                const seen = byGroup.get(r.group);
+                                if (seen !== undefined && seen !== r.genRound) return false;
+                                byGroup.set(r.group, r.genRound);
+                            }
+                            return true;
+                        };
+
+                        if (!validCR(orphanAfter) || !validCR(dstAfter)) continue;
+
+                        // Swap is legal. Commit it and signal "something changed".
+                        orphan.splice(pi, 1);
+                        orphan.push(xref);
+                        dst.splice(xi, 1);
+                        dst.push(oref);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    };
+
+    // Alternate swap-and-merge until nothing changes.
+    let changed = true;
+    let swapGuard = 50;
+    while (changed && swapGuard-- > 0) {
+        changed = false;
+        if (tryOneSwap()) changed = true;
+        // After any swap, try the plain merge pass again.
+        let merged = true;
+        while (merged) {
+            merged = false;
+            for (let i = schedule.length - 1; i >= 1 && !merged; i--) {
+                const src = schedule[i];
+                for (let j = 0; j < i; j++) {
+                    if (canMergeIntoDst(schedule[j], src)) {
+                        schedule[j].push(...src);
+                        schedule.splice(i, 1);
+                        merged = true;
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     return schedule;
 }
 
