@@ -448,6 +448,43 @@ function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
         schedule.push(cr);
     }
 
+    // Post-processing: merge pairs of under-capacity court rounds where the
+    // combined contents would fit in a single CR without any team collision.
+    // This recovers CRs the greedy left behind (typically 1–2 near the tail).
+    const canMergeIntoDst = (dstCR, srcCR) => {
+        if (dstCR.length + srcCR.length > courtCount) return false;
+        // Build a map of group → set of genRounds already present in dst
+        const dstByGroup = new Map();
+        dstCR.forEach(r => {
+            if (!dstByGroup.has(r.group)) dstByGroup.set(r.group, new Set());
+            dstByGroup.get(r.group).add(r.genRound);
+        });
+        return srcCR.every(r => {
+            const present = dstByGroup.get(r.group);
+            if (!present) return true;                // group absent: fine
+            if (present.has(r.genRound)) return true; // same genRound: conflict-free
+            return false;                             // different genRound: collision
+        });
+    };
+
+    // Repeatedly try to merge any smaller CR into an earlier one until no
+    // more merges are possible. O(n²) but n is small (≤ ~40 CRs in practice).
+    let mergedSomething = true;
+    while (mergedSomething) {
+        mergedSomething = false;
+        for (let i = schedule.length - 1; i >= 1 && !mergedSomething; i--) {
+            const src = schedule[i];
+            for (let j = 0; j < i; j++) {
+                if (canMergeIntoDst(schedule[j], src)) {
+                    schedule[j].push(...src);
+                    schedule.splice(i, 1);
+                    mergedSomething = true;
+                    break;
+                }
+            }
+        }
+    }
+
     return schedule;
 }
 
