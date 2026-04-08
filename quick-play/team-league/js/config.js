@@ -420,6 +420,13 @@ function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
     };
     const anyRemaining = () => pool.some(p => p.remaining.length > 0);
 
+    // Running count of how many times each group has been the "straggler donor"
+    // (contributed a partial packet in Pass 2). Used to pick the least-recently-
+    // used straggler group so the rotation is fair across all non-main groups
+    // — for 4 groups / 9 courts this produces straggler sequence C,A,D,B,C,A,D,B
+    // which gives every team an even rest cadence.
+    const stragglerCount = new Map(groups.map(g => [g, 0]));
+
     const schedule = [];
     let safety = 10000; // sanity guard against infinite loops
     while (anyRemaining() && safety-- > 0) {
@@ -447,18 +454,27 @@ function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
             }
         });
 
-        // Pass 2: fill leftover slots with partial packets from groups
-        // not yet used in this CR. Pull from the LAST pending packet of the
-        // group (atomise the final round rather than the first) so earlier
-        // rounds stay intact as whole packets for future CRs.
-        order.forEach(G => {
+        // Pass 2: fill leftover slots with partial packets from groups NOT
+        // yet used in this CR. Pick the candidate group with the LOWEST
+        // straggler count so far — this makes stragglers rotate fairly
+        // through all non-main groups instead of repeating one. Ties break
+        // on natural group order (A<B<C<D). Pull from the LAST pending
+        // packet of the chosen group (atomise the final round rather than
+        // the first) so earlier rounds stay intact as whole packets.
+        const pass2Order = groups
+            .filter(G => !groupsInThisCR.has(G))
+            .map(G => ({ G, count: stragglerCount.get(G) || 0, idx: groups.indexOf(G) }))
+            .sort((a, b) => (a.count - b.count) || (a.idx - b.idx))
+            .map(x => x.G);
+
+        pass2Order.forEach(G => {
             if (cr.length >= courtCount) return;
-            if (groupsInThisCR.has(G)) return;
             const packet = lastPendingForGroup(G);
             if (!packet || packet.remaining.length === 0) return;
             const take = Math.min(courtCount - cr.length, packet.remaining.length);
             cr.push(...packet.remaining.splice(0, take));
             groupsInThisCR.add(G);
+            stragglerCount.set(G, (stragglerCount.get(G) || 0) + 1);
         });
 
         if (cr.length === 0) break; // safety: nothing placed, avoid infinite loop
