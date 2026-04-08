@@ -585,6 +585,101 @@ function moveMatchToCourtRound(sourceCR, sourceIdx, targetCR) {
     renderTeamLeague();
 }
 
+// ===== Native HTML5 drag-and-drop between court rounds =====
+// Desktop organisers can grab a match card and drop it on another court-round
+// block. Mobile users continue to use the ↔ Move popover (native drag-drop is
+// not reliable on touch devices). All moves go through the same
+// state.moveMatchToCourtRound validator, so there's no new validation path.
+
+function _crDropValid(sourceRef, targetCrIdx) {
+    if (!state || !Array.isArray(state.courtSchedule)) return { ok: false, reason: 'No schedule' };
+    if (sourceRef.crIdx === targetCrIdx) return { ok: false, reason: 'Same court round' };
+    const dst = state.courtSchedule[targetCrIdx];
+    if (!dst) return { ok: false, reason: 'Invalid target' };
+    const courtCount = Math.max(1, state.courtCount || 4);
+    if (dst.length >= courtCount) return { ok: false, reason: 'Court round full' };
+    const conflict = dst.find(r => r.group === sourceRef.group && r.genRound !== sourceRef.genRound);
+    if (conflict) return { ok: false, reason: `Team conflict (Group ${sourceRef.group} R${conflict.genRound} already here)` };
+    return { ok: true };
+}
+
+function handleMatchDragStart(event, crIdx, posInCR) {
+    if (!state || !state.canEdit()) { event.preventDefault(); return; }
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', `${crIdx}:${posInCR}`);
+    // Visual feedback
+    const card = event.currentTarget;
+    if (card && card.classList) card.classList.add('dragging');
+}
+
+function handleMatchDragEnd(event) {
+    // Clear any lingering classes (covers drops outside a valid target too)
+    document.querySelectorAll('.team-match-card.dragging').forEach(el => el.classList.remove('dragging'));
+    document.querySelectorAll('.cr-drop-target-active, .cr-drop-target-invalid').forEach(el => {
+        el.classList.remove('cr-drop-target-active');
+        el.classList.remove('cr-drop-target-invalid');
+    });
+}
+
+function _parseDragSource(event) {
+    const raw = event.dataTransfer && event.dataTransfer.getData('text/plain');
+    if (!raw || !raw.includes(':')) return null;
+    const [crStr, posStr] = raw.split(':');
+    const crIdx = parseInt(crStr, 10);
+    const posInCR = parseInt(posStr, 10);
+    if (Number.isNaN(crIdx) || Number.isNaN(posInCR)) return null;
+    const cr = state && state.courtSchedule && state.courtSchedule[crIdx];
+    if (!cr || !cr[posInCR]) return null;
+    const ref = cr[posInCR];
+    return { crIdx, posInCR, group: ref.group, genRound: ref.genRound };
+}
+
+function handleMatchDragOver(event, targetCrIdx) {
+    if (!state || !state.canEdit()) return;
+    event.preventDefault(); // allow drop
+    const source = _parseDragSource(event);
+    const block = event.currentTarget;
+    if (!block || !block.classList) return;
+    // Validity live-check
+    if (source) {
+        const { ok } = _crDropValid(source, targetCrIdx);
+        block.classList.remove(ok ? 'cr-drop-target-invalid' : 'cr-drop-target-active');
+        block.classList.add(ok ? 'cr-drop-target-active' : 'cr-drop-target-invalid');
+        event.dataTransfer.dropEffect = ok ? 'move' : 'none';
+    } else {
+        // Firefox/Safari don't expose dataTransfer.getData() during dragover for
+        // security, so we can't run the validity check until drop. Fall back to
+        // a neutral purple highlight.
+        block.classList.add('cr-drop-target-active');
+        event.dataTransfer.dropEffect = 'move';
+    }
+}
+
+function handleMatchDragLeave(event) {
+    const block = event.currentTarget;
+    if (!block || !block.classList) return;
+    // Only clear when we actually leave the block (not when moving over a child)
+    if (block.contains(event.relatedTarget)) return;
+    block.classList.remove('cr-drop-target-active');
+    block.classList.remove('cr-drop-target-invalid');
+}
+
+function handleMatchDrop(event, targetCrIdx) {
+    if (!state || !state.canEdit()) return;
+    event.preventDefault();
+    const source = _parseDragSource(event);
+    // Clear visual state regardless of outcome
+    document.querySelectorAll('.team-match-card.dragging').forEach(el => el.classList.remove('dragging'));
+    document.querySelectorAll('.cr-drop-target-active, .cr-drop-target-invalid').forEach(el => {
+        el.classList.remove('cr-drop-target-active');
+        el.classList.remove('cr-drop-target-invalid');
+    });
+    if (!source) { showToast('❌ Could not read drag source'); return; }
+    // Reuse the existing click-handler which calls state.moveMatchToCourtRound
+    // (validates + persists + re-renders + toast)
+    moveMatchToCourtRound(source.crIdx, source.posInCR, targetCrIdx);
+}
+
 function openMovePopover(crIdx, matchIdxInCR) {
     if (!state || !state.canEdit()) return;
     state.movePopoverKey = `${crIdx}:${matchIdxInCR}`;

@@ -88,8 +88,13 @@ function GroupMatchCard(match, group, roundNum, matchNum, slot, courtName, crIdx
         `;
     }
 
+    const isDraggable = hasCrInfo && canEdit;
+
     return `
-        <div class="team-match-card ${isComplete ? 'complete' : ''} relative" data-group="${group}" data-team1="${match.team1Id}" data-team2="${match.team2Id}">
+        <div class="team-match-card ${isComplete ? 'complete' : ''} relative ${isDraggable ? 'draggable-card' : ''}"
+             data-group="${group}" data-team1="${match.team1Id}" data-team2="${match.team2Id}"
+             ${isDraggable ? `data-cr-idx="${crIdx}" data-pos-in-cr="${posInCR}"` : ''}
+             ${isDraggable ? `draggable="true" ondragstart="handleMatchDragStart(event, ${crIdx}, ${posInCR})" ondragend="handleMatchDragEnd(event)"` : ''}>
             <div class="match-header">
                 <div class="match-info flex items-center gap-2 flex-wrap">
                     <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-${groupColor}-500 text-white text-xs font-bold">${group}</span>
@@ -403,6 +408,12 @@ function FixturesTab() {
                 ` : ''}
             </div>
 
+            ${canEdit && totalCRs > 1 ? `
+                <div class="text-xs text-gray-500 flex items-center gap-2 -mt-2 mb-0">
+                    <span>💡 Drag a match card onto another court round to move it, or use the <strong>↔ Move</strong> button. Invalid drops show a red outline.</span>
+                </div>
+            ` : ''}
+
             <!-- Match grid grouped by Court Round -->
             ${(() => {
                 if (totalCRs === 0) return '';
@@ -431,7 +442,7 @@ function FixturesTab() {
                     }).join('');
 
                     return `
-                        <div class="mb-6">
+                        <div class="mb-6 cr-block rounded-xl" data-cr-idx="${crIdx}" ${canEdit ? `ondragover="handleMatchDragOver(event, ${crIdx})" ondragleave="handleMatchDragLeave(event)" ondrop="handleMatchDrop(event, ${crIdx})"` : ''}>
                             <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2 flex-wrap">
                                 <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-base">Court Round ${crIdx + 1}</span>
                                 <span class="text-gray-400 text-xs font-normal normal-case">${crSize} ${crSize === 1 ? 'match' : 'matches'} on ${Math.min(crSize, courtCount)} ${Math.min(crSize, courtCount) === 1 ? 'court' : 'courts'}</span>

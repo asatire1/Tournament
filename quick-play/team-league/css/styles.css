@@ -235,6 +235,30 @@ body {
     color: white;
 }
 
+/* ===== Court-round drag-and-drop (desktop only) ===== */
+.draggable-card[draggable="true"] {
+    cursor: grab;
+}
+.draggable-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+.team-match-card.dragging {
+    opacity: 0.4;
+}
+.cr-block {
+    transition: outline 120ms ease-in-out, background-color 120ms ease-in-out;
+}
+.cr-drop-target-active {
+    outline: 3px dashed rgb(168, 85, 247); /* purple-500 */
+    outline-offset: 4px;
+    background-color: rgba(168, 85, 247, 0.04);
+}
+.cr-drop-target-invalid {
+    outline: 3px dashed rgb(239, 68, 68); /* red-500 */
+    outline-offset: 4px;
+    background-color: rgba(239, 68, 68, 0.04);
+}
+
 .group-header-e {
     background: linear-gradient(135deg, #F43F5E 0%, #E11D48 100%);
     color: white;

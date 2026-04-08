@@ -408,6 +408,16 @@ function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
     if (pool.length === 0) return [];
 
     const firstPendingForGroup = (G) => pool.find(p => p.group === G && p.remaining.length > 0);
+    // Pass 2 uses this: walk pool from the end and return the last still-pending
+    // packet for a group. Atomising the LATEST pending round keeps the early
+    // rounds intact as whole packets (cheaper for later CRs) and pushes
+    // stragglers into the group's final round where they're cheapest to bleed.
+    const lastPendingForGroup = (G) => {
+        for (let i = pool.length - 1; i >= 0; i--) {
+            if (pool[i].group === G && pool[i].remaining.length > 0) return pool[i];
+        }
+        return undefined;
+    };
     const anyRemaining = () => pool.some(p => p.remaining.length > 0);
 
     const schedule = [];
@@ -433,11 +443,13 @@ function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
         });
 
         // Pass 2: fill leftover slots with partial packets from groups
-        // not yet used in this CR.
+        // not yet used in this CR. Pull from the LAST pending packet of the
+        // group (atomise the final round rather than the first) so earlier
+        // rounds stay intact as whole packets for future CRs.
         order.forEach(G => {
             if (cr.length >= courtCount) return;
             if (groupsInThisCR.has(G)) return;
-            const packet = firstPendingForGroup(G);
+            const packet = lastPendingForGroup(G);
             if (!packet || packet.remaining.length === 0) return;
             const take = Math.min(courtCount - cr.length, packet.remaining.length);
             cr.push(...packet.remaining.splice(0, take));
