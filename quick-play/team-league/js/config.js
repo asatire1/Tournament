@@ -426,8 +426,13 @@ function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
         const cr = [];
         const groupsInThisCR = new Set();
         // Rotate group order so different groups lead different court rounds.
-        // E.g. CR1 tries [A,B,C,D], CR2 tries [B,C,D,A], etc.
-        const rotation = schedule.length % groups.length;
+        // For even group counts we step by half the number of groups so paired
+        // groups alternate. With 4 groups that's a 2-step rotation producing
+        // [A,B,C,D] then [C,D,A,B] then [A,B,C,D]... so AB pairs and CD pairs
+        // alternate every court round, giving teams even breaks. Odd counts
+        // fall back to a 1-step rotation.
+        const step = groups.length % 2 === 0 ? Math.max(1, groups.length / 2) : 1;
+        const rotation = ((schedule.length * step) % groups.length + groups.length) % groups.length;
         const order = groups.slice(rotation).concat(groups.slice(0, rotation));
 
         // Pass 1: take whole packets that fit.
