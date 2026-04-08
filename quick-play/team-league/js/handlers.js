@@ -491,46 +491,33 @@ function cancelSwap() {
 
 function exportFixturesCsv() {
     if (!state) return;
-    const courtCount = Math.max(1, state.courtCount || 4);
     const courtNamesArr = (state.courtNames && state.courtNames.group) || [];
-    const activeGroups = state.getActiveGroupLetters();
-
-    // Collect all matches grouped by round, then assign slot/court (mirrors FixturesTab logic)
-    const matchesByRound = {};
-    activeGroups.forEach(g => {
-        const fixtures = state[`group${g}Fixtures`] || [];
-        fixtures.forEach((round, roundIdx) => {
-            const roundNum = round.round || (roundIdx + 1);
-            if (!matchesByRound[roundNum]) matchesByRound[roundNum] = [];
-            round.matches.forEach((match, matchIdx) => {
-                matchesByRound[roundNum].push({ group: g, roundNum, matchIdx, match });
-            });
-        });
-    });
+    const schedule = Array.isArray(state.courtSchedule) ? state.courtSchedule : [];
 
     const rows = [];
-    rows.push(['Round', 'Court Round', 'Court', 'Group', 'Match #', 'Team 1', 'Team 2', 'Score 1', 'Score 2', 'Status']);
+    rows.push(['Court Round', 'Court', 'Group Round', 'Group', 'Match #', 'Team 1', 'Team 2', 'Score 1', 'Score 2', 'Status']);
 
-    Object.keys(matchesByRound).map(Number).sort((a, b) => a - b).forEach(roundNum => {
-        const list = matchesByRound[roundNum];
-        list.forEach((m, idx) => {
-            const slot = Math.floor(idx / courtCount) + 1;
-            const courtIdx = idx % courtCount;
-            const courtName = courtNamesArr[courtIdx] || `Court ${courtIdx + 1}`;
-            const t1 = state.getTeamById(m.match.team1Id);
-            const t2 = state.getTeamById(m.match.team2Id);
-            const score = state.getGroupScore(m.group, m.match.team1Id, m.match.team2Id);
+    schedule.forEach((cr, crIdx) => {
+        cr.forEach((ref, posInCR) => {
+            const fixtures = state[`group${ref.group}Fixtures`] || [];
+            const gr = fixtures[ref.genRound - 1];
+            const match = gr && gr.matches ? gr.matches[ref.matchIdx] : null;
+            if (!match) return;
+            const t1 = state.getTeamById(match.team1Id);
+            const t2 = state.getTeamById(match.team2Id);
+            const score = state.getGroupScore(ref.group, match.team1Id, match.team2Id);
             const s1 = score.team1Score !== null ? score.team1Score : '';
             const s2 = score.team2Score !== null ? score.team2Score : '';
             const status = (s1 !== '' && s2 !== '') ? 'Complete' : 'Pending';
+            const courtName = courtNamesArr[posInCR] || `Court ${posInCR + 1}`;
             rows.push([
-                roundNum,
-                slot,
+                crIdx + 1,
                 courtName,
-                m.group,
-                m.matchIdx + 1,
-                t1?.name || `Team ${m.match.team1Id}`,
-                t2?.name || `Team ${m.match.team2Id}`,
+                ref.genRound,
+                ref.group,
+                ref.matchIdx + 1,
+                t1?.name || `Team ${match.team1Id}`,
+                t2?.name || `Team ${match.team2Id}`,
                 s1,
                 s2,
                 status
@@ -572,7 +559,41 @@ function updateCourtCount(value) {
     }
     state.saveSettingToFirebase('courtCount', n);
     state.saveCourtNamesToFirebase();
+
+    // Re-pack the schedule for the new court width
+    state.rebuildCourtSchedule();
+    state.saveSettingToFirebase('courtSchedule', state.courtSchedule);
+
     showToast(`✅ Court count set to ${n}`);
+    renderTeamLeague();
+}
+
+/**
+ * Move a match from one court round to another. Called from the "Move" popover
+ * in the Fixtures tab match card.
+ */
+function moveMatchToCourtRound(sourceCR, sourceIdx, targetCR) {
+    if (!state || !state.canEdit()) return;
+    const result = state.moveMatchToCourtRound(sourceCR, sourceIdx, targetCR);
+    if (result.ok) {
+        showToast(`✅ Match moved`);
+    } else {
+        showToast(`❌ ${result.reason || 'Could not move match'}`);
+    }
+    // Close any open popover
+    state.movePopoverKey = null;
+    renderTeamLeague();
+}
+
+function openMovePopover(crIdx, matchIdxInCR) {
+    if (!state || !state.canEdit()) return;
+    state.movePopoverKey = `${crIdx}:${matchIdxInCR}`;
+    renderTeamLeague();
+}
+
+function closeMovePopover() {
+    if (!state) return;
+    state.movePopoverKey = null;
     renderTeamLeague();
 }
 

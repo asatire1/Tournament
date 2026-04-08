@@ -37,7 +37,7 @@ function TeamBadge(team, size = 'full') {
 
 // ===== MATCH CARD COMPONENTS =====
 
-function GroupMatchCard(match, group, roundNum, matchNum, slot, courtName) {
+function GroupMatchCard(match, group, roundNum, matchNum, slot, courtName, crIdx, posInCR) {
     const team1 = state.getTeamById(match.team1Id);
     const team2 = state.getTeamById(match.team2Id);
     const score = state.getGroupScore(group, match.team1Id, match.team2Id);
@@ -56,9 +56,40 @@ function GroupMatchCard(match, group, roundNum, matchNum, slot, courtName) {
     const inputId2 = `score-${group}-${match.team1Id}-${match.team2Id}-2`;
     
     const groupColor = (CONFIG.GROUP_COLORS && CONFIG.GROUP_COLORS[group]) || 'blue';
+    const hasCrInfo = typeof crIdx === 'number' && typeof posInCR === 'number';
+    const popoverKey = hasCrInfo ? `${crIdx}:${posInCR}` : null;
+    const isPopoverOpen = popoverKey && state.movePopoverKey === popoverKey;
+
+    // Build move popover body if open
+    let movePopoverHtml = '';
+    if (isPopoverOpen && Array.isArray(state.courtSchedule)) {
+        const courtCount = Math.max(1, state.courtCount || 4);
+        const options = state.courtSchedule.map((cr, i) => {
+            if (i === crIdx) return null; // skip current CR
+            const dst = cr || [];
+            const full = dst.length >= courtCount;
+            const conflict = dst.find(r => r.group === group && r.genRound !== roundNum);
+            const disabled = full || !!conflict;
+            const reason = conflict ? `(Group ${group} R${conflict.genRound} already here)` : full ? `(full ${dst.length}/${courtCount})` : `(${dst.length}/${courtCount})`;
+            return `<button onclick="moveMatchToCourtRound(${crIdx}, ${posInCR}, ${i})" ${disabled ? 'disabled' : ''} class="w-full text-left px-3 py-2 text-xs rounded-lg ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-purple-50 hover:bg-purple-100 text-purple-700'} flex items-center justify-between gap-2"><span class="font-semibold">Court Round ${i + 1}</span><span class="text-[10px] opacity-80">${reason}</span></button>`;
+        }).filter(Boolean).join('');
+        const newCRIdx = state.courtSchedule.length;
+        movePopoverHtml = `
+            <div class="absolute right-0 top-full mt-1 z-50 w-72 bg-white border border-gray-200 rounded-xl shadow-lg p-3 max-h-96 overflow-y-auto" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="text-xs font-bold text-gray-700 uppercase tracking-wide">Move to Court Round</div>
+                    <button onclick="closeMovePopover()" class="text-gray-400 hover:text-gray-700 text-lg leading-none">×</button>
+                </div>
+                <div class="space-y-1">
+                    ${options || '<div class="text-xs text-gray-400 p-2">No other court rounds available.</div>'}
+                    <button onclick="moveMatchToCourtRound(${crIdx}, ${posInCR}, ${newCRIdx})" class="w-full text-left px-3 py-2 text-xs rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold">+ New Court Round ${newCRIdx + 1}</button>
+                </div>
+            </div>
+        `;
+    }
 
     return `
-        <div class="team-match-card ${isComplete ? 'complete' : ''}" data-group="${group}" data-team1="${match.team1Id}" data-team2="${match.team2Id}">
+        <div class="team-match-card ${isComplete ? 'complete' : ''} relative" data-group="${group}" data-team1="${match.team1Id}" data-team2="${match.team2Id}">
             <div class="match-header">
                 <div class="match-info flex items-center gap-2 flex-wrap">
                     <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-${groupColor}-500 text-white text-xs font-bold">${group}</span>
@@ -67,9 +98,15 @@ function GroupMatchCard(match, group, roundNum, matchNum, slot, courtName) {
                     <span class="match-number">Match ${matchNum}</span>
                     ${courtName ? `<span class="text-gray-300">•</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">${courtName}</span>` : ''}
                 </div>
-                ${isComplete && canEdit ? `
-                    <button class="clear-score-btn-small" onclick="clearGroupScore('${group}', ${match.team1Id}, ${match.team2Id})" title="Clear score">×</button>
-                ` : ''}
+                <div class="flex items-center gap-1 relative">
+                    ${hasCrInfo && canEdit ? `
+                        <button onclick="event.stopPropagation(); openMovePopover(${crIdx}, ${posInCR})" class="text-xs font-semibold px-2 py-0.5 rounded bg-purple-50 hover:bg-purple-100 text-purple-600 transition-colors" title="Move to another court round">↔ Move</button>
+                        ${movePopoverHtml}
+                    ` : ''}
+                    ${isComplete && canEdit ? `
+                        <button class="clear-score-btn-small" onclick="clearGroupScore('${group}', ${match.team1Id}, ${match.team2Id})" title="Clear score">×</button>
+                    ` : ''}
+                </div>
             </div>
             <div class="match-body">
                 <div class="teams-row">
@@ -304,57 +341,35 @@ function FixturesTab() {
         `;
     }
 
-    // ===== NEW UNIFIED LAYOUT: Round/Group filters + flat match grid =====
-    const filterRound = state.fixturesFilterRound || 'all';
+    // ===== COURT-SCHEDULE LAYOUT: filters + move-aware flat grid =====
+    const filterCourtRound = state.fixturesFilterRound || 'all'; // reusing existing field as "Court Round"
     const filterGroup = state.fixturesFilterGroup || 'all';
     const groupColors = CONFIG.GROUP_COLORS;
     const courtCount = Math.max(1, state.courtCount || 4);
     const courtNamesArr = (state.courtNames && state.courtNames.group) || [];
+    const canEdit = state.canEdit();
 
-    // Compute max rounds across all active groups
-    const maxRounds = Math.max(0, ...activeGroups.map(g => allFixtures[g].length));
+    // Lazy-rebuild the schedule if it's empty but fixtures exist (e.g. an older
+    // tournament that predates courtSchedule). This keeps the view usable on
+    // first load without forcing the organiser to regenerate fixtures.
+    if ((!state.courtSchedule || state.courtSchedule.length === 0) && activeGroups.some(g => (allFixtures[g] || []).length > 0)) {
+        state.rebuildCourtSchedule();
+    }
+    const schedule = Array.isArray(state.courtSchedule) ? state.courtSchedule : [];
+    const totalCRs = schedule.length;
 
-    // Step 1: collect ALL matches in every active group, keyed by round
-    // (we need the unfiltered set per round to compute slot indices consistently)
-    const matchesByRound = {};
-    activeGroups.forEach(g => {
-        (allFixtures[g] || []).forEach((round, roundIdx) => {
-            const roundNum = round.round || (roundIdx + 1);
-            if (!matchesByRound[roundNum]) matchesByRound[roundNum] = [];
-            round.matches.forEach((match, matchIdx) => {
-                matchesByRound[roundNum].push({ group: g, roundNum, matchIdx, match });
-            });
-        });
-    });
-
-    // Step 2: assign slot + court within each round, then apply filters
-    const allMatches = [];
-    Object.keys(matchesByRound).map(Number).sort((a, b) => a - b).forEach(roundNum => {
-        if (filterRound !== 'all' && parseInt(filterRound) !== roundNum) return;
-        const matches = matchesByRound[roundNum];
-        matches.forEach((m, idx) => {
-            m.slot = Math.floor(idx / courtCount) + 1;
-            m.courtIdx = idx % courtCount;
-            m.courtName = courtNamesArr[m.courtIdx] || `Court ${m.courtIdx + 1}`;
-        });
-        matches.forEach(m => {
-            if (filterGroup !== 'all' && filterGroup !== m.group) return;
-            allMatches.push(m);
-        });
-    });
-
-    const hasFilters = filterRound !== 'all' || filterGroup !== 'all';
+    const hasFilters = filterCourtRound !== 'all' || filterGroup !== 'all';
 
     return `
         <div class="space-y-6">
             <!-- Filter section -->
             <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                 <div class="flex flex-wrap items-end gap-3 mb-4">
-                    <div class="w-36">
-                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Round</label>
+                    <div class="w-44">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Court Round</label>
                         <select onchange="state.fixturesFilterRound = this.value; renderTeamLeague();" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-50 transition-all text-sm font-medium">
-                            <option value="all" ${filterRound === 'all' ? 'selected' : ''}>All Rounds</option>
-                            ${Array.from({length: maxRounds}, (_, i) => `<option value="${i + 1}" ${filterRound == (i + 1) ? 'selected' : ''}>Round ${i + 1}</option>`).join('')}
+                            <option value="all" ${filterCourtRound === 'all' ? 'selected' : ''}>All Court Rounds</option>
+                            ${Array.from({length: totalCRs}, (_, i) => `<option value="${i + 1}" ${filterCourtRound == (i + 1) ? 'selected' : ''}>Court Round ${i + 1}</option>`).join('')}
                         </select>
                     </div>
                     ${hasMultipleGroups ? `
@@ -370,11 +385,11 @@ function FixturesTab() {
                     <button onclick="exportFixturesCsv()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5" title="Download all fixtures as CSV">
                         ⬇ CSV
                     </button>
-                    <div class="text-sm text-gray-500 py-2.5">${allMatches.length} ${allMatches.length === 1 ? 'match' : 'matches'} • ${totalCompleted}/${totalMatches} complete • ${courtCount} ${courtCount === 1 ? 'court' : 'courts'}</div>
+                    <div class="text-sm text-gray-500 py-2.5">${totalMatches} ${totalMatches === 1 ? 'match' : 'matches'} • ${totalCompleted}/${totalMatches} complete • ${totalCRs} court ${totalCRs === 1 ? 'round' : 'rounds'} • ${courtCount} ${courtCount === 1 ? 'court' : 'courts'}</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="state.fixturesFilterRound = 'all'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterRound === 'all' ? 'bg-purple-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">All</button>
-                    ${Array.from({length: maxRounds}, (_, i) => `<button onclick="state.fixturesFilterRound = '${i + 1}'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterRound == (i + 1) ? 'bg-purple-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">R${i + 1}</button>`).join('')}
+                    <button onclick="state.fixturesFilterRound = 'all'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterCourtRound === 'all' ? 'bg-purple-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">All</button>
+                    ${Array.from({length: totalCRs}, (_, i) => `<button onclick="state.fixturesFilterRound = '${i + 1}'; renderTeamLeague();" class="px-3 py-2 rounded-xl text-xs font-semibold transition-all ${filterCourtRound == (i + 1) ? 'bg-purple-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">CR${i + 1}</button>`).join('')}
                 </div>
                 ${hasMultipleGroups ? `
                 <div class="flex flex-wrap gap-2 mt-2">
@@ -388,35 +403,51 @@ function FixturesTab() {
                 ` : ''}
             </div>
 
-            <!-- Match grid grouped by Round → Slot -->
+            <!-- Match grid grouped by Court Round -->
             ${(() => {
-                if (allMatches.length === 0) return '';
-                // Group by round → slot
-                const buckets = {};
-                allMatches.forEach(m => {
-                    const k = `${m.roundNum}__${m.slot}`;
-                    if (!buckets[k]) buckets[k] = { roundNum: m.roundNum, slot: m.slot, matches: [] };
-                    buckets[k].matches.push(m);
-                });
-                const ordered = Object.values(buckets).sort((a, b) =>
-                    a.roundNum - b.roundNum || a.slot - b.slot
-                );
-                return ordered.map(b => `
-                    <div class="mb-6">
-                        <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded">Round ${b.roundNum}</span>
-                            <span class="text-gray-400">•</span>
-                            <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded">Court Round ${b.slot}</span>
-                            <span class="text-gray-400 text-xs font-normal normal-case">${b.matches.length} ${b.matches.length === 1 ? 'match' : 'matches'} on ${Math.min(b.matches.length, courtCount)} ${Math.min(b.matches.length, courtCount) === 1 ? 'court' : 'courts'}</span>
-                        </h3>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            ${b.matches.map(m => GroupMatchCard(m.match, m.group, m.roundNum, m.matchIdx + 1, m.slot, m.courtName)).join('')}
+                if (totalCRs === 0) return '';
+                const visibleCRs = schedule
+                    .map((cr, crIdx) => ({ crIdx, cr }))
+                    .filter(({ crIdx }) => filterCourtRound === 'all' || parseInt(filterCourtRound) === (crIdx + 1));
+
+                let renderedAnyMatch = false;
+                const html = visibleCRs.map(({ crIdx, cr }) => {
+                    // Apply group filter to the visible match list in this CR
+                    const visibleMatches = cr
+                        .map((ref, posInCR) => ({ ref, posInCR }))
+                        .filter(({ ref }) => filterGroup === 'all' || filterGroup === ref.group);
+                    if (visibleMatches.length === 0) return '';
+                    renderedAnyMatch = true;
+
+                    const crSize = cr.length;
+                    const cardsHtml = visibleMatches.map(({ ref, posInCR }) => {
+                        // Resolve the live match data from the fixtures.
+                        const groupFixtures = state[`group${ref.group}Fixtures`] || [];
+                        const genRoundEntry = groupFixtures[ref.genRound - 1];
+                        const match = genRoundEntry && genRoundEntry.matches ? genRoundEntry.matches[ref.matchIdx] : null;
+                        if (!match) return '';
+                        const courtName = courtNamesArr[posInCR] || `Court ${posInCR + 1}`;
+                        return GroupMatchCard(match, ref.group, ref.genRound, ref.matchIdx + 1, crIdx + 1, courtName, crIdx, posInCR);
+                    }).join('');
+
+                    return `
+                        <div class="mb-6">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2 flex-wrap">
+                                <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-base">Court Round ${crIdx + 1}</span>
+                                <span class="text-gray-400 text-xs font-normal normal-case">${crSize} ${crSize === 1 ? 'match' : 'matches'} on ${Math.min(crSize, courtCount)} ${Math.min(crSize, courtCount) === 1 ? 'court' : 'courts'}</span>
+                            </h3>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                ${cardsHtml}
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
+
+                if (!renderedAnyMatch) return '';
+                return html;
             })()}
 
-            ${allMatches.length === 0 ? `<div class="text-center py-20"><div class="text-7xl mb-5 opacity-20">🔍</div><div class="text-xl font-semibold text-gray-400 mb-2">No matches found</div><div class="text-sm text-gray-400">Try adjusting your filters</div></div>` : ''}
+            ${totalCRs === 0 ? `<div class="text-center py-20"><div class="text-7xl mb-5 opacity-20">📋</div><div class="text-xl font-semibold text-gray-400 mb-2">No fixtures generated</div><div class="text-sm text-gray-400">Generate fixtures in Settings → Groups</div></div>` : ''}
         </div>
     `;
 }

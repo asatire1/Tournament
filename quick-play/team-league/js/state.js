@@ -135,6 +135,12 @@ class TeamLeagueState {
         // Used to slot fixtures into "court rounds" of N concurrent matches each.
         this.courtCount = 4;
 
+        // Court schedule: source of truth for how matches are distributed across
+        // court rounds. Populated by buildCourtSchedule() on generateFixtures()
+        // or rebuildCourtSchedule(). Mutated in place by moveMatchToCourtRound().
+        // Array<Array<{group, genRound, matchIdx}>>
+        this.courtSchedule = [];
+
         // Court names
         this.courtNames = {
             group: ['Court 1', 'Court 2', 'Court 3', 'Court 4'],
@@ -255,6 +261,7 @@ class TeamLeagueState {
         this.knockoutFormat = data.knockoutFormat || 'quarter_final';
         this.qualifiersPerGroup = data.qualifiersPerGroup || 4;
         this.courtCount = (typeof data.courtCount === 'number' && data.courtCount > 0) ? data.courtCount : 4;
+        this.courtSchedule = Array.isArray(data.courtSchedule) ? data.courtSchedule : [];
 
         // Teams (static)
         this.teams = data.teams || [];
@@ -576,6 +583,7 @@ class TeamLeagueState {
         });
         updates['qualifiersPerGroup'] = this.qualifiersPerGroup;
         updates['courtCount'] = this.courtCount;
+        updates['courtSchedule'] = this.courtSchedule;
         updates['groupMatchScores'] = this.groupMatchScores;
         updates['knockoutScores'] = this.knockoutScores;
         updates['knockoutTeams'] = this.knockoutTeams;
@@ -918,8 +926,78 @@ class TeamLeagueState {
         CONFIG.ALL_GROUP_LETTERS.forEach(letter => { scores[letter] = {}; });
         this.groupMatchScores = scores;
 
+        // Rebuild the court schedule from scratch on every fixture generation.
+        this.rebuildCourtSchedule();
+
         this.saveToFirebase();
         return true;
+    }
+
+    // ===== COURT SCHEDULE =====
+
+    /**
+     * Rebuild the court schedule by running the packer over current fixtures.
+     * Overwrites any manual overrides (matches the "always re-pack from scratch"
+     * policy when courts or fixtures change).
+     */
+    rebuildCourtSchedule() {
+        const activeLetters = this.getActiveGroupLetters();
+        if (typeof buildCourtSchedule !== 'function') {
+            console.warn('buildCourtSchedule not loaded yet');
+            this.courtSchedule = [];
+            return;
+        }
+        this.courtSchedule = buildCourtSchedule(activeLetters, this, Math.max(1, this.courtCount || 4));
+    }
+
+    /**
+     * Move a match from one court round to another.
+     * Validates:
+     *  - target CR isn't already at capacity
+     *  - target CR doesn't already contain another match from the same
+     *    group on a different genRound (would cause a team collision)
+     * Returns { ok: boolean, reason?: string }.
+     */
+    moveMatchToCourtRound(sourceCR, sourceIdx, targetCR) {
+        if (!this.canEdit()) return { ok: false, reason: 'Not organiser' };
+        if (!Array.isArray(this.courtSchedule)) return { ok: false, reason: 'No schedule' };
+        const src = this.courtSchedule[sourceCR];
+        if (!src || !src[sourceIdx]) return { ok: false, reason: 'Invalid source' };
+
+        // Create target CR if user picked "new" (sentinel = courtSchedule.length)
+        if (targetCR === this.courtSchedule.length) {
+            this.courtSchedule.push([]);
+        }
+        const dst = this.courtSchedule[targetCR];
+        if (!dst) return { ok: false, reason: 'Invalid target' };
+        if (sourceCR === targetCR) return { ok: false, reason: 'Same court round' };
+
+        const ref = src[sourceIdx];
+        const courtCount = Math.max(1, this.courtCount || 4);
+
+        if (dst.length >= courtCount) {
+            return { ok: false, reason: `Court round full (${courtCount})` };
+        }
+
+        // Team-collision check: if dst already has a match from the same group
+        // on a DIFFERENT genRound, reject. (Same genRound is always fine — the
+        // generator guarantees it's conflict-free.)
+        const conflict = dst.find(r => r.group === ref.group && r.genRound !== ref.genRound);
+        if (conflict) {
+            return { ok: false, reason: `Team conflict: Group ${ref.group} R${conflict.genRound} already in this court round` };
+        }
+
+        // Perform the move.
+        src.splice(sourceIdx, 1);
+        dst.push(ref);
+
+        // Remove the source CR if it's now empty and isn't the last one.
+        if (src.length === 0) {
+            this.courtSchedule.splice(sourceCR, 1);
+        }
+
+        this.saveSettingToFirebase('courtSchedule', this.courtSchedule);
+        return { ok: true };
     }
 
     // ===== SCORE MANAGEMENT =====

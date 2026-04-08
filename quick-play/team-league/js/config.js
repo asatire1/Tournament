@@ -361,6 +361,97 @@ function generateRoundRobinFixtures(teams) {
 }
 
 /**
+ * Build a court schedule from round-robin fixtures by tightly packing
+ * matches into "court rounds" of `courtCount` concurrent matches each.
+ *
+ * @param {Array<string>} activeGroups - e.g. ['A','B','C','D']
+ * @param {Object} fixtureSource - object exposing `group${letter}Fixtures`
+ *        (either the state instance or a plain map)
+ * @param {number} courtCount - number of courts available simultaneously
+ * @returns {Array<Array<{group:string, genRound:number, matchIdx:number}>>}
+ *          schedule[i] = list of match references playing in court round i+1
+ *
+ * Constraints enforced:
+ * - Within one court round, at most one "packet" per group
+ *   (a packet = all matches from one generator round of that group,
+ *    which the round-robin generator guarantees share no teams).
+ * - Matches from different groups never share teams, so they can always
+ *   coexist in the same court round.
+ *
+ * Algorithm: two-pass greedy. Pass 1 takes whole generator-round packets
+ * that fit. Pass 2 fills leftover slots with partial packets from groups
+ * not yet used in this court round. Group rotation order shifts each
+ * court round so different groups lead each CR, distributing stragglers
+ * across the tournament instead of bunching them at the end.
+ */
+function buildCourtSchedule(activeGroups, fixtureSource, courtCount) {
+    courtCount = Math.max(1, courtCount | 0);
+    const groups = Array.isArray(activeGroups) ? activeGroups.slice() : [];
+    if (groups.length === 0) return [];
+
+    // Build the pool: one entry per (group, genRound) with an array of
+    // remaining match refs. Entries are consumed by the greedy loop below.
+    const pool = [];
+    groups.forEach(g => {
+        const fixtures = (fixtureSource && fixtureSource[`group${g}Fixtures`]) || [];
+        fixtures.forEach((round, roundIdx) => {
+            const genRound = round.round || (roundIdx + 1);
+            const refs = (round.matches || []).map((_, matchIdx) => ({
+                group: g,
+                genRound,
+                matchIdx
+            }));
+            if (refs.length > 0) pool.push({ group: g, genRound, remaining: refs });
+        });
+    });
+
+    if (pool.length === 0) return [];
+
+    const firstPendingForGroup = (G) => pool.find(p => p.group === G && p.remaining.length > 0);
+    const anyRemaining = () => pool.some(p => p.remaining.length > 0);
+
+    const schedule = [];
+    let safety = 10000; // sanity guard against infinite loops
+    while (anyRemaining() && safety-- > 0) {
+        const cr = [];
+        const groupsInThisCR = new Set();
+        // Rotate group order so different groups lead different court rounds.
+        // E.g. CR1 tries [A,B,C,D], CR2 tries [B,C,D,A], etc.
+        const rotation = schedule.length % groups.length;
+        const order = groups.slice(rotation).concat(groups.slice(0, rotation));
+
+        // Pass 1: take whole packets that fit.
+        order.forEach(G => {
+            if (groupsInThisCR.has(G)) return;
+            const packet = firstPendingForGroup(G);
+            if (!packet) return;
+            if (cr.length + packet.remaining.length <= courtCount) {
+                cr.push(...packet.remaining);
+                packet.remaining = [];
+                groupsInThisCR.add(G);
+            }
+        });
+
+        // Pass 2: fill leftover slots with partial packets from groups
+        // not yet used in this CR.
+        order.forEach(G => {
+            if (cr.length >= courtCount) return;
+            if (groupsInThisCR.has(G)) return;
+            const packet = firstPendingForGroup(G);
+            if (!packet || packet.remaining.length === 0) return;
+            const take = Math.min(courtCount - cr.length, packet.remaining.length);
+            cr.push(...packet.remaining.splice(0, take));
+            groupsInThisCR.add(G);
+        });
+
+        if (cr.length === 0) break; // safety: nothing placed, avoid infinite loop
+        schedule.push(cr);
+    }
+
+    return schedule;
+}
+
+/**
  * Get knockout matchups based on group standings
  */
 function getKnockoutMatchups(groupAStandings, groupBStandings, groupMode) {
