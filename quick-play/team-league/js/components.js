@@ -390,6 +390,12 @@ function FixturesTab() {
                     <button onclick="exportFixturesCsv()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5" title="Download all fixtures as CSV">
                         ⬇ CSV
                     </button>
+                    <button onclick="exportSchedulesPdf()" class="px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5" title="Download a single PDF with every team's schedule (one page per team)">
+                        📄 PDF schedules
+                    </button>
+                    <button onclick="exportSchedulesZip()" class="px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5" title="Download a ZIP with one PDF per team">
+                        🗂 ZIP
+                    </button>
                     <div class="text-sm text-gray-500 py-2.5">${totalMatches} ${totalMatches === 1 ? 'match' : 'matches'} • ${totalCompleted}/${totalMatches} complete • ${totalCRs} court ${totalCRs === 1 ? 'round' : 'rounds'} • ${courtCount} ${courtCount === 1 ? 'court' : 'courts'}</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -1077,6 +1083,11 @@ function TeamsSettingsSection() {
                                 <div class="text-xs text-gray-400">Combined: ${team.combinedRating.toFixed(1)} • Group ${team.group || 'Unassigned'}</div>
                             </div>
                             <div class="flex gap-1 items-center">
+                                ${(Array.isArray(state.courtSchedule) && state.courtSchedule.length > 0) ? `
+                                <button onclick="shareTeamSchedule(${team.id})" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Share or download this team's schedule as PDF">
+                                    📤
+                                </button>
+                                ` : ''}
                                 <button onclick="startTeamEdit(${team.id})" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Edit team">
                                     ✏️
                                 </button>
