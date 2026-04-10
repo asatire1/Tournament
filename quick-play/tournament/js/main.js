@@ -55,13 +55,26 @@ function updateConnectionIndicator(isConnected) {
 
 // Handle route changes
 async function handleRouteChange(route, tournamentId, organiserKey) {
+    // Recover organiser key from sessionStorage when the URL doesn't carry
+    // one. Handles round-trips into TV mode (keyless) and any in-app
+    // navigation that loses the ?key= query string. sessionStorage is
+    // tab-scoped so it can't leak beyond the current tab.
+    if (!organiserKey && tournamentId) {
+        try {
+            const cached = sessionStorage.getItem('tournament_key_' + tournamentId);
+            if (cached) organiserKey = cached;
+        } catch (e) { /* private mode / disabled — ignore */ }
+    }
+
     console.log(`📍 Route: ${route}, Tournament: ${tournamentId}, Key: ${organiserKey ? 'present' : 'none'}`);
-    
+
     if (route === Router.routes.HOME) {
         // Show landing page
         await renderLandingPageView();
     } else if (route === Router.routes.TV) {
-        await initializeTournament(tournamentId, null);
+        // Forward the recovered key into the loader so the same session
+        // keeps write ownership while viewing the presentation screen.
+        await initializeTournament(tournamentId, organiserKey);
         TVMode.init(getTvData);
     } else if (route === Router.routes.TOURNAMENT) {
         // Show tournament view
