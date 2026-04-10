@@ -547,6 +547,79 @@ function exportFixturesCsv() {
     showToast(`✅ Exported ${rows.length - 1} fixtures to CSV`);
 }
 
+// ===== PER-TEAM SCHEDULE PDF EXPORT =====
+// These wrap window.TeamSchedulePdf (quick-play/team-league/js/schedule-pdf.js),
+// which lazy-loads jsPDF/jszip from CDN the first time it's invoked.
+
+function _ensureTeamSchedulePdf() {
+    if (!window.TeamSchedulePdf) {
+        showToast('❌ PDF export unavailable — reload the page');
+        return null;
+    }
+    return window.TeamSchedulePdf;
+}
+
+function _hasScheduleData() {
+    if (!state) return false;
+    const teams = Array.isArray(state.teams) ? state.teams : [];
+    const schedule = Array.isArray(state.courtSchedule) ? state.courtSchedule : [];
+    return teams.length > 0 && schedule.length > 0;
+}
+
+async function exportSchedulesPdf() {
+    const api = _ensureTeamSchedulePdf();
+    if (!api || !state) return;
+    if (!_hasScheduleData()) {
+        showToast('❌ Generate fixtures first');
+        return;
+    }
+    try {
+        showToast('⏳ Building schedules PDF…');
+        const res = await api.exportCombined(state);
+        showToast(`✅ Exported schedules for ${res.count} ${res.count === 1 ? 'team' : 'teams'}`);
+    } catch (err) {
+        console.error('exportSchedulesPdf failed', err);
+        showToast('❌ PDF export failed');
+    }
+}
+
+async function exportSchedulesZip() {
+    const api = _ensureTeamSchedulePdf();
+    if (!api || !state) return;
+    if (!_hasScheduleData()) {
+        showToast('❌ Generate fixtures first');
+        return;
+    }
+    try {
+        showToast('⏳ Building ZIP of schedules…');
+        const res = await api.exportZip(state);
+        showToast(`✅ Zipped ${res.count} ${res.count === 1 ? 'schedule' : 'schedules'}`);
+    } catch (err) {
+        console.error('exportSchedulesZip failed', err);
+        showToast('❌ ZIP export failed');
+    }
+}
+
+async function shareTeamSchedule(teamId) {
+    const api = _ensureTeamSchedulePdf();
+    if (!api || !state) return;
+    const id = parseInt(teamId, 10);
+    if (!id) return;
+    if (!_hasScheduleData()) {
+        showToast('❌ Generate fixtures first');
+        return;
+    }
+    try {
+        const res = await api.shareTeam(state, id);
+        if (res.cancelled) return;
+        if (res.shared) showToast('✅ Shared');
+        else showToast(`✅ Downloaded ${res.filename}`);
+    } catch (err) {
+        console.error('shareTeamSchedule failed', err);
+        showToast('❌ Share failed');
+    }
+}
+
 function updateCourtCount(value) {
     if (!state || !state.canEdit()) return;
     const n = Math.max(1, Math.min(16, parseInt(value) || 1));
