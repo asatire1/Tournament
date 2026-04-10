@@ -223,12 +223,25 @@ class TeamLeagueState {
 
             if (this.isOrganiser) {
                 console.log('✅ Organiser access granted');
+                // Persist the verified key in sessionStorage so the organiser
+                // can navigate into TV mode (or any keyless route) and come
+                // back without losing write ownership. sessionStorage is
+                // tab-scoped and cleared when the tab closes, which is the
+                // right lifetime for a shared-secret.
+                try {
+                    sessionStorage.setItem('teamLeague_key_' + this.tournamentId, key);
+                } catch (e) { /* private mode / disabled — ignore */ }
                 // Upgrade from polling to real-time sync
                 this.upgradeToRealtime();
                 // Re-anchor Firebase ownership to this session's anon UID so writes succeed
                 await this.claimOwnership();
             } else {
                 console.log('❌ Invalid organiser key');
+                // Wipe any stale cached key for this tournament — whatever
+                // was in sessionStorage no longer matches the server.
+                try {
+                    sessionStorage.removeItem('teamLeague_key_' + this.tournamentId);
+                } catch (e) { /* ignore */ }
             }
 
             return this.isOrganiser;
