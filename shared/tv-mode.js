@@ -9,9 +9,25 @@ const TVMode = {
     isActive: false,
     getDataFn: null,
 
+    // localStorage key for the "tables only" preference. Shared across all
+    // formats — toggling it on Team League also affects Americano, Mexicano, etc.
+    _TABLES_ONLY_KEY: 'tvMode_tablesOnly',
+
     init(getDataFn) {
         this.isActive = true;
         this.getDataFn = getDataFn;
+        this.render();
+    },
+
+    _isTablesOnly() {
+        try { return localStorage.getItem(this._TABLES_ONLY_KEY) === 'true'; }
+        catch (e) { return false; }
+    },
+
+    toggleTablesOnly() {
+        const next = !this._isTablesOnly();
+        try { localStorage.setItem(this._TABLES_ONLY_KEY, next ? 'true' : 'false'); }
+        catch (e) { /* ignore — Safari private mode, etc. */ }
         this.render();
     },
 
@@ -44,6 +60,11 @@ const TVMode = {
 
         const hasMatches = data.currentMatches && data.currentMatches.length > 0;
         const liveCount = hasMatches ? data.currentMatches.filter(m => m.isLive).length : 0;
+        const tablesOnly = this._isTablesOnly();
+        // When tables-only is on, the fixtures panel is removed and standings
+        // take the full width. showMatches is the effective "render the right
+        // side?" flag — it still respects tablesOnly even if there are matches.
+        const showMatches = hasMatches && !tablesOnly;
 
         document.getElementById('app').innerHTML = `
             <style>
@@ -76,6 +97,12 @@ const TVMode = {
                                 <span class="font-semibold text-sm text-gray-400">IDLE</span>
                             </div>
                         `}
+                        <button onclick="TVMode.toggleTablesOnly()" class="${tablesOnly ? 'bg-white text-gray-900 hover:bg-white/90' : 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'} h-10 px-3 rounded-xl flex items-center gap-2 transition-colors text-sm font-semibold" title="${tablesOnly ? 'Show fixtures panel again' : 'Show standings tables only (hide fixtures)'}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18M3 18h18M3 6h18"/>
+                            </svg>
+                            <span class="hidden md:inline">${tablesOnly ? 'Show All' : 'Tables Only'}</span>
+                        </button>
                         <button onclick="TVMode.exit()" class="bg-white/10 hover:bg-white/20 text-white/60 hover:text-white w-10 h-10 rounded-xl flex items-center justify-center transition-colors" title="Exit TV Mode">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
@@ -83,12 +110,12 @@ const TVMode = {
                 </div>
 
                 <!-- Content -->
-                <div class="flex-1 flex ${hasMatches ? 'flex-col lg:flex-row' : ''} overflow-hidden">
+                <div class="flex-1 flex ${showMatches ? 'flex-col lg:flex-row' : ''} overflow-hidden">
                     <!-- Standings -->
-                    <div class="${hasMatches ? 'lg:w-[45%] w-full' : 'w-full'} overflow-y-auto p-4 md:p-6">
-                        ${this._renderStandings(data, accent)}
+                    <div class="${showMatches ? 'lg:w-[45%] w-full' : 'w-full'} overflow-y-auto p-4 md:p-6">
+                        ${this._renderStandings(data, accent, { grid: tablesOnly })}
                     </div>
-                    ${hasMatches ? `
+                    ${showMatches ? `
                         <!-- Matches -->
                         <div class="lg:w-[55%] w-full overflow-y-auto p-4 md:p-6 lg:border-l border-t lg:border-t-0 border-white/10">
                             ${this._renderMatches(data, accent)}
@@ -116,13 +143,18 @@ const TVMode = {
         `;
     },
 
-    _renderStandings(data, accent) {
+    _renderStandings(data, accent, options) {
+        const opts = options || {};
+        const gridMode = !!opts.grid;
         const groups = data.standingsGroups || [{ groupName: null, standings: data.standings || [] }];
         if (groups.length === 0 || (groups.length === 1 && (!groups[0].standings || groups[0].standings.length === 0))) {
             return `<div class="flex items-center justify-center h-full text-gray-500 text-2xl">No standings yet</div>`;
         }
 
-        return groups.map(group => {
+        // In grid mode, drop per-table margin-bottom (grid `gap-*` handles spacing).
+        const tableBottomMargin = gridMode ? '' : 'mb-6';
+
+        const groupHtmls = groups.map(group => {
             const standings = group.standings || [];
             if (standings.length === 0) return '';
 
@@ -132,9 +164,9 @@ const TVMode = {
             const hasPD = standings.some(s => s.pointsDiff != null);
             const hasExtra = standings.some(s => s.extraColumns && s.extraColumns.length > 0);
 
-            return `
+            const tableHtml = `
                 ${group.groupName ? `<h2 class="text-lg font-bold ${accent.text} mb-3 uppercase tracking-wider">Group ${group.groupName}</h2>` : ''}
-                <table class="w-full text-left mb-6">
+                <table class="w-full text-left ${tableBottomMargin}">
                     <thead>
                         <tr class="text-gray-500 text-sm uppercase tracking-wider border-b border-white/10">
                             <th class="py-3 px-2 w-10">#</th>
@@ -174,7 +206,24 @@ const TVMode = {
                     </tbody>
                 </table>
             `;
-        }).join('');
+
+            // Wrap each group in its own block so it becomes a grid cell.
+            return gridMode ? `<div>${tableHtml}</div>` : tableHtml;
+        }).filter(Boolean);
+
+        // Responsive grid when tables-only mode is on AND there's more than
+        // one non-empty group. 2 groups → 2 cols, 3–4 → 2 cols, 5–9 → up to 3.
+        if (gridMode && groupHtmls.length > 1) {
+            const n = groupHtmls.length;
+            let cols = 'grid-cols-1';
+            if (n === 2)       cols = 'grid-cols-1 md:grid-cols-2';
+            else if (n <= 4)   cols = 'grid-cols-1 md:grid-cols-2';
+            else if (n <= 6)   cols = 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3';
+            else               cols = 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3';
+            return `<div class="grid ${cols} gap-4 md:gap-6">${groupHtmls.join('')}</div>`;
+        }
+
+        return groupHtmls.join('');
     },
 
     _renderMatches(data, accent) {
