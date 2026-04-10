@@ -296,9 +296,21 @@ const TVMode = {
         const spacer = document.getElementById('shared-nav-spacer');
         if (nav) nav.style.display = '';
         if (spacer) spacer.style.display = '';
-        // Navigate back to tournament view (remove /tv from hash)
-        const hash = window.location.hash.replace(/\/tv$/, '');
-        window.location.hash = hash;
+
+        // Prefer history.back() when the user navigated INTO TV mode from
+        // another in-app page: stepping back restores the previous URL
+        // exactly as it was, including any ?key= query string an organiser
+        // had. Falling back to the manual hash-strip only if we're at the
+        // start of the history stack (e.g. someone opened the TV link
+        // directly in a new tab) — in that case the app page's own
+        // sessionStorage fallback picks the key back up.
+        const canGoBack = (window.history && window.history.length > 1);
+        if (canGoBack) {
+            window.history.back();
+        } else {
+            const hash = window.location.hash.replace(/\/tv$/, '');
+            window.location.hash = hash;
+        }
     },
 
     getTVLink(tournamentId) {
