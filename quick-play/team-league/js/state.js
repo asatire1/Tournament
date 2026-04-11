@@ -197,11 +197,37 @@ class TeamLeagueState {
      * check. The Firebase rule allows this rewrite only when organiserKey
      * is unchanged in the new payload.
      */
+    /**
+     * Wait for Firebase anonymous auth to finish signing the user in so
+     * firebase.auth().currentUser is available. The tournament loader can
+     * easily race the initial signInAnonymously() call, so any method
+     * that needs currentUser must await this first. Resolves to the UID
+     * on success, or null if no user appears within the timeout.
+     */
+    async _awaitFirebaseAuthUid(timeoutMs = 8000) {
+        if (typeof firebase === 'undefined' || !firebase.auth) return null;
+        const auth = firebase.auth();
+        if (auth.currentUser) return auth.currentUser.uid;
+        return new Promise(resolve => {
+            let done = false;
+            const unsub = auth.onAuthStateChanged(user => {
+                if (done) return;
+                if (user) { done = true; unsub(); resolve(user.uid); }
+            });
+            setTimeout(() => {
+                if (done) return;
+                done = true;
+                unsub();
+                resolve(auth.currentUser ? auth.currentUser.uid : null);
+            }, timeoutMs);
+        });
+    }
+
     async claimOwnership() {
         if (!this.tournamentId) return false;
-        const currentUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null;
+        const currentUid = await this._awaitFirebaseAuthUid();
         if (!currentUid) {
-            console.warn('claimOwnership: no Firebase auth UID yet');
+            console.warn('claimOwnership: no Firebase auth UID (sign-in timed out)');
             return false;
         }
         const path = `${this.getBasePath()}/meta/organizerUid`;
@@ -232,7 +258,7 @@ class TeamLeagueState {
      */
     async ensureWriteOwnership() {
         if (!this.isOrganiser || !this.tournamentId) return false;
-        const currentUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null;
+        const currentUid = await this._awaitFirebaseAuthUid();
         if (!currentUid) return false;
         try {
             const snap = await database.ref(`${this.getBasePath()}/meta/organizerUid`).once('value');
