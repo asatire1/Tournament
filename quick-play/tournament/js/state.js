@@ -92,27 +92,124 @@ class TournamentState {
             this.isOrganiser = false;
             return false;
         }
-        
+
         try {
             const snapshot = await database.ref(`${this.getBasePath()}/meta/organiserKey`).once('value');
             const storedKey = snapshot.val();
             this.isOrganiser = (storedKey === key);
             this.organiserKey = key;
-            
+
             if (this.isOrganiser) {
                 console.log('✅ Organiser access granted');
+                // Persist the verified key in sessionStorage so the organiser
+                // can navigate into TV mode (or any keyless route) and come
+                // back without losing write ownership. sessionStorage is
+                // tab-scoped and cleared when the tab closes, which is the
+                // right lifetime for a shared-secret.
+                try {
+                    sessionStorage.setItem('tournament_key_' + this.tournamentId, key);
+                } catch (e) { /* private mode / disabled — ignore */ }
                 // Upgrade from polling to real-time sync
                 this.upgradeToRealtime();
+                // Re-anchor Firebase ownership to this session's anon UID so
+                // writes succeed. If the claim doesn't stick on the server we
+                // surface the problem loudly — this is the "can edit in UI but
+                // every write gets reverted by Firebase" scenario that
+                // happens when an organiser returns on a different device.
+                const claimed = await this.claimOwnership();
+                if (!claimed) {
+                    console.error('⚠️ Organiser key matched but could not claim Firebase write ownership. Writes will fail until this resolves.');
+                    if (typeof showToast === 'function') {
+                        showToast('⚠️ Could not secure write access. Refresh and try again.');
+                    }
+                }
             } else {
                 console.log('❌ Invalid organiser key');
+                try {
+                    sessionStorage.removeItem('tournament_key_' + this.tournamentId);
+                } catch (e) { /* ignore */ }
             }
-            
+
             return this.isOrganiser;
         } catch (error) {
             console.error('Error verifying organiser key:', error);
             this.isOrganiser = false;
             return false;
         }
+    }
+
+    /**
+     * Wait for Firebase anonymous auth to finish signing the user in so
+     * firebase.auth().currentUser is available. The tournament loader can
+     * easily race the initial signInAnonymously() call, so any method
+     * that needs currentUser must await this first. Resolves to the UID
+     * on success, or null if no user appears within the timeout.
+     */
+    async _awaitFirebaseAuthUid(timeoutMs = 8000) {
+        if (typeof firebase === 'undefined' || !firebase.auth) return null;
+        const auth = firebase.auth();
+        if (auth.currentUser) return auth.currentUser.uid;
+        return new Promise(resolve => {
+            let done = false;
+            const unsub = auth.onAuthStateChanged(user => {
+                if (done) return;
+                if (user) { done = true; unsub(); resolve(user.uid); }
+            });
+            setTimeout(() => {
+                if (done) return;
+                done = true;
+                unsub();
+                resolve(auth.currentUser ? auth.currentUser.uid : null);
+            }, timeoutMs);
+        });
+    }
+
+    /**
+     * Claim Firebase write ownership for this tournament: set
+     * meta/organizerUid to the current anon Firebase UID, then read back
+     * to confirm the write actually stuck on the server. Returns
+     * true/false instead of silently swallowing errors. The rule's
+     * ownership-transfer clause lets a session that already has a valid
+     * organiserKey re-anchor meta/organizerUid to its own UID.
+     */
+    async claimOwnership() {
+        if (!this.tournamentId) return false;
+        const currentUid = await this._awaitFirebaseAuthUid();
+        if (!currentUid) {
+            console.warn('claimOwnership: no Firebase auth UID (sign-in timed out)');
+            return false;
+        }
+        const path = `${this.getBasePath()}/meta/organizerUid`;
+        try {
+            await database.ref(path).set(currentUid);
+            const snap = await database.ref(path).once('value');
+            const actualUid = snap.val();
+            if (actualUid === currentUid) {
+                console.log('🔑 Ownership claimed for current session');
+                return true;
+            }
+            console.warn('claimOwnership: server still has', actualUid, 'expected', currentUid);
+            return false;
+        } catch (e) {
+            console.warn('claimOwnership failed:', e.code || e.message);
+            return false;
+        }
+    }
+
+    /**
+     * Fast-path guard before destructive writes: does this session
+     * currently have write ownership on the server? If not, re-claim.
+     * Returns true if the session can write, false otherwise.
+     */
+    async ensureWriteOwnership() {
+        if (!this.isOrganiser || !this.tournamentId) return false;
+        const currentUid = await this._awaitFirebaseAuthUid();
+        if (!currentUid) return false;
+        try {
+            const snap = await database.ref(`${this.getBasePath()}/meta/organizerUid`).once('value');
+            if (snap.val() === currentUid) return true;
+        } catch (e) { /* fall through to claim attempt */ }
+        return await this.claimOwnership();
     }
 
     // ===== INITIALIZATION =====
@@ -496,20 +593,24 @@ class TournamentState {
         }
     }
 
-    saveToFirebase() {
+    async saveToFirebase() {
         if (!this.canEdit()) {
             console.log('⚠️ Cannot save - not organiser');
             return;
         }
-        
+
         // Set flag to prevent Firebase listener from overwriting during save
         this.isSaving = true;
-        
+
+        // Re-anchor write ownership if this session's UID doesn't match
+        // meta/organizerUid on the server (returning-on-different-device case).
+        await this.ensureWriteOwnership();
+
         const basePath = this.getBasePath();
-        
+
         // Update the updatedAt timestamp
         database.ref(`${basePath}/meta/updatedAt`).set(new Date().toISOString());
-        
+
         // Use granular updates instead of overwriting entire database
         const updates = {};
         updates[`${basePath}/playerNames`] = this.playerNames;
@@ -529,14 +630,17 @@ class TournamentState {
         updates[`${basePath}/registeredPlayers`] = this.registeredPlayers || {};
         updates[`${basePath}/roundOrder`] = this.roundOrder;
         updates[`${basePath}/excludedRounds`] = this.excludedRounds;
-        
+
         database.ref().update(updates).then(() => {
             // Clear saving flag after a short delay to allow Firebase listener to settle
             setTimeout(() => {
                 this.isSaving = false;
             }, 100);
         }).catch((error) => {
-            console.error('❌ Error saving to Firebase:', error);
+            console.error('❌ Error saving to Firebase:', error.code || error.message);
+            if (typeof showToast === 'function') {
+                showToast('⚠️ Save failed — ' + (error.code || 'permission denied'));
+            }
             this.isSaving = false;
         });
     }
@@ -591,43 +695,48 @@ class TournamentState {
     }
     
     // Flush all pending score updates to Firebase in a single batch
-    flushPendingScores() {
+    async flushPendingScores() {
         const basePath = this.getBasePath();
         const updates = {};
         let hasUpdates = false;
-        
+
         // Add pending match scores
         for (const key in this.pendingScoreUpdates) {
             const { round, matchIdx, team1Score, team2Score } = this.pendingScoreUpdates[key];
             updates[`${basePath}/matchScores/${round}/${matchIdx}`] = { team1Score, team2Score };
             hasUpdates = true;
         }
-        
+
         // Add pending knockout scores
         for (const matchId in this.pendingKnockoutUpdates) {
             const { team1Score, team2Score } = this.pendingKnockoutUpdates[matchId];
             updates[`${basePath}/knockoutScores/${matchId}`] = { team1Score, team2Score };
             hasUpdates = true;
         }
-        
-        if (hasUpdates) {
-            // meta/updatedAt write removed — score writes are open to all users but meta writes
-            // require organizer auth per Firebase Security Rules. See firebase-rules-production.json
 
-            // Batch write all updates
-            database.ref().update(updates)
-                .then(() => {
-                    console.log(`✅ Saved ${Object.keys(this.pendingScoreUpdates).length} match + ${Object.keys(this.pendingKnockoutUpdates).length} knockout scores`);
-                })
-                .catch(err => {
-                    console.error('❌ Error saving scores:', err);
-                });
-            
-            // Clear pending updates
+        if (hasUpdates) {
+            const matchCount = Object.keys(this.pendingScoreUpdates).length;
+            const knockoutCount = Object.keys(this.pendingKnockoutUpdates).length;
+
+            // Clear pending updates before the async write so new edits can
+            // queue up while this batch is in flight.
             this.pendingScoreUpdates = {};
             this.pendingKnockoutUpdates = {};
+
+            // Re-anchor write ownership if needed, then batch-write.
+            await this.ensureWriteOwnership();
+
+            try {
+                await database.ref().update(updates);
+                console.log(`✅ Saved ${matchCount} match + ${knockoutCount} knockout scores`);
+            } catch (err) {
+                console.error('❌ Error saving scores:', err.code || err.message);
+                if (typeof showToast === 'function') {
+                    showToast('⚠️ Score save failed — ' + (err.code || 'permission denied'));
+                }
+            }
         }
-        
+
         this.scoreDebounceTimer = null;
     }
     
@@ -640,12 +749,24 @@ class TournamentState {
         this.flushPendingScores();
     }
 
-    // Granular update for settings
-    saveSettingToFirebase(key, value) {
+    // Granular update for settings — multi-path update under
+    // ensureWriteOwnership so returning-on-different-device organisers
+    // can recover ownership on the fly, with surfaced errors.
+    async saveSettingToFirebase(key, value) {
         if (!this.canEdit()) return;
-        
-        database.ref(`${this.getBasePath()}/${key}`).set(value);
-        database.ref(`${this.getBasePath()}/meta/updatedAt`).set(new Date().toISOString());
+        await this.ensureWriteOwnership();
+        const updates = {
+            [`${this.getBasePath()}/${key}`]: value,
+            [`${this.getBasePath()}/meta/updatedAt`]: new Date().toISOString(),
+        };
+        try {
+            await database.ref().update(updates);
+        } catch (err) {
+            console.error(`❌ Settings save failed:`, err.code || err.message);
+            if (typeof showToast === 'function') {
+                showToast('⚠️ Settings save failed — ' + (err.code || 'permission denied'));
+            }
+        }
     }
 
     // ===== PLAYER MANAGEMENT =====

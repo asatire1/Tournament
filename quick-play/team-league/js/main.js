@@ -3,19 +3,34 @@
 // ===== ROUTE CHANGE HANDLER =====
 
 Router.onRouteChange = async function(route, tournamentId, organiserKey) {
+    // Recover organiser key from sessionStorage when the URL doesn't carry
+    // one. This handles the round-trip into TV mode (which is keyless) and
+    // any other keyless navigation within the same tab: as long as the key
+    // was verified earlier in this session, the user stays in organiser
+    // mode. sessionStorage is cleared on tab close, so it can't leak.
+    if (!organiserKey && tournamentId) {
+        try {
+            const cached = sessionStorage.getItem('teamLeague_key_' + tournamentId);
+            if (cached) organiserKey = cached;
+        } catch (e) { /* private mode / disabled — ignore */ }
+    }
+
     console.log(`📍 Route changed: ${route}, Tournament: ${tournamentId}, Key: ${organiserKey ? 'provided' : 'none'}`);
-    
+
     // Cleanup previous state
     if (state) {
         state.stopListening();
         state = null;
     }
-    
+
     if (route === Router.routes.HOME) {
         // Landing page
         await renderLandingPage();
     } else if (route === Router.routes.TV) {
-        await loadTournament(tournamentId, null);
+        // TV route: load with whatever key we have so the same state instance
+        // can still write (an organiser viewing their own TV preview should
+        // not lose ownership). Viewers without a key just render read-only.
+        await loadTournament(tournamentId, organiserKey);
         TVMode.init(getTvData);
     } else if (route === Router.routes.TOURNAMENT && tournamentId) {
         // Tournament page

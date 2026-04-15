@@ -145,17 +145,27 @@ function KnockoutMatchCard(matchId, team1Players, team2Players, maxScore) {
 // ===== TOURNAMENT FIXTURES TAB =====
 function TournamentFixturesTab() {
     const matches = [];
-    
+    const canEdit = state.canEdit();
+
     // Get round order (custom or default)
     const roundOrder = state.roundOrder || Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => i);
-    
+
+    // Viewers should never see excluded rounds at all (cards or filter
+    // buttons). Organisers still see them — dimmed via the MatchCard
+    // opacity styling — so they can verify what's been excluded and
+    // re-enable from Settings if needed.
+    const visibleRounds = roundOrder.filter(originalIdx => {
+        if (canEdit) return true;
+        return !state.isRoundExcluded(originalIdx + 1);
+    });
+
     // Iterate through rounds in display order
-    roundOrder.forEach((originalIdx, displayIdx) => {
+    visibleRounds.forEach((originalIdx, displayIdx) => {
         const round = originalIdx + 1;
         const displayRound = displayIdx + 1;
-        
+
         if (state.filterRound !== 'all' && parseInt(state.filterRound) !== displayRound) return;
-        
+
         state.fixtures[round].forEach((match, idx) => {
             if (state.filterPlayer !== 'all') {
                 const playerId = parseInt(state.filterPlayer);
@@ -165,10 +175,16 @@ function TournamentFixturesTab() {
             matches.push({ round, displayRound, idx, match });
         });
     });
-    
-    const canEdit = state.canEdit();
+
     const hasFilters = state.filterRound !== 'all' || state.filterPlayer !== 'all';
-    
+    // Round options/buttons must mirror visibleRounds so viewers don't
+    // see filter affordances for rounds they can't reach.
+    const roundOptions = visibleRounds.map((originalIdx, displayIdx) => {
+        const r = displayIdx + 1;
+        const excluded = state.isRoundExcluded(originalIdx + 1);
+        return { value: r, label: `Round ${r}${excluded ? ' (excluded)' : ''}`, excluded };
+    });
+
     return `
         <div class="space-y-6">
             <div class="filter-section rounded-2xl shadow-sm p-4 border border-gray-100">
@@ -177,7 +193,7 @@ function TournamentFixturesTab() {
                         <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Round</label>
                         <select class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all text-sm font-medium" onchange="state.filterRound = this.value; render();">
                             <option value="all" ${state.filterRound === 'all' ? 'selected' : ''}>All Rounds</option>
-                            ${Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => `<option value="${i + 1}" ${state.filterRound == (i + 1) ? 'selected' : ''}>Round ${i + 1}</option>`).join('')}
+                            ${roundOptions.map(o => `<option value="${o.value}" ${state.filterRound == o.value ? 'selected' : ''}>${o.label}</option>`).join('')}
                         </select>
                     </div>
                     <div class="w-44">
@@ -192,7 +208,7 @@ function TournamentFixturesTab() {
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="state.filterRound = 'all'; render();" class="round-btn px-3 py-2 rounded-xl text-xs font-semibold transition-all ${state.filterRound === 'all' ? 'bg-blue-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">All</button>
-                    ${Array.from({length: CONFIG.TOTAL_ROUNDS}, (_, i) => `<button onclick="state.filterRound = '${i + 1}'; render();" class="round-btn px-3 py-2 rounded-xl text-xs font-semibold transition-all ${state.filterRound == (i + 1) ? 'bg-blue-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'}">R${i + 1}</button>`).join('')}
+                    ${roundOptions.map(o => `<button onclick="state.filterRound = '${o.value}'; render();" class="round-btn px-3 py-2 rounded-xl text-xs font-semibold transition-all ${state.filterRound == o.value ? 'bg-blue-500 text-white shadow-md' : 'bg-white hover:bg-gray-50 text-gray-600 border border-gray-200'} ${o.excluded ? 'opacity-50' : ''}" ${o.excluded ? 'title="Excluded round"' : ''}>R${o.value}</button>`).join('')}
                 </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -568,6 +584,9 @@ function calculatePartnerships() {
         }
     }
     for (let round = 1; round <= CONFIG.TOTAL_ROUNDS; round++) {
+        // Skip excluded rounds so the partners/opponents matrix reflects
+        // the actual tournament that was played, not the original schedule.
+        if (state.isRoundExcluded && state.isRoundExcluded(round)) continue;
         state.fixtures[round].forEach((match) => {
             const [p1, p2] = match.team1;
             const [p3, p4] = match.team2;
