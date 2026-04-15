@@ -54,7 +54,7 @@ class UberPadelApp {
             // Initialize toast container
             Toast.init({ position: 'bottom-right' });
 
-            // Initialize BugsIQ feedback button
+            // Initialize feedback button
             initFeedbackButton();
             
             this.initialized = true;

@@ -12,6 +12,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Community Moderation | Uber Padel</title>
+    <!-- Bug Reports v1 -->
     <meta name="robots" content="noindex, nofollow">
     
     <!-- Favicon -->
@@ -126,6 +127,10 @@
                 <button onclick="setTab('tournament')" id="tab-tournament"
                     class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
                     ⚙️ Tournament Reset
+                </button>
+                <button onclick="setTab('bugs')" id="tab-bugs"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                    🐛 Bug Reports
                 </button>
             </div>
         </div>
@@ -315,7 +320,47 @@
                 </div>
             </div>
         </div>
-        
+
+        <!-- Bug Reports Panel -->
+        <div id="bugs-panel" class="hidden max-w-6xl mx-auto px-4 pb-8">
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-bugs-open" class="text-2xl font-bold text-amber-500">-</div>
+                    <div class="text-sm text-gray-500">Open</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-bugs-resolved" class="text-2xl font-bold text-green-500">-</div>
+                    <div class="text-sm text-gray-500">Resolved</div>
+                </div>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
+                    <div id="stat-bugs-total" class="text-2xl font-bold text-gray-700">-</div>
+                    <div class="text-sm text-gray-500">Total</div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-6">
+                <div class="flex flex-wrap gap-4 items-center">
+                    <select id="bugs-status-filter" onchange="renderBugReports()" class="px-3 py-2 border border-gray-200 rounded-lg">
+                        <option value="open">Open</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="dismissed">Dismissed</option>
+                        <option value="all">All</option>
+                    </select>
+                    <select id="bugs-priority-filter" onchange="renderBugReports()" class="px-3 py-2 border border-gray-200 rounded-lg">
+                        <option value="all">All Priorities</option>
+                        <option value="critical">Critical</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <span id="bugs-count" class="text-sm text-gray-500"></span>
+                </div>
+            </div>
+
+            <div id="bugs-list" class="space-y-3">
+                <div class="text-center py-8 text-gray-400">Loading bug reports...</div>
+            </div>
+        </div>
+
         <!-- Messages List -->
         <main class="max-w-6xl mx-auto px-4 pb-8">
             <div id="messages-list" class="space-y-3">
@@ -443,7 +488,8 @@
                 'competitions': { color: 'blue' },
                 'reported': { color: 'amber' },
                 'all': { color: 'blue' },
-                'tournament': { color: 'purple' }
+                'tournament': { color: 'purple' },
+                'bugs': { color: 'red' }
             };
             
             Object.keys(tabConfigs).forEach(t => {
@@ -461,12 +507,14 @@
             const tournamentPanel = document.getElementById('tournament-panel');
             const playersPanel = document.getElementById('players-panel');
             const competitionsPanel = document.getElementById('competitions-panel');
-            
+            const bugsPanel = document.getElementById('bugs-panel');
+
             messagesPanel.classList.add('hidden');
             tournamentPanel.classList.add('hidden');
             playersPanel.classList.add('hidden');
             competitionsPanel.classList.add('hidden');
-            
+            bugsPanel.classList.add('hidden');
+
             if (tab === 'tournament') {
                 tournamentPanel.classList.remove('hidden');
             } else if (tab === 'players') {
@@ -475,6 +523,9 @@
             } else if (tab === 'competitions') {
                 competitionsPanel.classList.remove('hidden');
                 loadCompetitions();
+            } else if (tab === 'bugs') {
+                bugsPanel.classList.remove('hidden');
+                loadBugReports();
             } else {
                 messagesPanel.classList.remove('hidden');
                 renderMessages();
@@ -2184,11 +2235,172 @@
         function formatDate(isoString) {
             if (!isoString) return '-';
             const date = new Date(isoString);
-            return date.toLocaleDateString('en-GB', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
+            return date.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
             });
+        }
+
+        // ===== BUG REPORTS =====
+        let allBugReports = [];
+        let bugReportsLoaded = false;
+
+        async function loadBugReports() {
+            if (bugReportsLoaded) { renderBugReports(); return; }
+            try {
+                const snapshot = await database.ref('bug-reports').orderByChild('createdAt').once('value');
+                allBugReports = [];
+                snapshot.forEach(child => {
+                    allBugReports.push({ id: child.key, ...child.val() });
+                });
+                allBugReports.reverse(); // newest first
+                bugReportsLoaded = true;
+                updateBugStats();
+                renderBugReports();
+            } catch (err) {
+                console.error('Failed to load bug reports:', err);
+                document.getElementById('bugs-list').innerHTML = '<div class="text-center py-8 text-red-400">Failed to load reports</div>';
+            }
+        }
+
+        function updateBugStats() {
+            const open = allBugReports.filter(r => r.status === 'open').length;
+            const resolved = allBugReports.filter(r => r.status === 'resolved').length;
+            document.getElementById('stat-bugs-open').textContent = open;
+            document.getElementById('stat-bugs-resolved').textContent = resolved;
+            document.getElementById('stat-bugs-total').textContent = allBugReports.length;
+        }
+
+        function renderBugReports() {
+            const container = document.getElementById('bugs-list');
+            const statusFilter = document.getElementById('bugs-status-filter').value;
+            const priorityFilter = document.getElementById('bugs-priority-filter').value;
+
+            let filtered = allBugReports;
+            if (statusFilter !== 'all') filtered = filtered.filter(r => r.status === statusFilter);
+            if (priorityFilter !== 'all') filtered = filtered.filter(r => r.priority === priorityFilter);
+
+            document.getElementById('bugs-count').textContent = `${filtered.length} report${filtered.length !== 1 ? 's' : ''}`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center py-12 text-gray-400"><p class="text-4xl mb-2">🐛</p><p>No bug reports found</p></div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(r => {
+                const priorityStyle = { critical: 'background:#fef2f2;color:#b91c1c', medium: 'background:#fffbeb;color:#b45309', low: 'background:#ecfdf5;color:#047857' };
+                const ps = priorityStyle[r.priority] || 'background:#f3f4f6;color:#374151';
+                const statusStyle = { open: 'background:#fffbeb;color:#b45309', resolved: 'background:#ecfdf5;color:#047857', dismissed: 'background:#f3f4f6;color:#374151' };
+                const ss = statusStyle[r.status] || 'background:#f3f4f6;color:#374151';
+                const timeAgo = formatTimeAgo(r.createdAt);
+                const typeBadge = r.type === 'enhancement' ? '💡' : '🐛';
+
+                return `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden" id="bug-${r.id}">
+                    <div class="p-4 cursor-pointer" onclick="toggleBugDetail('${r.id}')">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span class="text-lg">${typeBadge}</span>
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold" style="${ps}">${r.priority}</span>
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold" style="${ss}">${r.status}</span>
+                                    <span class="text-xs text-gray-400">${timeAgo}</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-800 truncate">${escapeHtml(r.title || r.description.substring(0, 80))}</h4>
+                                <p class="text-sm text-gray-500 truncate mt-1">${escapeHtml(r.description.substring(0, 120))}</p>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 flex-shrink-0 mt-1 transition-transform" id="bug-chevron-${r.id}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </div>
+                    <div class="hidden border-t border-gray-100" id="bug-detail-${r.id}">
+                        <div class="p-4 space-y-3">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-400 uppercase mb-1">Description</p>
+                                <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(r.description)}</p>
+                            </div>
+                            ${r.screenshot ? `
+                            <div>
+                                <p class="text-xs font-semibold text-gray-400 uppercase mb-1">Screenshot</p>
+                                <img src="data:image/png;base64,${r.screenshot}" alt="Screenshot" class="rounded-lg border border-gray-200 max-h-64 object-contain cursor-pointer" onclick="window.open(this.src)">
+                            </div>
+                            ` : ''}
+                            <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                                <div><span class="font-semibold">Page:</span> <a href="${escapeHtml(r.pageUrl || '')}" target="_blank" class="text-blue-500 hover:underline break-all">${escapeHtml((r.pageUrl || '').replace(/https?:\/\/[^/]+/, ''))}</a></div>
+                                <div><span class="font-semibold">Submitted:</span> ${new Date(r.createdAt).toLocaleString()}</div>
+                            </div>
+                            ${r.resolvedAt ? `<p class="text-xs text-green-600">Resolved: ${new Date(r.resolvedAt).toLocaleString()}</p>` : ''}
+                            <div class="flex gap-2 pt-2 border-t border-gray-100">
+                                ${r.status === 'open' ? `
+                                    <button onclick="updateBugStatus('${r.id}','resolved')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium">Resolve</button>
+                                    <button onclick="updateBugStatus('${r.id}','dismissed')" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium">Dismiss</button>
+                                ` : r.status !== 'open' ? `
+                                    <button onclick="updateBugStatus('${r.id}','open')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium">Reopen</button>
+                                ` : ''}
+                                <button onclick="deleteBugReport('${r.id}')" class="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium ml-auto">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function toggleBugDetail(id) {
+            const detail = document.getElementById(`bug-detail-${id}`);
+            const chevron = document.getElementById(`bug-chevron-${id}`);
+            if (detail) {
+                detail.classList.toggle('hidden');
+                chevron?.classList.toggle('rotate-180');
+            }
+        }
+
+        async function updateBugStatus(id, status) {
+            try {
+                const updates = { status };
+                if (status === 'resolved') updates.resolvedAt = new Date().toISOString();
+                if (status === 'open') updates.resolvedAt = null;
+                await db.ref(`bug-reports/${id}`).update(updates);
+                const report = allBugReports.find(r => r.id === id);
+                if (report) { Object.assign(report, updates); }
+                updateBugStats();
+                renderBugReports();
+            } catch (err) {
+                console.error('Failed to update bug status:', err);
+                alert('Failed to update status');
+            }
+        }
+
+        async function deleteBugReport(id) {
+            if (!confirm('Delete this bug report? This cannot be undone.')) return;
+            try {
+                await db.ref(`bug-reports/${id}`).remove();
+                allBugReports = allBugReports.filter(r => r.id !== id);
+                updateBugStats();
+                renderBugReports();
+            } catch (err) {
+                console.error('Failed to delete bug report:', err);
+                alert('Failed to delete report');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function formatTimeAgo(isoString) {
+            if (!isoString) return '';
+            const diff = Date.now() - new Date(isoString).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'just now';
+            if (mins < 60) return `${mins}m ago`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            const days = Math.floor(hrs / 24);
+            if (days < 30) return `${days}d ago`;
+            return new Date(isoString).toLocaleDateString();
         }
     </script>
     <script src="/js/feedback-button.js" defer></script>

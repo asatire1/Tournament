@@ -128,7 +128,7 @@ async function renderLandingPage() {
                         </div>
                         
                         <h1 class="text-4xl md:text-6xl font-bold text-white mb-6" style="letter-spacing: -2px; line-height: 1.1;">
-                            Team Tournament<br>Tournament
+                            Team Tournament
                         </h1>
                         
                         <p class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto mb-12" style="line-height: 1.6;">
@@ -391,9 +391,9 @@ function renderWizardStep2() {
             
             <!-- Quick Select -->
             <div class="flex flex-wrap justify-center gap-2 mb-6">
-                ${[6, 8, 10, 12, 16, 20, 24, 28, 32, 36].map(n => `
-                    <button 
-                        onclick="setTeamCount(${n})" 
+                ${[6, 8, 10, 12, 16, 20, 24, 28, 32, 36].filter(n => n <= CONFIG.MAX_TEAMS).map(n => `
+                    <button
+                        onclick="setTeamCount(${n})"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${WizardState.teamCount === n ? 'bg-purple-500 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}"
                     >
                         ${n} teams

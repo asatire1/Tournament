@@ -1,12 +1,10 @@
 /**
- * FeedbackButton - BugsIQ Bug Report / Suggestion Button
- * Self-contained vanilla JS floating feedback button with modal
+ * FeedbackButton — Internal Bug Report / Suggestion Button
+ * Self-contained vanilla JS floating feedback button with modal.
+ * Saves reports directly to Firebase Realtime Database.
  */
 
 import html2canvas from 'html2canvas-pro';
-
-const CLOUD_FUNCTION_URL =
-  'https://europe-west2-recruitment-633bd.cloudfunctions.net/submitFeedbackToIssueIQ';
 
 const PRIORITY_MAP = { urgent: 'critical', standard: 'medium', improvement: 'low' };
 
@@ -37,15 +35,15 @@ const STYLES = `
 .feedback-image-preview{position:relative;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb}
 .feedback-image-preview img{width:100%;max-height:200px;object-fit:cover;display:block}
 .feedback-image-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px}
-.feedback-image-remove,.feedback-image-replace{background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer}
-.feedback-image-remove:hover,.feedback-image-replace:hover{background:rgba(0,0,0,.8)}
+.feedback-image-remove{background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer}
+.feedback-image-remove:hover{background:rgba(0,0,0,.8)}
 .feedback-auto-badge{font-size:11px;font-weight:400;color:#059669;margin-left:6px}
 .feedback-auto-info{padding:0 20px 4px;font-size:12px;color:#9ca3af}
 .feedback-modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #e5e7eb}
 .feedback-cancel-btn{padding:8px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:14px;color:#374151;cursor:pointer;font-weight:500}
 .feedback-cancel-btn:hover{background:#f3f4f6}
-.feedback-submit-btn{padding:8px 20px;border:none;border-radius:8px;background:#0d4a6f;font-size:14px;color:#fff;cursor:pointer;font-weight:500;transition:background .15s}
-.feedback-submit-btn:hover:not(:disabled){background:#0b3d5c}
+.feedback-submit-btn{padding:8px 20px;border:none;border-radius:8px;background:#7c3aed;font-size:14px;color:#fff;cursor:pointer;font-weight:500;transition:background .15s}
+.feedback-submit-btn:hover:not(:disabled){background:#6d28d9}
 .feedback-submit-btn:disabled{opacity:.5;cursor:not-allowed}
 .feedback-toast{position:fixed;bottom:80px;right:24px;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:500;z-index:10000;animation:fbToastIn .3s ease-out;box-shadow:0 4px 12px rgba(0,0,0,.15);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 .feedback-toast-success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
@@ -177,11 +175,8 @@ export class FeedbackButton {
       submitBtn.disabled = !descEl.value.trim();
     });
 
-    // Close
     overlay.querySelector('.feedback-close-btn').addEventListener('click', () => this._close());
     overlay.querySelector('.feedback-cancel-btn').addEventListener('click', () => this._close());
-
-    // Submit
     submitBtn.addEventListener('click', () => this._submit());
   }
 
@@ -213,41 +208,36 @@ export class FeedbackButton {
     submitBtn.disabled = true;
 
     try {
-      let imageBase64, imageMimeType;
-      if (this.autoScreenshot) {
-        const base64Data = this.autoScreenshot.split(',')[1];
-        if (base64Data) { imageBase64 = base64Data; imageMimeType = 'image/png'; }
+      // Use Firebase global (loaded via compat SDK on all pages)
+      if (typeof firebase === 'undefined' || !firebase.database) {
+        throw new Error('Firebase not available');
       }
 
-      const feedbackData = {
+      let screenshot = null;
+      if (this.autoScreenshot) {
+        const b64 = this.autoScreenshot.split(',')[1];
+        if (b64) screenshot = b64;
+      }
+
+      const report = {
+        title: title || null,
         description: desc,
         priority: PRIORITY_MAP[this.priority],
         type: this.priority === 'improvement' ? 'enhancement' : 'bug',
-        title: title || undefined,
-        imageBase64,
-        imageMimeType,
+        screenshot,
         pageUrl: window.location.href,
         userAgent: navigator.userAgent,
-        appName: 'uberpadel',
+        createdAt: new Date().toISOString(),
+        status: 'open',
+        resolvedAt: null,
       };
 
-      const response = await fetch(CLOUD_FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: feedbackData }),
-      });
+      await firebase.database().ref('bug-reports').push(report);
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = await response.json();
-
-      if (result.result?.success) {
-        this._showToast('success', 'Feedback submitted - thank you!');
-        this._close();
-      } else {
-        this._showToast('error', 'Failed to submit feedback. Please try again.');
-      }
+      this._showToast('success', 'Report submitted — thank you!');
+      this._close();
     } catch {
-      this._showToast('error', 'Failed to submit feedback. Please try again.');
+      this._showToast('error', 'Failed to submit report. Please try again.');
     } finally {
       this.submitting = false;
     }

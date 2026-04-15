@@ -260,7 +260,7 @@ This is the weakest area by a significant margin.
 There is no `.github/workflows/`, no Netlify config, no Vercel config. Deployment appears to be a manual `git push` to a branch that GitHub Pages serves. There is no automated build validation, no PR preview environments, no deployment gates. A broken commit goes directly to production.
 
 **No Error Tracking**
-No Sentry, no Datadog, no Firebase Crashlytics integration. When something breaks in production for a user, there is no record of it. The only feedback mechanism is the BugsIQ feedback button (which requires a user to actively submit a report).
+No Sentry, no Datadog, no Firebase Crashlytics integration. When something breaks in production for a user, there is no record of it. The internal bug report button saves reports to Firebase and can be viewed from the admin page.
 
 **No Application Monitoring**
 No uptime monitoring, no performance monitoring, no alerting. If the Firebase database becomes unreachable or the domain DNS fails, no one is notified until a user complains.

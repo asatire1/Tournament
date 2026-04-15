@@ -93,17 +93,27 @@ function renderTeamLeague() {
 function getTvData() {
     if (!state) return null;
 
+    // Helper to resolve team ID to team name
+    const getTeamName = (teamId) => {
+        if (!teamId) return 'TBD';
+        const team = (state.teams || []).find(t => t.id === teamId);
+        return team ? (team.name || `Team ${teamId}`) : `Team ${teamId}`;
+    };
+
     const standingsGroups = [];
 
-    // Get group standings
-    const activeGroups = state.groupMode === 'four_groups' ? ['A', 'B', 'C', 'D'] : state.groupMode === 'two_groups' ? ['A', 'B'] : ['A'];
+    // Get active groups based on groupMode using CONFIG
+    const activeGroups = typeof getActiveGroups === 'function'
+        ? getActiveGroups(state.groupMode)
+        : (CONFIG.ALL_GROUP_LETTERS || ['A']).slice(0, CONFIG.GROUP_COUNT[state.groupMode] || 1);
+
     activeGroups.forEach(group => {
         const groupStandings = state.getGroupStandings ? state.getGroupStandings(group) : [];
         standingsGroups.push({
             groupName: group,
             standings: groupStandings.map((s, i) => ({
                 rank: i + 1,
-                name: s.name || s.teamName || `Team ${i + 1}`,
+                name: s.name || s.teamName || getTeamName(s.teamId || s.id),
                 played: s.played || 0,
                 points: s.points || 0,
                 wins: s.wins,
@@ -113,21 +123,33 @@ function getTvData() {
         });
     });
 
-    // Get current matches
+    // Get current matches from all possible groups
     const currentMatches = [];
-    const fixtures = [...(state.groupAFixtures || []), ...(state.groupBFixtures || []), ...(state.groupCFixtures || []), ...(state.groupDFixtures || [])];
-    fixtures.forEach((match, i) => {
-        if (!match) return;
-        const isScored = match.score1 != null && match.score1 >= 0;
-        currentMatches.push({
-            courtName: match.court || null,
-            roundLabel: match.group ? `Group ${match.group}` : `Match ${i + 1}`,
-            team1: match.team1Name || match.team1 || 'TBD',
-            team2: match.team2Name || match.team2 || 'TBD',
-            score1: isScored ? match.score1 : null,
-            score2: isScored ? match.score2 : null,
-            isComplete: isScored,
-            isLive: !isScored
+    const allGroupLetters = CONFIG.ALL_GROUP_LETTERS || ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+
+    activeGroups.forEach(letter => {
+        const groupFixtures = state[`group${letter}Fixtures`] || [];
+        // Fixtures are rounds containing arrays of matches
+        groupFixtures.forEach(round => {
+            if (!round) return;
+            const matches = round.matches || (round.team1Id ? [round] : []);
+            matches.forEach(match => {
+                if (!match) return;
+                // Check scores from groupMatchScores
+                const scoreKey = `${Math.min(match.team1Id, match.team2Id)}_${Math.max(match.team1Id, match.team2Id)}`;
+                const scores = state.groupMatchScores?.[scoreKey];
+                const isScored = scores && scores.team1Score != null;
+                currentMatches.push({
+                    courtName: match.court || null,
+                    roundLabel: `Group ${letter}`,
+                    team1: getTeamName(match.team1Id),
+                    team2: getTeamName(match.team2Id),
+                    score1: isScored ? scores.team1Score : null,
+                    score2: isScored ? scores.team2Score : null,
+                    isComplete: isScored,
+                    isLive: !isScored
+                });
+            });
         });
     });
 

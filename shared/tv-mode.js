@@ -9,9 +9,10 @@ const TVMode = {
     isActive: false,
     getDataFn: null,
 
-    init(getDataFn) {
+    init(getDataFn, tournamentId) {
         this.isActive = true;
         this.getDataFn = getDataFn;
+        this.tournamentId = tournamentId || (typeof Router !== 'undefined' ? Router.tournamentId : null);
         this.render();
     },
 
@@ -248,8 +249,15 @@ const TVMode = {
         if (nav) nav.style.display = '';
         if (spacer) spacer.style.display = '';
         // Navigate back to tournament view (remove /tv from hash)
-        const hash = window.location.hash.replace(/\/tv$/, '');
-        window.location.hash = hash;
+        // Use Router.navigate if available for proper route handling
+        if (typeof Router !== 'undefined' && Router.navigate) {
+            const tid = this.tournamentId || Router.tournamentId;
+            const key = Router.organiserKey || null;
+            Router.navigate('tournament', tid, key);
+        } else {
+            const hash = window.location.hash.replace(/\/tv$/, '');
+            window.location.hash = hash;
+        }
     },
 
     getTVLink(tournamentId) {
