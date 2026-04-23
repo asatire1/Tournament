@@ -54,7 +54,7 @@ const TOURNAMENTS_CONFIG = {
     FEATURE_FLAGS: {
         OPEN_REGISTRATION_ENABLED: true,  // Phase C live
         PAID_ENTRY_ENABLED:        false, // Phase E lights this up
-        INVITE_LINKS_ENABLED:      false  // Phase D lights this up
+        INVITE_LINKS_ENABLED:      true   // Phase D live
     }
 };
 

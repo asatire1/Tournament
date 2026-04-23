@@ -385,3 +385,10 @@ exports.createPairClaimLink  = pairInvites.createPairClaimLink;
 exports.acceptPairClaim      = pairInvites.acceptPairClaim;
 exports.sendPairInviteEmail  = pairInvites.sendPairInviteEmail;
 exports.acceptPairInvite     = pairInvites.acceptPairInvite;
+
+// Phase D — private-tournament invite tokens
+const inviteTokens = require('./invite-tokens.js');
+exports.mintInviteToken     = inviteTokens.mintInviteToken;
+exports.validateInviteToken = inviteTokens.validateInviteToken;
+exports.redeemInviteToken   = inviteTokens.redeemInviteToken;
+exports.revokeInviteToken   = inviteTokens.revokeInviteToken;

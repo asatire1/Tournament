@@ -20,10 +20,32 @@ const Handlers = {
             postcode: lastPc,
             radius: TOURNAMENTS_CONFIG.DEFAULT_RADIUS_MILES,
             origin: null,
-            tournaments: []
+            tournaments: [],
+            filters: {}
         };
 
-        searchRoot.innerHTML = Components.postcodeSearchBar(lastPc);
+        searchRoot.innerHTML = Components.postcodeSearchBar(lastPc) + '<div class="mt-3">' + Components.filterPanel({ expanded: false }) + '</div>';
+
+        // Wire filter events
+        searchRoot.addEventListener('change', e => {
+            const key = e.target.dataset.filter;
+            if (!key) return;
+            const val = e.target.value;
+            if (!this._browseState.filters) this._browseState.filters = {};
+            if (val === '' || val === undefined) {
+                delete this._browseState.filters[key];
+            } else {
+                this._browseState.filters[key] = key === 'minRating' || key === 'maxRating' ? Number(val) : val;
+            }
+        });
+        searchRoot.addEventListener('click', e => {
+            if (e.target.dataset.filterAction === 'apply') this._runBrowseSearch(resultsRoot, searchRoot);
+            if (e.target.dataset.filterAction === 'reset') {
+                this._browseState.filters = {};
+                searchRoot.querySelectorAll('[data-filter]').forEach(el => { el.value = ''; });
+                this._runBrowseSearch(resultsRoot, searchRoot);
+            }
+        });
 
         // Wire events on the search bar
         searchRoot.addEventListener('click', e => {
@@ -89,6 +111,9 @@ const Handlers = {
                 new Date(a.startDate || a.createdAt || 0) -
                 new Date(b.startDate || b.createdAt || 0));
         }
+
+        // Apply advanced filters
+        filtered = Components.applyFilters(filtered, this._browseState.filters || {});
 
         this._browseState.tournaments = filtered;
 
@@ -193,6 +218,15 @@ const Handlers = {
                             </div>
                         </details>
                     ` : ''}
+                    ${state.isOrganiser && meta.registrationMode === 'open' && TOURNAMENTS_CONFIG.FEATURE_FLAGS.INVITE_LINKS_ENABLED ? `
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <div class="text-xs font-semibold text-gray-700 mb-1">Private invite link</div>
+                            <p class="text-xs text-gray-500 mb-2">Single-use-per-recipient URL you can send out privately. Expires in 7 days by default.</p>
+                            <div id="invite-link-slot">
+                                <button data-action="mint-invite" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">Generate invite link</button>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <!-- Roster -->
@@ -221,10 +255,29 @@ const Handlers = {
             </div>
         `;
 
-        root.addEventListener('click', e => {
+        root.addEventListener('click', async e => {
             const action = e.target.closest('[data-action]')?.dataset.action;
             if (action === 'copy-share') this._copy(shareUrl);
             if (action === 'copy-organiser') this._copy(organiserUrl);
+            if (action === 'mint-invite') {
+                const slot = document.getElementById('invite-link-slot');
+                slot.innerHTML = '<div class="text-xs text-gray-500">Generating…</div>';
+                try {
+                    const fns = firebase.app().functions('europe-west1');
+                    const res = await fns.httpsCallable('mintInviteToken')({ tournamentId, ttlHours: 168, maxUses: 50 });
+                    const { token } = res.data || res;
+                    const url = `${window.location.origin}/tournaments/invite.html?token=${encodeURIComponent(token)}`;
+                    slot.innerHTML = `
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <input readonly value="${Components._esc(url)}" class="flex-1 min-w-0 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono" />
+                            <button data-action="copy-invite" class="px-3 py-1.5 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200">Copy</button>
+                        </div>
+                    `;
+                    slot.querySelector('[data-action="copy-invite"]').addEventListener('click', () => this._copy(url));
+                } catch (err) {
+                    slot.innerHTML = `<div class="text-xs text-red-600">Could not mint: ${Components._esc(err.message || String(err))}</div>`;
+                }
+            }
         });
     },
 

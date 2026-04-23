@@ -107,6 +107,98 @@ const Components = {
     },
 
     /**
+     * Advanced browse filter panel (Phase D).
+     * @param {object} state { format, minRating, maxRating, feeMode, startAfter }
+     */
+    filterPanel(state = {}) {
+        const formats = (typeof FORMAT_CONFIG !== 'undefined') ? Object.entries(FORMAT_CONFIG) : [];
+        const fmtOptions = formats.map(([k, cfg]) =>
+            `<option value="${k}" ${state.format === k ? 'selected' : ''}>${cfg.emoji} ${cfg.name}</option>`
+        ).join('');
+        return `
+            <details class="bg-white rounded-xl border border-gray-200 p-4" ${state.expanded ? 'open' : ''}>
+                <summary class="font-semibold text-sm text-gray-800 cursor-pointer select-none">
+                    Advanced filters ${Components._filterCount(state) > 0 ? `<span class="ml-1 text-xs text-blue-700">(${Components._filterCount(state)})</span>` : ''}
+                </summary>
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="block">
+                        <span class="text-xs font-medium text-gray-700 block mb-1">Format</span>
+                        <select data-filter="format" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                            <option value="">Any format</option>
+                            ${fmtOptions}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-medium text-gray-700 block mb-1">Entry fee</span>
+                        <select data-filter="feeMode" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                            <option value=""     ${!state.feeMode ? 'selected' : ''}>Any</option>
+                            <option value="free" ${state.feeMode === 'free' ? 'selected' : ''}>Free only</option>
+                            <option value="paid" ${state.feeMode === 'paid' ? 'selected' : ''}>Paid only</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-medium text-gray-700 block mb-1">Your rating (min)</span>
+                        <input data-filter="minRating" type="number" step="0.1" min="0" max="10"
+                            value="${state.minRating ?? ''}"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-medium text-gray-700 block mb-1">Your rating (max)</span>
+                        <input data-filter="maxRating" type="number" step="0.1" min="0" max="10"
+                            value="${state.maxRating ?? ''}"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-medium text-gray-700 block mb-1">Starts after</span>
+                        <input data-filter="startAfter" type="date"
+                            value="${state.startAfter || ''}"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </label>
+                </div>
+                <div class="mt-3 flex justify-end gap-2">
+                    <button data-filter-action="reset" class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900">Reset</button>
+                    <button data-filter-action="apply" class="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">Apply</button>
+                </div>
+            </details>
+        `;
+    },
+
+    _filterCount(state) {
+        let n = 0;
+        if (state.format)      n++;
+        if (state.feeMode)     n++;
+        if (state.minRating)   n++;
+        if (state.maxRating)   n++;
+        if (state.startAfter)  n++;
+        return n;
+    },
+
+    /**
+     * Apply filter state to an array of tournament summaries.
+     * @param {Array} tournaments
+     * @param {object} filters
+     */
+    applyFilters(tournaments, filters) {
+        if (!filters) return tournaments;
+        return tournaments.filter(t => {
+            if (filters.format && t.format !== filters.format) return false;
+            if (filters.feeMode === 'free' && (t.entryFeeGBP || 0) > 0) return false;
+            if (filters.feeMode === 'paid' && (!t.entryFeeGBP || t.entryFeeGBP <= 0)) return false;
+            if (filters.minRating !== undefined && t.ratingLimit?.max !== undefined) {
+                // Exclude tournaments whose max is below the user's min rating.
+                if (Number(t.ratingLimit.max) < Number(filters.minRating)) return false;
+            }
+            if (filters.maxRating !== undefined && t.ratingLimit?.min !== undefined) {
+                if (Number(t.ratingLimit.min) > Number(filters.maxRating)) return false;
+            }
+            if (filters.startAfter && t.startDate) {
+                if (new Date(t.startDate).getTime() < new Date(filters.startAfter).getTime()) return false;
+            }
+            return true;
+        });
+    },
+
+    /**
      * Postcode search bar used on browse + home.
      */
     postcodeSearchBar(initialPostcode = '', initialRadius = null) {

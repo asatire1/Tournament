@@ -371,6 +371,20 @@
       }
     },
 
+    "invite_tokens": {
+      ".read":  false,
+      ".write": false,
+      "$tokenHash": {
+        "tournamentId":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+        "createdBy":     { ".validate": "newData.isString() && newData.val().length <= 128" },
+        "maxUses":       { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000" },
+        "usesRemaining": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000" },
+        "expiresAt":     { ".validate": "newData.isString()" },
+        "createdAt":     { ".validate": "newData.isString()" },
+        "revoked":       { ".validate": "newData.isBoolean()" }
+      }
+    },
+
     "playtomic_verifications": {
       "$uid": {
         ".read":  "auth != null && (auth.uid == $uid || auth.token.admin == true)",
