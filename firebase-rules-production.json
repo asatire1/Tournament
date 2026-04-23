@@ -46,6 +46,20 @@
           ".validate": "newData.isString()"
         },
 
+        "tournamentHistory": {
+          "$tournamentId": {
+            ".write": false
+          }
+        },
+        "stats": {
+          ".write": false
+        },
+        "trophies": {
+          "$trophyId": {
+            ".write": false
+          }
+        },
+
         "currentPlaytomicVerification": {
           ".write": "auth != null && auth.uid == $userId",
           "verificationId":    { ".validate": "newData.isString() && newData.val().length <= 64" },

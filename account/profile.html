@@ -313,7 +313,10 @@
                 </button>
             </form>
         </div>
-        
+
+        <!-- Phase H — Stats / Trophies / History -->
+        <section id="phase-h" class="mt-8 space-y-6"></section>
+
     </main>
     
     <!-- Toast Container -->
@@ -486,6 +489,110 @@
         // Start initialization
         initPage();
     </script>
+
+    <!-- Phase H: dynamic profile (history, trophies, stats) -->
+    <script src="/src/services/profile-service.js"></script>
+    <script>
+    (async () => {
+        function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+        const root = document.getElementById('phase-h');
+        if (!root) return;
+
+        const user = await new Promise(res => {
+            if (firebase.auth().currentUser) return res(firebase.auth().currentUser);
+            firebase.auth().onAuthStateChanged(u => res(u));
+        });
+        if (!user) { root.innerHTML = ''; return; }
+
+        let stats = null, trophies = [], history = [];
+        try {
+            [stats, trophies, history] = await Promise.all([
+                ProfileService.getStats(user.uid),
+                ProfileService.getTrophies(user.uid),
+                ProfileService.getHistory(user.uid, { limit: 20 })
+            ]);
+        } catch (err) {
+            console.warn('ProfileService load failed:', err);
+            return;
+        }
+
+        if (!stats && !trophies.length && !history.length) {
+            // Nothing to show yet — keep the section hidden.
+            root.innerHTML = '';
+            return;
+        }
+
+        root.innerHTML = `
+            ${renderStats(stats)}
+            ${renderTrophies(trophies)}
+            ${renderHistory(history)}
+        `;
+
+        function renderStats(s) {
+            if (!s) return '';
+            const net = (Number(s.totalPrizeGBP || 0) - Number(s.totalEntryFeeGBP || 0)).toFixed(2);
+            return `
+                <div class="bg-white rounded-2xl border border-gray-200 p-5">
+                    <div class="text-sm font-semibold text-gray-700 mb-3">Stats</div>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        ${statCard('Tournaments', s.totalTournaments || 0)}
+                        ${statCard('Wins 🥇',     s.wins || 0)}
+                        ${statCard('Podiums',     s.podiums || 0)}
+                        ${statCard('Prize won',   '£' + Number(s.totalPrizeGBP || 0).toFixed(2), 'text-green-700')}
+                        ${statCard('Net (prize − fees)', '£' + net, Number(net) >= 0 ? 'text-green-700' : 'text-red-700')}
+                    </div>
+                </div>`;
+        }
+        function statCard(label, val, tone = 'text-gray-900') {
+            return `
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500">${esc(label)}</div>
+                    <div class="text-lg font-bold ${tone}">${esc(val)}</div>
+                </div>`;
+        }
+        function renderTrophies(list) {
+            if (!list.length) return '';
+            const badge = r => r === 'gold' ? '🥇' : r === 'silver' ? '🥈' : '🥉';
+            return `
+                <div class="bg-white rounded-2xl border border-gray-200 p-5">
+                    <div class="text-sm font-semibold text-gray-700 mb-3">Trophy cabinet</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        ${list.map(t => `
+                            <div class="flex items-center gap-3 p-3 bg-gradient-to-br from-yellow-50 to-amber-50 border border-amber-100 rounded-xl">
+                                <div class="text-3xl">${badge(t.rank)}</div>
+                                <div class="min-w-0">
+                                    <div class="font-semibold text-gray-900 truncate">${esc(t.tournamentName || 'Untitled')}</div>
+                                    <div class="text-xs text-gray-500">${esc(t.format || '—')} · ${t.earnedAt ? new Date(t.earnedAt).toLocaleDateString('en-GB') : '—'}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+        function renderHistory(list) {
+            if (!list.length) return '';
+            return `
+                <div class="bg-white rounded-2xl border border-gray-200 p-5">
+                    <div class="text-sm font-semibold text-gray-700 mb-3">Tournament history</div>
+                    <div class="divide-y divide-gray-100">
+                        ${list.map(h => `
+                            <div class="py-2 flex items-center gap-3">
+                                <div class="w-10 text-center font-bold text-gray-700">${h.position ? '#' + h.position : '—'}</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium text-gray-900 truncate">${esc(h.tournamentName || 'Untitled')}</div>
+                                    <div class="text-xs text-gray-500">${esc(h.format || '—')} · ${h.finishedAt ? new Date(h.finishedAt).toLocaleDateString('en-GB') : '—'}</div>
+                                </div>
+                                ${h.isTrophy ? `<div class="text-xl">${h.trophyRank === 'gold' ? '🥇' : h.trophyRank === 'silver' ? '🥈' : '🥉'}</div>` : ''}
+                                ${h.prizeGBP ? `<div class="text-sm font-semibold text-green-700">+£${Number(h.prizeGBP).toFixed(2)}</div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+    })();
+    </script>
+
     <script src="/js/feedback-button.js" defer></script>
     <script src="../shared/nav.js" defer></script>
 </body>

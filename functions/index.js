@@ -406,3 +406,8 @@ exports.adminVerificationQueue  = adminVerification.adminVerificationQueue;
 // Phase G — organiser revenue ledger
 const organiserLedger = require('./organiser-ledger.js');
 exports.getOrganiserLedger = organiserLedger.getOrganiserLedger;
+
+// Phase H — dynamic player profile aggregation
+const profileAggregator = require('./profile-aggregator.js');
+exports.onTournamentStatusCompleted = profileAggregator.onTournamentStatusCompleted;
+exports.rerunTournamentAggregation  = profileAggregator.rerunTournamentAggregation;
