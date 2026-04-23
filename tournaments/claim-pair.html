@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accept pair invite · Uber Padel</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <meta name="theme-color" content="#2563eb">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/tournaments/css/tournaments.css">
+</head>
+<body class="tournaments-page">
+
+<header class="bg-white border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2">
+            <img src="/uberpadel-logo.svg" alt="Uber Padel" class="h-8" onerror="this.style.display='none'">
+            <span class="font-bold text-gray-900">Uber Padel</span>
+        </a>
+    </div>
+</header>
+
+<main class="max-w-xl mx-auto px-4 sm:px-6 py-10">
+    <div id="root"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+
+<script>
+(async () => {
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain: "stretford-padel-tournament.firebaseapp.com",
+        databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "stretford-padel-tournament",
+        storageBucket: "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    const root = document.getElementById('root');
+    const params = new URLSearchParams(window.location.search);
+    const claim  = params.get('claim');  // shared-link flow
+    const invite = params.get('invite'); // email-invite flow
+    if (!claim && !invite) {
+        root.innerHTML = '<div class="rounded-2xl bg-red-50 border border-red-200 p-5 text-sm text-red-800">Missing invite token.</div>';
+        return;
+    }
+
+    const user = await new Promise(res => firebase.auth().onAuthStateChanged(u => res(u)));
+    if (!user) {
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        root.innerHTML = `
+            <div class="rounded-2xl bg-yellow-50 border border-yellow-200 p-6 text-center">
+                <div class="text-4xl mb-2">🤝</div>
+                <h1 class="text-xl font-bold text-yellow-900 mb-2">Sign in to accept</h1>
+                <p class="text-sm text-yellow-800 mb-4">Create an account (takes 30 seconds with a Playtomic screenshot) and then click the invite link again.</p>
+                <a href="/account/login.html?next=${next}" class="inline-block px-5 py-3 bg-yellow-600 text-white rounded-xl font-semibold">Sign in / Sign up</a>
+            </div>`;
+        return;
+    }
+
+    root.innerHTML = '<div class="text-center py-8 text-gray-600">Accepting invite…</div>';
+
+    try {
+        const fns = firebase.app().functions('europe-west1');
+        const callable = fns.httpsCallable(claim ? 'acceptPairClaim' : 'acceptPairInvite');
+        const res = await callable(claim ? { token: claim } : { inviteId: invite });
+        const { pairId } = (res.data || res);
+        const tournamentId = (res.data?.tournamentId) || null;
+        root.innerHTML = `
+            <div class="rounded-2xl bg-green-50 border border-green-200 p-6 text-center">
+                <div class="text-4xl mb-2">✅</div>
+                <h1 class="text-xl font-bold text-green-900 mb-2">You're paired up!</h1>
+                <p class="text-sm text-green-800 mb-4">Your registration is locked in. Good luck in the tournament.</p>
+                ${tournamentId ? `<a href="/tournaments/detail.html?id=${encodeURIComponent(tournamentId)}" class="inline-block px-5 py-3 bg-green-600 text-white rounded-xl font-semibold">Open tournament →</a>` : `<a href="/tournaments/browse.html" class="inline-block px-5 py-3 bg-green-600 text-white rounded-xl font-semibold">Back to browsing →</a>`}
+            </div>`;
+    } catch (err) {
+        const msg = err?.message || String(err);
+        root.innerHTML = `
+            <div class="rounded-2xl bg-red-50 border border-red-200 p-6">
+                <div class="text-4xl mb-2">🚫</div>
+                <h1 class="text-xl font-bold text-red-900 mb-2">We couldn't accept the invite</h1>
+                <p class="text-sm text-red-800 mb-4">${escapeHtml(msg)}</p>
+                <a href="/tournaments/browse.html" class="inline-block px-4 py-2 bg-red-600 text-white rounded-lg font-semibold">Back to browsing</a>
+            </div>`;
+    }
+
+    function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+})();
+</script>
+</body>
+</html>

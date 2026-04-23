@@ -278,11 +278,96 @@ const CreateWizard = {
         `;
     },
 
-    _renderStep3OpenReg(_fmt) {
-        // Placeholder for Phase C — not user-visible (button is disabled until then)
+    _renderStep3OpenReg(fmt) {
+        const isTeam = fmt.registrationUnit === 'pair' || fmt.rule === 'teams';
+        const label = isTeam ? 'Max number of pairs' : 'Max number of players';
+        const limitTypeOptions = (fmt.supportsRatingLimit || [])
+            .map(t => `<option value="${t}" ${this.state.ratingLimit?.type === t ? 'selected' : ''}>${t === 'combined' ? 'Combined' : 'Individual'}</option>`)
+            .join('');
+
         return `
-            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800">
-                Open registration UI is being built. Please choose "I'll enter the player names myself" to continue.
+            <div class="space-y-4">
+                <!-- Date + deadline -->
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <label class="block">
+                        <span class="text-sm font-semibold text-gray-800 block mb-1">Start date</span>
+                        <input data-input="start-date" type="datetime-local"
+                            value="${this.state.startDate || ''}"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </label>
+                    <label class="block">
+                        <span class="text-sm font-semibold text-gray-800 block mb-1">Registration deadline</span>
+                        <input data-input="deadline" type="datetime-local"
+                            value="${this.state.registrationDeadline || ''}"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </label>
+                </div>
+
+                <!-- Max pairs / players -->
+                <label class="block">
+                    <span class="text-sm font-semibold text-gray-800 block mb-1">${label}</span>
+                    <input data-input="max-pairs" type="number"
+                        min="${isTeam ? fmt.minTeams : fmt.minPlayers}"
+                        max="${isTeam ? fmt.maxTeams : fmt.maxPlayers}"
+                        value="${this.state.maxPairs || (isTeam ? fmt.minTeams : fmt.minPlayers)}"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </label>
+
+                <!-- Rating limit -->
+                ${(fmt.supportsRatingLimit || []).length > 0 ? `
+                    <div>
+                        <span class="text-sm font-semibold text-gray-800 block mb-1">Rating limit</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <select data-input="rating-type"
+                                class="px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="none" ${this.state.ratingLimit?.type==='none'?'selected':''}>No limit</option>
+                                ${limitTypeOptions}
+                            </select>
+                            <input data-input="rating-min" type="number" step="0.1" min="0" max="10"
+                                placeholder="Min"
+                                value="${this.state.ratingLimit?.min ?? ''}"
+                                class="px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input data-input="rating-max" type="number" step="0.1" min="0" max="10"
+                                placeholder="Max"
+                                value="${this.state.ratingLimit?.max ?? ''}"
+                                class="px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Combined means the sum of both partners' ratings.</p>
+                    </div>
+                ` : ''}
+
+                <!-- Match format picker for fixed-pair -->
+                ${fmt.matchFormats?.length > 0 ? `
+                    <div>
+                        <span class="text-sm font-semibold text-gray-800 block mb-1">Match format</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            ${fmt.matchFormats.map(mf => `
+                                <label class="cursor-pointer block p-3 rounded-xl border-2 ${this.state.matchFormat === mf ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}">
+                                    <input type="radio" name="match-format" data-input="match-format" value="${mf}"
+                                        ${this.state.matchFormat === mf ? 'checked' : ''} class="sr-only" />
+                                    <div class="text-sm font-semibold text-gray-900">${_matchFormatLabel(mf)}</div>
+                                    <div class="text-xs text-gray-500 mt-0.5">${_matchFormatHint(mf)}</div>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Entry fee (Phase E gated) -->
+                <div>
+                    <span class="text-sm font-semibold text-gray-800 block mb-1">Entry fee</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 p-3 rounded-xl border-2 ${!this.state.entryFeeGBP ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'} cursor-pointer">
+                            <input type="radio" name="fee-mode" data-input="fee-free" ${!this.state.entryFeeGBP ? 'checked' : ''} class="sr-only" />
+                            <span class="text-sm font-semibold text-gray-900">Free</span>
+                        </label>
+                        <label class="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 cursor-not-allowed opacity-60">
+                            <input type="radio" name="fee-mode" disabled class="sr-only" />
+                            <span class="text-sm font-semibold text-gray-900">Paid</span>
+                            <span class="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Coming soon</span>
+                        </label>
+                    </div>
+                </div>
             </div>
         `;
     },
@@ -355,6 +440,11 @@ const CreateWizard = {
             case 'postcode':     this._setLocation({ postcode: e.target.value }); break;
             case 'venue':        this._setLocation({ venue: e.target.value }); break;
             case 'player-count': this.state.namesOnly.playerCount = Number(e.target.value); break;
+            case 'start-date':   this.state.startDate = e.target.value; break;
+            case 'deadline':     this.state.registrationDeadline = e.target.value; break;
+            case 'max-pairs':    this.state.maxPairs = Number(e.target.value); break;
+            case 'rating-min':   this.state.ratingLimit = { ...(this.state.ratingLimit||{}), min: e.target.value === '' ? undefined : Number(e.target.value) }; break;
+            case 'rating-max':   this.state.ratingLimit = { ...(this.state.ratingLimit||{}), max: e.target.value === '' ? undefined : Number(e.target.value) }; break;
         }
     },
 
@@ -362,6 +452,18 @@ const CreateWizard = {
         const key = e.target.dataset.input;
         if (key === 'publish-public') {
             this.state.publishPublic = e.target.checked;
+        }
+        if (key === 'rating-type') {
+            this.state.ratingLimit = { ...(this.state.ratingLimit || {}), type: e.target.value };
+            // Re-render so min/max inputs enable/disable based on type
+            this._render();
+        }
+        if (key === 'match-format') {
+            this.state.matchFormat = e.target.value;
+            this._render();
+        }
+        if (key === 'fee-free') {
+            this.state.entryFeeGBP = 0;
         }
     },
 
@@ -432,6 +534,30 @@ const CreateWizard = {
         };
         if (resolvedLocation) meta.location = resolvedLocation;
 
+        // Open-registration fields
+        if (this.state.registrationMode === 'open') {
+            const f = FORMAT_CONFIG[this.state.format];
+            meta.registrationUnit = f.registrationUnit || 'individual';
+            if (this.state.startDate)            meta.startDate = new Date(this.state.startDate).toISOString();
+            if (this.state.registrationDeadline) meta.registrationDeadline = new Date(this.state.registrationDeadline).toISOString();
+            if (this.state.maxPairs) {
+                if (meta.registrationUnit === 'pair') meta.maxPairs = this.state.maxPairs;
+                else meta.maxPlayers = this.state.maxPairs;
+            }
+            meta.entryFeeGBP = 0;
+            meta.currency = 'GBP';
+            const limit = this.state.ratingLimit || {};
+            meta.ratingLimit = { type: limit.type || 'none' };
+            if (typeof limit.min === 'number') meta.ratingLimit.min = limit.min;
+            if (typeof limit.max === 'number') meta.ratingLimit.max = limit.max;
+            if (f.matchFormats?.length) {
+                meta.formatConfig = {
+                    matchFormat: this.state.matchFormat || (f.defaults?.matchFormat) || f.matchFormats[0],
+                    pointsPerMatch: (f.defaults?.pointsPerMatch) || 24
+                };
+            }
+        }
+
         // Names-only roster stub (organiser will fill names on the play page)
         let namesOnlyRoster = null;
         if (this.state.registrationMode === 'names_only') {
@@ -466,6 +592,24 @@ const CreateWizard = {
         window.location.href = url;
     }
 };
+
+// Tiny helpers for match-format tiles
+function _matchFormatLabel(mf) {
+    switch (mf) {
+        case 'round-robin': return 'Round-robin';
+        case 'groups+ko':   return 'Groups + knockout';
+        case 'knockout':    return 'Single-elim';
+        default:            return mf;
+    }
+}
+function _matchFormatHint(mf) {
+    switch (mf) {
+        case 'round-robin': return 'Every pair plays every other pair once.';
+        case 'groups+ko':   return 'Group stage, then knockout bracket.';
+        case 'knockout':    return 'Single-elim bracket, seeded by rating.';
+        default:            return '';
+    }
+}
 
 if (typeof window !== 'undefined') {
     window.CreateWizard = CreateWizard;

@@ -377,3 +377,11 @@ exports.createConnectOnboardingLink = stripeConnect.createConnectOnboardingLink;
 exports.getConnectAccountStatus     = stripeConnect.getConnectAccountStatus;
 const stripeWebhook = require('./stripe-webhook.js');
 exports.stripeWebhook = stripeWebhook.stripeWebhook;
+
+// Phase C — fixed-pair registration (three partner-invite mechanisms)
+const pairInvites = require('./pair-invites.js');
+exports.registerPair         = pairInvites.registerPair;
+exports.createPairClaimLink  = pairInvites.createPairClaimLink;
+exports.acceptPairClaim      = pairInvites.acceptPairClaim;
+exports.sendPairInviteEmail  = pairInvites.sendPairInviteEmail;
+exports.acceptPairInvite     = pairInvites.acceptPairInvite;

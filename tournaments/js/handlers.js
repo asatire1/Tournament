@@ -229,8 +229,9 @@ const Handlers = {
     },
 
     /**
-     * Detail page (public) — Phase 0 stub: shows read-only info.
-     * Registration flow wires in Phase C.
+     * Detail page (public). Open-registration tournaments show the PairInvite
+     * widget (requires verified Playtomic profile); names-only tournaments
+     * show an informational note.
      */
     async handleDetailPage(tournamentId) {
         const root = document.getElementById('detail-root');
@@ -256,6 +257,19 @@ const Handlers = {
 
         const { meta } = state;
         const fmt = FORMAT_CONFIG[meta.format] || {};
+        const pairs = state.pairs || {};
+        const players = state.players || {};
+        const regCount = Object.keys(pairs).length + Object.keys(players).length;
+        const capacity = meta.maxPairs || meta.maxPlayers || null;
+        const ratingLimitText = (() => {
+            const rl = meta.ratingLimit;
+            if (!rl || rl.type === 'none') return null;
+            const parts = [];
+            if (rl.min !== undefined) parts.push(`≥${rl.min}`);
+            if (rl.max !== undefined) parts.push(`≤${rl.max}`);
+            return `${rl.type === 'combined' ? 'Combined' : 'Individual'} rating ${parts.join(' ')}`;
+        })();
+
         root.innerHTML = `
             <div class="max-w-2xl mx-auto">
                 <div class="flex items-center gap-3 mb-6">
@@ -268,24 +282,125 @@ const Handlers = {
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-3 text-sm">
+                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm space-y-3 text-sm mb-4">
                     ${meta.location?.postcode ? `<div><span class="text-gray-500">Location:</span> <strong>${Components._esc(meta.location.venue || meta.location.postcode)}</strong></div>` : ''}
                     ${meta.startDate ? `<div><span class="text-gray-500">Starts:</span> ${new Date(meta.startDate).toLocaleString('en-GB')}</div>` : ''}
+                    ${meta.registrationDeadline ? `<div><span class="text-gray-500">Registration deadline:</span> ${new Date(meta.registrationDeadline).toLocaleString('en-GB')}</div>` : ''}
                     <div><span class="text-gray-500">Registration:</span> ${meta.registrationMode === 'open' ? 'Open' : 'Names-only (organiser-managed)'}</div>
                     <div><span class="text-gray-500">Status:</span> ${meta.status}</div>
+                    ${ratingLimitText ? `<div><span class="text-gray-500">Rating limit:</span> ${ratingLimitText}</div>` : ''}
+                    ${capacity ? `<div><span class="text-gray-500">Capacity:</span> ${regCount}/${capacity}</div>` : `<div><span class="text-gray-500">Registered:</span> ${regCount}</div>`}
+                    ${meta.entryFeeGBP ? `<div><span class="text-gray-500">Entry fee:</span> £${meta.entryFeeGBP}</div>` : `<div><span class="text-gray-500">Entry fee:</span> Free</div>`}
                 </div>
 
-                ${meta.registrationMode === 'open' ? `
-                    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-                        Open registration is being wired up in the next update. Check back soon.
-                    </div>
-                ` : `
-                    <div class="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700">
-                        This is a names-only tournament — the organiser manages the player list directly. Contact the organiser to join.
-                    </div>
-                `}
+                ${meta.registrationMode === 'open'
+                    ? `<div id="register-wrap" class="mb-6"></div>`
+                    : `<div class="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700">
+                           This is a names-only tournament — the organiser manages the player list directly. Contact the organiser to join.
+                       </div>`}
             </div>
         `;
+
+        if (meta.registrationMode === 'open') {
+            await Handlers._renderOpenRegistration(tournamentId, state, meta, fmt);
+        }
+    },
+
+    async _renderOpenRegistration(tournamentId, state, meta, fmt) {
+        const el = document.getElementById('register-wrap');
+        if (!el) return;
+
+        // Wait briefly for auth
+        const user = await new Promise(res => {
+            if (firebase.auth().currentUser) return res(firebase.auth().currentUser);
+            const off = firebase.auth().onAuthStateChanged(u => { off(); res(u); });
+        });
+        if (!user) {
+            const next = encodeURIComponent(window.location.pathname + window.location.search);
+            el.innerHTML = `
+                <div class="rounded-2xl bg-blue-50 border border-blue-200 p-5">
+                    <div class="font-semibold text-blue-900 mb-1">Sign in to register</div>
+                    <p class="text-sm text-blue-800 mb-3">You'll need a verified Uber Padel account (email + Playtomic screenshot).</p>
+                    <a href="/account/login.html?next=${next}" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold">Sign in / sign up</a>
+                </div>`;
+            return;
+        }
+
+        // Require verification
+        const current = await PlaytomicVerificationService.getCurrent(user.uid);
+        if (!current || current.status !== 'verified' || PlaytomicVerificationService.isExpired(current)) {
+            el.innerHTML = `
+                <div class="rounded-2xl bg-amber-50 border border-amber-200 p-5">
+                    <div class="font-semibold text-amber-900 mb-1">Verify to register</div>
+                    <p class="text-sm text-amber-800 mb-3">${current?.status === 'expired' || (current && PlaytomicVerificationService.isExpired(current)) ? 'Your Playtomic verification has expired.' : "We need to verify your Playtomic rating before you can register."}</p>
+                    <a href="/account/reverify.html" class="inline-block px-4 py-2 bg-amber-600 text-white rounded-lg font-semibold">Verify now →</a>
+                </div>`;
+            return;
+        }
+
+        // Already registered?
+        const allPairs = Object.entries(state.pairs || {});
+        const myPair = allPairs.find(([, p]) => p.player1Uid === user.uid || p.player2Uid === user.uid);
+        const myIndividual = (state.players || {})[user.uid];
+        if (myPair) {
+            el.innerHTML = `
+                <div class="rounded-2xl bg-green-50 border border-green-200 p-5">
+                    <div class="font-semibold text-green-900 mb-1">You're registered</div>
+                    <p class="text-sm text-green-800">Paired with ${Components._esc(myPair[1].player1Uid === user.uid ? myPair[1].player2Name : myPair[1].player1Name)}.</p>
+                </div>`;
+            return;
+        }
+        if (myIndividual) {
+            el.innerHTML = `
+                <div class="rounded-2xl bg-green-50 border border-green-200 p-5">
+                    <div class="font-semibold text-green-900 mb-1">You're registered</div>
+                    <p class="text-sm text-green-800">Partners are drawn when the tournament starts.</p>
+                </div>`;
+            return;
+        }
+
+        // Registration CTA — depends on registrationUnit
+        if (meta.registrationUnit === 'pair') {
+            el.innerHTML = `
+                <div class="mb-2 text-sm font-semibold text-gray-800">Register a pair</div>
+                <div id="pair-invite"></div>`;
+            PairInvite.render('pair-invite', {
+                tournamentId,
+                onRegistered() {
+                    window.location.reload();
+                }
+            });
+        } else {
+            el.innerHTML = `
+                <div class="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
+                    <div class="font-semibold text-gray-900 mb-2">Register</div>
+                    <p class="text-sm text-gray-600 mb-3">You'll be added as an individual. Pairings are generated when the tournament starts.</p>
+                    <button data-action="register-individual" class="px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">
+                        Register me
+                    </button>
+                </div>`;
+            el.querySelector('[data-action="register-individual"]').addEventListener('click', () => {
+                Handlers._registerIndividual(tournamentId).catch(err => alert(err.message || err));
+            });
+        }
+    },
+
+    async _registerIndividual(tournamentId) {
+        const user = firebase.auth().currentUser;
+        if (!user) throw new Error('Sign in first');
+        const db = firebase.database();
+        const userSnap = await db.ref(`users/${user.uid}`).once('value');
+        const u = userSnap.val() || {};
+        const ver = u.currentPlaytomicVerification;
+        if (ver?.status !== 'verified') throw new Error('Verify your Playtomic profile first.');
+        const rating = ver.extractedRating ?? u.playtomicLevel;
+        await db.ref(`tournaments/${tournamentId}/players/${user.uid}`).set({
+            name: u.name || ver.extractedName || 'Player',
+            rating: rating,
+            registeredAt: new Date().toISOString(),
+            paymentStatus: 'free'
+        });
+        window.location.reload();
     },
 
     // -----------------------------------------------------------------------
