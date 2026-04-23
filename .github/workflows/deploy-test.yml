@@ -1,0 +1,60 @@
+name: Deploy to test.uberpadel.com
+
+on:
+  push:
+    branches:
+      - 'feat/**'
+      - 'staging'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to deploy'
+        required: false
+        default: ''
+
+jobs:
+  deploy-test:
+    name: Deploy to test.uberpadel.com
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          UBER_FIREBASE_API_KEY:            ${{ secrets.UBER_FIREBASE_API_KEY }}
+          UBER_FIREBASE_AUTH_DOMAIN:        ${{ secrets.UBER_FIREBASE_AUTH_DOMAIN }}
+          UBER_FIREBASE_DATABASE_URL:       ${{ secrets.UBER_FIREBASE_DATABASE_URL }}
+          UBER_FIREBASE_PROJECT_ID:         ${{ secrets.UBER_FIREBASE_PROJECT_ID }}
+          UBER_FIREBASE_STORAGE_BUCKET:     ${{ secrets.UBER_FIREBASE_STORAGE_BUCKET }}
+          UBER_FIREBASE_MESSAGING_SENDER_ID:${{ secrets.UBER_FIREBASE_MESSAGING_SENDER_ID }}
+          UBER_FIREBASE_APP_ID:             ${{ secrets.UBER_FIREBASE_APP_ID }}
+          UBER_FIREBASE_MEASUREMENT_ID:     ${{ secrets.UBER_FIREBASE_MEASUREMENT_ID }}
+          UBER_SENTRY_DSN:                  ${{ secrets.UBER_SENTRY_DSN }}
+          UBER_ENV:                         'test'
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages (test)
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: uberpadel-test
+          directory: dist
+          branch: ${{ github.ref_name }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
