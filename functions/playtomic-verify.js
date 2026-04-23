@@ -193,6 +193,14 @@ exports.verifyPlaytomicScreenshot = functions
                 `storagePath must start with playtomic-screenshots/${uid}/`);
         }
 
+        // Phase F — per-UID rate limit (5 / hour)
+        const { checkPlaytomicVerifyRate } = require('./admin-verification.js');
+        const rl = await checkPlaytomicVerifyRate(uid, 5);
+        if (!rl.ok) {
+            throw new functions.https.HttpsError('resource-exhausted',
+                'Too many verification attempts — please try again in an hour.');
+        }
+
         const apiKey = process.env.ANTHROPIC_API_KEY;
         const model  = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514';
         if (!apiKey) {

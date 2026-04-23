@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playtomic verification queue · Uber Padel admin</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <meta name="theme-color" content="#2563eb">
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f9fafb; color: #111827; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.01em; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<header class="bg-white border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2">
+            <img src="/uberpadel-logo.svg" alt="Uber Padel" class="h-8" onerror="this.style.display='none'">
+            <span class="font-bold text-gray-900">Uber Padel Admin</span>
+        </a>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Verification queue</h1>
+    <p class="text-sm text-gray-600 mb-6">Screenshots the AI rejected, flagged as low-confidence, or left pending. Admin only.</p>
+    <div id="root"><div class="text-center py-8 text-gray-500">Loading…</div></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+
+<script>
+(async () => {
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain: "stretford-padel-tournament.firebaseapp.com",
+        databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "stretford-padel-tournament",
+        storageBucket: "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    const root = document.getElementById('root');
+    const user = await new Promise(res => firebase.auth().onAuthStateChanged(u => res(u)));
+    if (!user) {
+        root.innerHTML = `
+            <div class="rounded-2xl bg-yellow-50 border border-yellow-200 p-5">
+                Sign in as an admin.
+                <a class="text-blue-600 underline" href="/account/login.html?next=/admin/verification-queue.html">Sign in</a>
+            </div>`;
+        return;
+    }
+
+    const fns = firebase.app().functions('europe-west1');
+    const queue = fns.httpsCallable('adminVerificationQueue');
+    const override = fns.httpsCallable('overrideVerification');
+
+    async function reload() {
+        root.innerHTML = '<div class="text-center py-8 text-gray-500">Loading…</div>';
+        try {
+            const r = await queue({});
+            const rows = (r.data || r).rows || [];
+            if (!rows.length) {
+                root.innerHTML = `<div class="rounded-2xl bg-green-50 border border-green-200 p-5 text-green-800">🎉 Queue is empty.</div>`;
+                return;
+            }
+            root.innerHTML = `<div class="grid gap-3">${rows.map(renderRow).join('')}</div>`;
+            root.querySelectorAll('[data-act]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const { uid, vid, act } = btn.dataset;
+                    const noteInput = btn.closest('.row').querySelector('[data-note]');
+                    const ratingInput = btn.closest('.row').querySelector('[data-rating]');
+                    try {
+                        await override({
+                            uid,
+                            verificationId: vid,
+                            decision: act,
+                            note: noteInput?.value || null,
+                            extractedRating: ratingInput?.value ? Number(ratingInput.value) : undefined
+                        });
+                        reload();
+                    } catch (err) {
+                        alert(err.message || err);
+                    }
+                });
+            });
+        } catch (err) {
+            root.innerHTML = `<div class="rounded-2xl bg-red-50 border border-red-200 p-5 text-sm text-red-800">Could not load: ${String(err.message || err)}<br><span class="text-xs">You may not have admin custom claim set.</span></div>`;
+        }
+    }
+
+    function renderRow(r) {
+        return `
+            <div class="row rounded-2xl bg-white border border-gray-200 p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="text-sm font-semibold text-gray-900">${esc(r.extractedName || '(no name)')} <span class="text-gray-500 font-normal">@${esc(r.extractedUsername || '—')}</span></div>
+                        <div class="text-xs text-gray-500">UID <code>${esc(r.uid.slice(0,12))}…</code> · ${esc(r.createdAt || '—')}</div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-xs font-semibold ${r.status==='rejected'?'bg-red-100 text-red-800':r.status==='pending'?'bg-yellow-100 text-yellow-800':'bg-blue-100 text-blue-800'}">${esc(r.status)}</span>
+                </div>
+                <div class="mt-2 text-sm text-gray-700 space-y-1">
+                    ${r.extractedRating !== undefined && r.extractedRating !== null ? `<div>Extracted rating: <strong>${r.extractedRating}</strong></div>` : ''}
+                    ${typeof r.aiConfidence === 'number' ? `<div>AI confidence: ${(r.aiConfidence * 100).toFixed(0)}%</div>` : ''}
+                    ${r.failureReason ? `<div>Reason: <code>${esc(r.failureReason)}</code></div>` : ''}
+                </div>
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input data-rating type="number" step="0.1" min="0" max="10" placeholder="Rating (if approving)" value="${r.extractedRating ?? ''}" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                    <input data-note type="text" maxlength="200" placeholder="Note (optional)" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                </div>
+                <div class="mt-3 flex gap-2">
+                    <button data-act="approve" data-uid="${esc(r.uid)}" data-vid="${esc(r.verificationId)}"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">Approve</button>
+                    <button data-act="reject" data-uid="${esc(r.uid)}" data-vid="${esc(r.verificationId)}"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700">Reject</button>
+                </div>
+            </div>`;
+    }
+
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+    reload();
+})();
+</script>
+</body>
+</html>

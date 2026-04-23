@@ -397,3 +397,8 @@ exports.revokeInviteToken   = inviteTokens.revokeInviteToken;
 const stripeCheckout = require('./stripe-checkout.js');
 exports.createCheckoutSessionForRegistration = stripeCheckout.createCheckoutSessionForRegistration;
 exports.createRefund                         = stripeCheckout.createRefund;
+
+// Phase F — admin override + verification queue
+const adminVerification = require('./admin-verification.js');
+exports.overrideVerification    = adminVerification.overrideVerification;
+exports.adminVerificationQueue  = adminVerification.adminVerificationQueue;

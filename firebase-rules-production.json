@@ -426,7 +426,7 @@
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "groupMatchScores": {
@@ -456,7 +456,7 @@
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "meta": {
@@ -486,7 +486,7 @@
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "meta": {
@@ -543,7 +543,7 @@
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "meta": {
@@ -719,8 +719,8 @@
     },
 
     "bug-reports": {
-      ".read": true,
-      ".write": true
+      ".read": "auth != null && auth.token.admin == true",
+      ".write": "auth != null"
     },
 
     ".read": false,
