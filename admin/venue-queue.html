@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venue approvals · Uber Padel admin</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <meta name="theme-color" content="#2563eb">
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f9fafb; color: #111827; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.01em; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<header class="bg-white border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2">
+            <img src="/uberpadel-logo.svg" alt="Uber Padel" class="h-8" onerror="this.style.display='none'">
+            <span class="font-bold text-gray-900">Uber Padel Admin</span>
+        </a>
+        <nav class="flex gap-4 text-sm">
+            <a href="/admin/verification-queue.html" class="text-gray-700 hover:text-blue-600 font-medium">Verification</a>
+            <a href="/admin/venue-queue.html" class="text-blue-600 font-semibold">Venues</a>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-1">Venue approval queue</h1>
+            <p class="text-sm text-gray-600">Pending venues suggested by organisers. Approve, reject, or merge into an existing venue.</p>
+        </div>
+        <div class="flex gap-2">
+            <button id="seed-osm" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg font-medium">Seed from OSM</button>
+        </div>
+    </div>
+
+    <div id="seed-result" class="mb-4"></div>
+    <div id="root"><div class="text-center py-8 text-gray-500">Loading…</div></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+
+<script>
+(async () => {
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain: "stretford-padel-tournament.firebaseapp.com",
+        databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "stretford-padel-tournament",
+        storageBucket: "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    const root = document.getElementById('root');
+    const seedResult = document.getElementById('seed-result');
+
+    const user = await new Promise(res => firebase.auth().onAuthStateChanged(u => res(u)));
+    if (!user) {
+        root.innerHTML = `
+            <div class="rounded-2xl bg-yellow-50 border border-yellow-200 p-5">
+                Sign in as an admin.
+                <a class="text-blue-600 underline" href="/account/login.html?next=/admin/venue-queue.html">Sign in</a>
+            </div>`;
+        return;
+    }
+
+    const fns = firebase.app().functions('europe-west1');
+    const listPending = fns.httpsCallable('listPendingVenues');
+    const approve     = fns.httpsCallable('approveVenue');
+    const reject      = fns.httpsCallable('rejectVenue');
+    const merge       = fns.httpsCallable('mergeVenue');
+    const search      = fns.httpsCallable('searchVenues');
+    const seedOsm     = fns.httpsCallable('seedUKPadelVenuesFromOSM');
+
+    document.getElementById('seed-osm').addEventListener('click', async () => {
+        if (!confirm('Import UK padel venues from OpenStreetMap? This is safe to re-run.')) return;
+        seedResult.innerHTML = '<div class="rounded-xl bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">Running OSM seed (may take up to a minute)…</div>';
+        try {
+            const res = await seedOsm({});
+            const { created, updated, totalOsm } = res.data || res;
+            seedResult.innerHTML = `<div class="rounded-xl bg-green-50 border border-green-200 p-3 text-sm text-green-800">OSM seed complete — ${created} created, ${updated} updated (${totalOsm} candidates from Overpass).</div>`;
+            reload();
+        } catch (err) {
+            seedResult.innerHTML = `<div class="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-800">Seed failed: ${esc(err.message || err)}</div>`;
+        }
+    });
+
+    async function reload() {
+        root.innerHTML = '<div class="text-center py-8 text-gray-500">Loading…</div>';
+        try {
+            const r = await listPending({ limit: 100 });
+            const rows = (r.data || r).rows || [];
+            if (!rows.length) {
+                root.innerHTML = `<div class="rounded-2xl bg-green-50 border border-green-200 p-5 text-green-800">🎉 No pending venues.</div>`;
+                return;
+            }
+            root.innerHTML = `<div class="grid gap-3">${rows.map(renderRow).join('')}</div>`;
+            wire();
+        } catch (err) {
+            root.innerHTML = `<div class="rounded-2xl bg-red-50 border border-red-200 p-5 text-sm text-red-800">Could not load: ${esc(err.message || String(err))}<br><span class="text-xs">You may not have the admin custom claim set.</span></div>`;
+        }
+    }
+
+    function renderRow(r) {
+        return `
+            <div class="row rounded-2xl bg-white border border-gray-200 p-4 shadow-sm" data-vid="${esc(r.venueId)}">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="text-sm font-semibold text-gray-900">${esc(r.canonicalName)}</div>
+                        <div class="text-xs text-gray-500">
+                            <code>${esc(r.slug)}</code>
+                            ${r.postcode ? ' · ' + esc(r.postcode) : ''}
+                            · suggested ${r.firstUsedAt ? new Date(r.firstUsedAt).toLocaleString('en-GB') : '—'}
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">${esc(r.status)}</span>
+                </div>
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input data-field="canonical" type="text" value="${esc(r.canonicalName)}" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                    <input data-field="note" type="text" placeholder="Note (optional)" class="px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                </div>
+                <div class="mt-3 flex gap-2 flex-wrap items-center">
+                    <button data-act="approve" class="px-3 py-1.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">Approve</button>
+                    <button data-act="reject"  class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700">Reject</button>
+                    <span class="mx-2 text-xs text-gray-400">or merge into →</span>
+                    <input data-field="merge-query" type="text" placeholder="Search existing venue..." class="flex-1 min-w-[200px] px-3 py-1.5 rounded-lg border border-gray-200 text-sm" />
+                    <button data-act="merge-find" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium">Find</button>
+                </div>
+                <div data-merge-results class="mt-2"></div>
+            </div>`;
+    }
+
+    function wire() {
+        root.querySelectorAll('.row').forEach(row => {
+            const vid = row.dataset.vid;
+            const canonical = () => row.querySelector('[data-field="canonical"]').value.trim();
+            const note = () => row.querySelector('[data-field="note"]').value.trim() || null;
+
+            row.querySelector('[data-act="approve"]').addEventListener('click', async () => {
+                try {
+                    await approve({ venueId: vid, canonicalName: canonical(), note: note() });
+                    reload();
+                } catch (err) { alert(err.message || err); }
+            });
+            row.querySelector('[data-act="reject"]').addEventListener('click', async () => {
+                try {
+                    await reject({ venueId: vid, note: note() });
+                    reload();
+                } catch (err) { alert(err.message || err); }
+            });
+            row.querySelector('[data-act="merge-find"]').addEventListener('click', async () => {
+                const q = row.querySelector('[data-field="merge-query"]').value.trim();
+                if (q.length < 2) return;
+                const mergeRoot = row.querySelector('[data-merge-results]');
+                mergeRoot.innerHTML = '<div class="text-xs text-gray-500 py-1">Searching…</div>';
+                try {
+                    const r = await search({ query: q, limit: 5 });
+                    const results = (r.data || r).rows || [];
+                    mergeRoot.innerHTML = results.length === 0
+                        ? '<div class="text-xs text-gray-500 py-1">No matches.</div>'
+                        : results.map(v => `
+                            <div class="flex items-center justify-between gap-2 py-1">
+                                <div class="text-sm">${esc(v.canonicalName)} <span class="text-xs text-gray-500">${esc(v.postcode || '')}</span></div>
+                                <button data-merge-into="${esc(v.venueId)}" class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold hover:bg-blue-200">Merge</button>
+                            </div>`).join('');
+                    mergeRoot.querySelectorAll('[data-merge-into]').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            try {
+                                await merge({ fromId: vid, intoId: btn.dataset.mergeInto });
+                                reload();
+                            } catch (err) { alert(err.message || err); }
+                        });
+                    });
+                } catch (err) {
+                    mergeRoot.innerHTML = `<div class="text-xs text-red-600 py-1">${esc(err.message || err)}</div>`;
+                }
+            });
+        });
+    }
+
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+    reload();
+})();
+</script>
+</body>
+</html>

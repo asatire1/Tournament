@@ -411,3 +411,14 @@ exports.getOrganiserLedger = organiserLedger.getOrganiserLedger;
 const profileAggregator = require('./profile-aggregator.js');
 exports.onTournamentStatusCompleted = profileAggregator.onTournamentStatusCompleted;
 exports.rerunTournamentAggregation  = profileAggregator.rerunTournamentAggregation;
+
+// Phase I — venue catalog (self-populating + admin approval + OSM seed)
+const venues = require('./venues.js');
+exports.searchVenues      = venues.searchVenues;
+exports.suggestVenue      = venues.suggestVenue;
+exports.listPendingVenues = venues.listPendingVenues;
+exports.approveVenue      = venues.approveVenue;
+exports.rejectVenue       = venues.rejectVenue;
+exports.mergeVenue        = venues.mergeVenue;
+const seedVenues = require('./seed-venues.js');
+exports.seedUKPadelVenuesFromOSM = seedVenues.seedUKPadelVenuesFromOSM;

@@ -66,6 +66,23 @@ const CreateWizard = {
                 </div>
             </div>
         `;
+        // Mount the venue autocomplete after step 3 renders (Phase I)
+        if (this.state.step === 3 && typeof VenuePicker !== 'undefined') {
+            const slot = document.getElementById('venue-picker-slot');
+            if (slot) {
+                this._venuePicker = VenuePicker.mount(slot, {
+                    postcode: () => this.state.location?.postcode || '',
+                    initialValue: this.state.venue
+                        ? { venueId: this.state.venue.venueId, canonicalName: this.state.venue.canonicalName, isPending: this.state.venue.isPending }
+                        : null,
+                    onChange: sel => {
+                        this.state.venue = sel;
+                        // Also mirror name into legacy location.venue string for backwards compat
+                        this._setLocation({ venue: sel?.canonicalName || '' });
+                    }
+                });
+            }
+        }
     },
 
     _renderProgress() {
@@ -224,14 +241,7 @@ const CreateWizard = {
                             class="px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             autocomplete="postal-code"
                         />
-                        <input
-                            data-input="venue"
-                            type="text"
-                            maxlength="100"
-                            placeholder="Venue (optional)"
-                            value="${Components._esc(this.state.location?.venue || '')}"
-                            class="px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                        <div id="venue-picker-slot"></div>
                     </div>
                     ${isNamesOnly ? `
                         <label class="flex items-center gap-2 mt-3 cursor-pointer">
@@ -499,6 +509,25 @@ const CreateWizard = {
             if (!v.valid) throw new Error(v.error);
         }
 
+        // Open-registration: postcode + venue are required so the tournament
+        // can be discovered in browse and players know where to turn up.
+        if (this.state.registrationMode === 'open') {
+            if (!this.state.location?.postcode) {
+                throw new Error('Postcode is required for open-registration tournaments — players use it to find you.');
+            }
+            // Commit the venue picker — resolves venueId (existing or pending).
+            if (this._venuePicker) {
+                const committed = await this._venuePicker.commit(this.state.location.postcode);
+                if (!committed?.canonicalName) {
+                    throw new Error('Venue name is required for open-registration tournaments.');
+                }
+                this.state.venue = committed;
+                this._setLocation({ venue: committed.canonicalName });
+            } else if (!this.state.location?.venue) {
+                throw new Error('Venue name is required for open-registration tournaments.');
+            }
+        }
+
         // Resolve postcode if provided
         let resolvedLocation = null;
         if (this.state.location?.postcode) {
@@ -548,6 +577,7 @@ const CreateWizard = {
             updatedAt: now
         };
         if (resolvedLocation) meta.location = resolvedLocation;
+        if (this.state.venue?.venueId) meta.venueId = this.state.venue.venueId;
 
         // Open-registration fields
         if (this.state.registrationMode === 'open') {

@@ -260,6 +260,7 @@
           "entryFeeGBP": { ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000) || newData.val() == null" },
           "currency": { ".validate": "newData.isString() && newData.val() == 'GBP'" },
           "stripeAccountId": { ".validate": "newData.isString() || newData.val() == null" },
+          "venueId":         { ".validate": "newData.isString() || newData.val() == null" },
           "location": {
             "postcode": { ".validate": "newData.isString() && newData.val().length <= 10" },
             "line1":    { ".validate": "newData.isString() && newData.val().length <= 200" },
@@ -317,6 +318,30 @@
         "finalStandings": {
           ".write": false
         }
+      }
+    },
+
+    "venues": {
+      ".read": true,
+      ".indexOn": ["status", "slug", "postcode", "canonicalName", "tournamentCount", "source"],
+      "$venueId": {
+        ".write": false,
+        "canonicalName":    { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100" },
+        "slug":             { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100" },
+        "aliases":          {},
+        "postcode":         { ".validate": "newData.isString() && newData.val().length <= 10" },
+        "lat":              { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+        "lng":              { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+        "tournamentCount":  { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "firstUsedAt":      { ".validate": "newData.isString()" },
+        "lastUsedAt":       { ".validate": "newData.isString() || newData.val() == null" },
+        "source":           { ".validate": "newData.isString() && (newData.val() == 'user' || newData.val() == 'osm' || newData.val() == 'admin' || newData.val() == 'google')" },
+        "status":           { ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'approved' || newData.val() == 'rejected' || newData.val() == 'merged')" },
+        "mergedInto":       { ".validate": "newData.isString() || newData.val() == null" },
+        "suggestedBy":      { ".validate": "newData.isString() && newData.val().length <= 128" },
+        "approvedBy":       { ".validate": "newData.isString() || newData.val() == null" },
+        "approvedAt":       { ".validate": "newData.isString() || newData.val() == null" },
+        "reviewNote":       { ".validate": "newData.isString() || newData.val() == null" }
       }
     },
 
