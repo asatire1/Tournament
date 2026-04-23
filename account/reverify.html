@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Re-verify your Playtomic profile · Uber Padel</title>
+    <meta name="description" content="Upload a fresh Playtomic profile screenshot to keep your Uber Padel verification active.">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <meta name="theme-color" content="#2563eb">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f9fafb; color: #111827; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.01em; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<header class="bg-white border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2">
+            <img src="/uberpadel-logo.svg" alt="Uber Padel" class="h-8" onerror="this.style.display='none'">
+            <span class="font-bold text-gray-900">Uber Padel</span>
+        </a>
+        <nav class="flex items-center gap-4 text-sm">
+            <a href="/tournaments/browse.html" class="text-gray-700 hover:text-blue-600 font-medium">Browse</a>
+            <a href="/account/profile.html" class="text-gray-700 hover:text-blue-600 font-medium">Profile</a>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Re-verify your Playtomic profile</h1>
+        <p class="text-gray-600">Verifications expire every 30 days. Upload a fresh screenshot to keep registering for tournaments.</p>
+    </div>
+
+    <!-- Current status -->
+    <div id="current-status" class="mb-6"></div>
+
+    <!-- Uploader -->
+    <div id="uploader"></div>
+
+    <div id="done" class="hidden mt-6 text-center">
+        <a href="/tournaments/browse.html" class="inline-block px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">Back to browsing →</a>
+    </div>
+
+    <div class="mt-8 p-4 bg-gray-100 rounded-xl text-sm text-gray-600">
+        <div class="font-semibold text-gray-800 mb-1">How does this work?</div>
+        <ol class="list-decimal ml-5 space-y-1">
+            <li>Open your Playtomic app and screenshot your profile page (name + level visible).</li>
+            <li>Upload it above — it stays private to you.</li>
+            <li>Our AI reads your rating to keep rating-gated tournaments fair.</li>
+            <li>Repeat every 30 days.</li>
+        </ol>
+    </div>
+</main>
+
+<!-- Firebase SDK (v9 compat to match the rest of the site) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+
+<script src="/shared/format-config.js"></script>
+<script src="/account/auth-service.js"></script>
+<script src="/src/services/playtomic-verification-service.js"></script>
+<script src="/src/components/ui/PlaytomicScreenshotUpload.js"></script>
+
+<script>
+(async () => {
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain: "stretford-padel-tournament.firebaseapp.com",
+        databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "stretford-padel-tournament",
+        storageBucket: "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    // Wait for auth state
+    const waitForAuth = () => new Promise(res =>
+        firebase.auth().onAuthStateChanged(u => res(u), () => res(null)));
+    const user = await waitForAuth();
+
+    const statusEl = document.getElementById('current-status');
+    if (!user) {
+        statusEl.innerHTML = `
+            <div class="rounded-2xl bg-yellow-50 border border-yellow-200 p-5 text-center">
+                <div class="font-semibold text-yellow-900 mb-1">Sign in first</div>
+                <p class="text-sm text-yellow-800 mb-3">You need an Uber Padel account to re-verify.</p>
+                <a href="/account/login.html?next=/account/reverify.html" class="inline-block px-4 py-2 bg-yellow-600 text-white rounded-lg font-semibold">Sign in</a>
+            </div>`;
+        document.getElementById('uploader').innerHTML = '';
+        return;
+    }
+
+    // Show current state
+    const cur = await PlaytomicVerificationService.getCurrent(user.uid);
+    statusEl.innerHTML = renderStatus(cur);
+
+    PlaytomicScreenshotUpload.mount('uploader', {
+        onVerified() {
+            document.getElementById('done').classList.remove('hidden');
+            // Refresh status
+            PlaytomicVerificationService.getCurrent(user.uid).then(c => {
+                statusEl.innerHTML = renderStatus(c);
+            });
+        }
+    });
+
+    function renderStatus(rec) {
+        if (!rec) {
+            return `<div class="rounded-2xl bg-gray-100 border border-gray-200 p-4 text-sm text-gray-700">
+                <strong>Not yet verified.</strong> Upload a screenshot below to get started.
+            </div>`;
+        }
+        const days = PlaytomicVerificationService.daysUntilExpiry(rec);
+        if (rec.status === 'verified' && days !== null && days >= 0) {
+            const tone = days <= 7 ? 'amber' : 'green';
+            const emoji = days <= 7 ? '⚠️' : '✅';
+            const cls = tone === 'amber' ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-green-50 border-green-200 text-green-800';
+            return `<div class="rounded-2xl border ${cls} p-4 text-sm flex items-center gap-3">
+                <span class="text-xl">${emoji}</span>
+                <div>
+                    <div class="font-semibold">Verified (rating ${rec.extractedRating ?? '—'})</div>
+                    <div>Expires in ${days} day${days === 1 ? '' : 's'}. You can re-verify any time.</div>
+                </div>
+            </div>`;
+        }
+        if (rec.status === 'expired' || (days !== null && days < 0)) {
+            return `<div class="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+                <div class="font-semibold">Verification expired</div>
+                <div>Upload a fresh screenshot to register for new tournaments.</div>
+            </div>`;
+        }
+        if (rec.status === 'rejected') {
+            return `<div class="rounded-2xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+                <div class="font-semibold">Previous verification was rejected</div>
+                <div>Try a clearer screenshot.</div>
+            </div>`;
+        }
+        return `<div class="rounded-2xl bg-gray-100 border border-gray-200 p-4 text-sm text-gray-700">
+            Status: ${rec.status}
+        </div>`;
+    }
+})();
+</script>
+</body>
+</html>

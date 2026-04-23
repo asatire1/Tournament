@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Playtomic verification screenshots: per-user upload-only folder.
+    // - write: authenticated user, path must be under their own UID folder,
+    //   <= 5 MB, must be an image.
+    // - read: authenticated user reading their own file, OR Cloud Functions
+    //   (Admin SDK bypasses rules). This prevents another signed-in user
+    //   from enumerating screenshots.
+    match /playtomic-screenshots/{uid}/{fileName} {
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Default: deny everything else. Prize-money photo verification (existing
+    // feature) continues to work because verification-service.js uses the
+    // Admin SDK path, not client Storage writes. Add explicit rules here if
+    // that changes.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -348,15 +348,46 @@ const AuthService = {
         if (!user || user.type !== 'registered') {
             throw new Error('Must be registered to complete profile');
         }
-        
+
         const fullProfile = {
             ...profile,
             status: 'pending',
             profileCompleted: true,
             completedAt: new Date().toISOString()
         };
-        
+
         return this.updateProfile(fullProfile);
+    },
+
+    /**
+     * Phase A: finalise signup with a successful Playtomic screenshot verification.
+     * The Cloud Function has already written users/{uid}/currentPlaytomicVerification
+     * and mirrored rating/name/username onto the user row. This method only
+     * flips local state + sets profileCompleted so the UI can move on to
+     * "Welcome!".
+     *
+     * @param {object} ver - Verification result from PlaytomicVerificationService
+     * @returns {Promise<object>} Updated local user
+     */
+    async finaliseScreenshotSignup(ver) {
+        const user = this.getCurrentUser();
+        if (!user || user.type !== 'registered') {
+            throw new Error('Must be registered to finalise signup');
+        }
+        if (!ver?.verificationId) {
+            throw new Error('Missing verificationId');
+        }
+
+        const patch = {
+            profileCompleted: true,
+            status: 'verified',
+            completedAt: new Date().toISOString()
+        };
+        if (ver.extractedName)     patch.name              = ver.extractedName;
+        if (ver.extractedUsername) patch.playtomicUsername = ver.extractedUsername;
+        if (typeof ver.extractedRating === 'number') patch.playtomicLevel = ver.extractedRating;
+
+        return this.updateProfile(patch);
     },
     
     // ===== LISTENERS =====

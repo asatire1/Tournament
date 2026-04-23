@@ -365,3 +365,8 @@ exports.api = api;
 // Postcode lookup proxy + 24-h cache (browse-by-postcode in the new shell)
 const postcodeProxy = require('./postcode-proxy.js');
 exports.lookupPostcode = postcodeProxy.lookupPostcode;
+
+// Phase A — Playtomic screenshot verification via Claude Vision
+const playtomicVerify = require('./playtomic-verify.js');
+exports.verifyPlaytomicScreenshot    = playtomicVerify.verifyPlaytomicScreenshot;
+exports.expireStalePlaytomicVerifications = playtomicVerify.expireStalePlaytomicVerifications;

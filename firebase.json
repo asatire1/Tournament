@@ -2,6 +2,9 @@
   "database": {
     "rules": "firebase-rules-production.json"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "functions": [
     {
       "source": "functions",

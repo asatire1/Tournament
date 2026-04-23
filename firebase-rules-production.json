@@ -46,6 +46,16 @@
           ".validate": "newData.isString()"
         },
 
+        "currentPlaytomicVerification": {
+          ".write": "auth != null && auth.uid == $userId",
+          "verificationId":    { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "status":            { ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'verified' || newData.val() == 'rejected' || newData.val() == 'expired')" },
+          "extractedRating":   { ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 10) || newData.val() == null" },
+          "extractedName":     { ".validate": "newData.isString() || newData.val() == null" },
+          "verifiedAt":        { ".validate": "newData.isString() || newData.val() == null" },
+          "expiresAt":         { ".validate": "newData.isString() || newData.val() == null" }
+        },
+
         "notifications": {
           ".read":  "auth != null && auth.uid == $userId",
           ".write": "auth != null && auth.uid == $userId",
@@ -305,6 +315,32 @@
           "postcode": { ".validate": "newData.isString()" },
           "lat":      { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
           "lng":      { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" }
+        }
+      }
+    },
+
+    "playtomic_verifications": {
+      "$uid": {
+        ".read":  "auth != null && (auth.uid == $uid || auth.token.admin == true)",
+        ".indexOn": ["status", "expiresAt", "createdAt"],
+        ".write": false,
+        "$verificationId": {
+          "uid":              { ".validate": "newData.isString() && newData.val() == $uid" },
+          "storagePath":      { ".validate": "newData.isString() && newData.val().length <= 512" },
+          "screenshotUrl":    { ".validate": "newData.isString() || newData.val() == null" },
+          "extractedName":    { ".validate": "newData.isString() || newData.val() == null" },
+          "extractedUsername":{ ".validate": "newData.isString() || newData.val() == null" },
+          "extractedRating":  { ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 10) || newData.val() == null" },
+          "screenshotDate":   { ".validate": "newData.isString() || newData.val() == null" },
+          "aiConfidence":     { ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 1) || newData.val() == null" },
+          "aiModel":          { ".validate": "newData.isString() && newData.val().length <= 128" },
+          "aiRawResponse":    { ".validate": "newData.isString() || newData.val() == null" },
+          "status":           { ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'verified' || newData.val() == 'rejected' || newData.val() == 'expired')" },
+          "failureReason":    { ".validate": "newData.isString() || newData.val() == null" },
+          "createdAt":        { ".validate": "newData.isString()" },
+          "verifiedAt":       { ".validate": "newData.isString() || newData.val() == null" },
+          "expiresAt":        { ".validate": "newData.isString() || newData.val() == null" },
+          "reviewedBy":       { ".validate": "newData.isString() || newData.val() == null" }
         }
       }
     },
