@@ -53,7 +53,7 @@ const TOURNAMENTS_CONFIG = {
     // Phase flags — turn features on as phases ship
     FEATURE_FLAGS: {
         OPEN_REGISTRATION_ENABLED: true,  // Phase C live
-        PAID_ENTRY_ENABLED:        false, // Phase E lights this up
+        PAID_ENTRY_ENABLED:        true,  // Phase E live
         INVITE_LINKS_ENABLED:      true   // Phase D live
     }
 };

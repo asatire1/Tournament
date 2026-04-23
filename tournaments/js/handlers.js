@@ -412,13 +412,61 @@ const Handlers = {
             return;
         }
 
+        // Payment-return UX (Phase E)
+        const params = new URLSearchParams(window.location.search);
+        const paymentStatus = params.get('payment');
+        const paymentId     = params.get('pid');
+        if (paymentStatus === 'success') {
+            el.innerHTML = `
+                <div class="rounded-2xl bg-green-50 border border-green-200 p-5 mb-4">
+                    <div class="font-semibold text-green-900 mb-1">Payment received — confirming…</div>
+                    <p class="text-sm text-green-800">We're waiting for Stripe to confirm. This page will refresh when done.</p>
+                </div>`;
+            // Poll payments/{paymentId} up to 15s, then fall back.
+            if (paymentId) {
+                const ref = firebase.database().ref(`payments/${paymentId}`);
+                const t0 = Date.now();
+                const poll = async () => {
+                    const snap = await ref.once('value');
+                    const pay = snap.val();
+                    if (pay?.status === 'paid') {
+                        window.location.assign(window.location.pathname + `?id=${tournamentId}`);
+                        return;
+                    }
+                    if (Date.now() - t0 > 15000) {
+                        el.innerHTML = `
+                            <div class="rounded-2xl bg-yellow-50 border border-yellow-200 p-5">
+                                <div class="font-semibold text-yellow-900 mb-1">Still processing</div>
+                                <p class="text-sm text-yellow-800">Your payment is being finalised. Check back or wait for the email confirmation.</p>
+                            </div>`;
+                        return;
+                    }
+                    setTimeout(poll, 1200);
+                };
+                poll();
+            }
+            return;
+        }
+        if (paymentStatus === 'cancel') {
+            el.insertAdjacentHTML('afterbegin', `
+                <div class="rounded-2xl bg-gray-100 border border-gray-200 p-4 mb-3 text-sm text-gray-700">
+                    Payment cancelled — you haven't been charged.
+                </div>`);
+        }
+
+        const isPaid = !!(meta.entryFeeGBP && meta.entryFeeGBP > 0);
+
         // Registration CTA — depends on registrationUnit
         if (meta.registrationUnit === 'pair') {
             el.innerHTML = `
-                <div class="mb-2 text-sm font-semibold text-gray-800">Register a pair</div>
+                <div class="mb-2 flex items-center justify-between">
+                    <div class="text-sm font-semibold text-gray-800">Register a pair</div>
+                    ${isPaid ? `<div class="text-sm font-bold text-gray-900">£${meta.entryFeeGBP}</div>` : ''}
+                </div>
                 <div id="pair-invite"></div>`;
             PairInvite.render('pair-invite', {
                 tournamentId,
+                isPaid,
                 onRegistered() {
                     window.location.reload();
                 }
@@ -426,16 +474,28 @@ const Handlers = {
         } else {
             el.innerHTML = `
                 <div class="rounded-2xl bg-white border border-gray-200 p-5 shadow-sm">
-                    <div class="font-semibold text-gray-900 mb-2">Register</div>
-                    <p class="text-sm text-gray-600 mb-3">You'll be added as an individual. Pairings are generated when the tournament starts.</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="font-semibold text-gray-900">Register</div>
+                        ${isPaid ? `<div class="text-sm font-bold text-gray-900">£${meta.entryFeeGBP}</div>` : ''}
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">${isPaid ? "You'll be sent to Stripe to pay and confirm." : "You'll be added as an individual. Pairings are generated when the tournament starts."}</p>
                     <button data-action="register-individual" class="px-5 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">
-                        Register me
+                        ${isPaid ? `Pay £${meta.entryFeeGBP} & register` : 'Register me'}
                     </button>
                 </div>`;
             el.querySelector('[data-action="register-individual"]').addEventListener('click', () => {
-                Handlers._registerIndividual(tournamentId).catch(err => alert(err.message || err));
+                (isPaid ? Handlers._payAndRegisterIndividual : Handlers._registerIndividual)(tournamentId)
+                    .catch(err => alert(err.message || err));
             });
         }
+    },
+
+    async _payAndRegisterIndividual(tournamentId) {
+        const fns = firebase.app().functions('europe-west1');
+        const res = await fns.httpsCallable('createCheckoutSessionForRegistration')({ tournamentId });
+        const { sessionUrl } = res.data || res;
+        if (!sessionUrl) throw new Error('Could not create checkout session');
+        window.location.assign(sessionUrl);
     },
 
     async _registerIndividual(tournamentId) {

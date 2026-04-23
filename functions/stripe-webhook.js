@@ -55,16 +55,173 @@ async function handleAccountUpdated(account) {
     console.log(`[stripe.account.updated] uid=${uid} chargesEnabled=${row.chargesEnabled}`);
 }
 
-// Phase E handlers — stubs ready to extend
+// ---------------------------------------------------------------------------
+// Phase E — payment completion + refunds
+// ---------------------------------------------------------------------------
+
+const { v4: uuidv4 } = require('uuid');
+const { _internal: pairInternals } = require('./pair-invites.js');
+
+async function loadUserRow(uid) {
+    const snap = await db.ref(`users/${uid}`).once('value');
+    return snap.val() || null;
+}
+
 async function handleCheckoutSessionCompleted(session) {
-    // Will be implemented in Phase E; stub for now so webhook doesn't 500.
-    console.log('[stripe.checkout.session.completed] session=', session.id, '(no-op in Phase B)');
+    const meta = session.metadata || {};
+    const paymentId = meta.uberpadel_payment_id;
+    if (!paymentId) {
+        console.warn('checkout.session.completed missing uberpadel_payment_id', session.id);
+        return;
+    }
+
+    const payRef = db.ref(`payments/${paymentId}`);
+    const pay = (await payRef.once('value')).val();
+    if (!pay) {
+        console.warn('payments/%s not found for session %s', paymentId, session.id);
+        return;
+    }
+    if (pay.status === 'paid') {
+        console.log('Payment already paid, skipping:', paymentId);
+        return;
+    }
+
+    const tournamentId = pay.tournamentId;
+    const tournament = (await db.ref(`tournaments/${tournamentId}`).once('value')).val();
+    if (!tournament) {
+        await payRef.update({ status: 'failed', failureReason: 'tournament_not_found', updatedAt: new Date().toISOString() });
+        return;
+    }
+    const tMeta = tournament.meta || {};
+    const now = new Date().toISOString();
+
+    // Re-check capacity (atomic-ish via existing-pair count).
+    const pairsSnap = await db.ref(`tournaments/${tournamentId}/pairs`).once('value');
+    const pairsCount = pairsSnap.numChildren();
+    const playersSnap = await db.ref(`tournaments/${tournamentId}/players`).once('value');
+    const playersCount = playersSnap.numChildren();
+
+    if (pay.unit === 'pair') {
+        if (tMeta.maxPairs && pairsCount >= tMeta.maxPairs) {
+            await payRef.update({ status: 'failed', failureReason: 'capacity_exceeded', updatedAt: now });
+            console.error('Capacity exceeded after payment, will need manual refund:', paymentId);
+            return;
+        }
+    } else if (tMeta.maxPlayers && playersCount >= tMeta.maxPlayers) {
+        await payRef.update({ status: 'failed', failureReason: 'capacity_exceeded', updatedAt: now });
+        console.error('Capacity exceeded after payment:', paymentId);
+        return;
+    }
+
+    // Fetch display info for the registration doc
+    const me = await loadUserRow(pay.playerUid);
+    const meRating = me?.currentPlaytomicVerification?.extractedRating ?? me?.playtomicLevel ?? null;
+    const meName = me?.name || me?.currentPlaytomicVerification?.extractedName || 'Player';
+
+    let pairId = null;
+    if (pay.unit === 'pair') {
+        const partner = pay.partnerUid ? await loadUserRow(pay.partnerUid) : null;
+        const partnerRating = partner?.currentPlaytomicVerification?.extractedRating ?? partner?.playtomicLevel ?? null;
+        const partnerName   = partner?.name || partner?.currentPlaytomicVerification?.extractedName || 'Partner';
+        const combinedRating = (meRating || 0) + (partnerRating || 0);
+
+        pairId = uuidv4();
+        const pairDoc = {
+            player1Uid: pay.playerUid,
+            player2Uid: pay.partnerUid,
+            player1Name: meName,
+            player2Name: partnerName,
+            combinedRating,
+            registeredAt: now,
+            paymentStatus: 'paid',
+            stripeSessionId: session.id
+        };
+        await db.ref(`tournaments/${tournamentId}/pairs/${pairId}`).set(pairDoc);
+    } else {
+        await db.ref(`tournaments/${tournamentId}/players/${pay.playerUid}`).set({
+            name: meName,
+            rating: meRating,
+            registeredAt: now,
+            paymentStatus: 'paid',
+            stripeSessionId: session.id
+        });
+    }
+
+    await payRef.update({
+        status: 'paid',
+        stripePaymentIntentId: session.payment_intent || pay.stripePaymentIntentId || null,
+        pairIdAtPayment: pairId || null,
+        paidAt: now,
+        updatedAt: now
+    });
+
+    // Best-effort notification
+    await pushNotification(pay.playerUid, {
+        type: 'registration_confirmed',
+        title: '✅ You\'re registered',
+        body: `"${tMeta.name || 'Your tournament'}" entry paid.`,
+        tournamentId
+    }).catch(() => {});
+    if (pay.partnerUid) {
+        await pushNotification(pay.partnerUid, {
+            type: 'registration_confirmed',
+            title: '✅ Pair registered',
+            body: `${meName} paid your pair entry for "${tMeta.name || 'the tournament'}".`,
+            tournamentId
+        }).catch(() => {});
+    }
 }
+
 async function handleChargeRefunded(charge) {
-    console.log('[stripe.charge.refunded] charge=', charge.id, '(no-op in Phase B)');
+    const piId = charge.payment_intent;
+    if (!piId) return;
+    // Find the payment row by paymentIntent id — RTDB doesn't index this,
+    // so scan linearly. Payment volume is small (per tournament).
+    const snap = await db.ref('payments').orderByChild('stripePaymentIntentId').equalTo(piId).once('value');
+    let paymentId = null, pay = null;
+    snap.forEach(c => { paymentId = c.key; pay = c.val(); });
+    if (!paymentId) {
+        console.warn('charge.refunded for unknown PI', piId);
+        return;
+    }
+    if (pay.status === 'refunded') return;
+    const now = new Date().toISOString();
+    await db.ref(`payments/${paymentId}`).update({
+        status: 'refunded',
+        refundedAt: now,
+        updatedAt: now,
+        stripeRefundId: charge.refunds?.data?.[0]?.id || pay.stripeRefundId || null
+    });
+    // Also reflect on the registration doc
+    if (pay.unit === 'pair' && pay.pairIdAtPayment) {
+        await db.ref(`tournaments/${pay.tournamentId}/pairs/${pay.pairIdAtPayment}`).update({
+            paymentStatus: 'refunded',
+            cancelledAt: now
+        });
+    } else if (pay.unit === 'individual' && pay.playerUid) {
+        await db.ref(`tournaments/${pay.tournamentId}/players/${pay.playerUid}/paymentStatus`).set('refunded');
+    }
 }
+
 async function handlePaymentIntentFailed(pi) {
-    console.log('[stripe.payment_intent.payment_failed] pi=', pi.id, '(no-op in Phase B)');
+    const meta = pi.metadata || {};
+    const paymentId = meta.uberpadel_payment_id;
+    if (!paymentId) return;
+    const now = new Date().toISOString();
+    await db.ref(`payments/${paymentId}`).update({
+        status: 'failed',
+        failureReason: pi.last_payment_error?.code || 'payment_failed',
+        updatedAt: now
+    }).catch(err => console.warn('payments update failed', err));
+}
+
+async function pushNotification(uid, { type, title, body, tournamentId = null }) {
+    const ref = db.ref(`users/${uid}/notifications`).push();
+    await ref.set({
+        type, title, body, tournamentId,
+        read: false,
+        createdAt: new Date().toISOString()
+    });
 }
 
 // ---------------------------------------------------------------------------

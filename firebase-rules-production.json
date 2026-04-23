@@ -371,6 +371,14 @@
       }
     },
 
+    "payments": {
+      ".indexOn": ["organiserUid", "playerUid", "stripePaymentIntentId", "status", "createdAt"],
+      "$paymentId": {
+        ".read":  "auth != null && (auth.uid == data.child('playerUid').val() || auth.uid == data.child('partnerUid').val() || auth.uid == data.child('organiserUid').val() || auth.token.admin == true)",
+        ".write": false
+      }
+    },
+
     "invite_tokens": {
       ".read":  false,
       ".write": false,

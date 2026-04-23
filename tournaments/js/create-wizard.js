@@ -353,7 +353,7 @@ const CreateWizard = {
                     </div>
                 ` : ''}
 
-                <!-- Entry fee (Phase E gated) -->
+                <!-- Entry fee -->
                 <div>
                     <span class="text-sm font-semibold text-gray-800 block mb-1">Entry fee</span>
                     <div class="grid grid-cols-2 gap-2">
@@ -361,12 +361,21 @@ const CreateWizard = {
                             <input type="radio" name="fee-mode" data-input="fee-free" ${!this.state.entryFeeGBP ? 'checked' : ''} class="sr-only" />
                             <span class="text-sm font-semibold text-gray-900">Free</span>
                         </label>
-                        <label class="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 cursor-not-allowed opacity-60">
-                            <input type="radio" name="fee-mode" disabled class="sr-only" />
+                        <label class="flex items-center gap-2 p-3 rounded-xl border-2 ${this.state.entryFeeGBP > 0 ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:border-blue-300'} cursor-pointer">
+                            <input type="radio" name="fee-mode" data-input="fee-paid" ${this.state.entryFeeGBP > 0 ? 'checked' : ''} class="sr-only" />
                             <span class="text-sm font-semibold text-gray-900">Paid</span>
-                            <span class="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">Coming soon</span>
                         </label>
                     </div>
+                    ${this.state.entryFeeGBP > 0 ? `
+                        <div class="mt-2 flex items-center gap-2">
+                            <span class="text-gray-500">£</span>
+                            <input data-input="entry-fee" type="number" step="1" min="1" max="500"
+                                value="${this.state.entryFeeGBP}"
+                                class="flex-1 px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <span class="text-xs text-gray-500">per ${FORMAT_CONFIG[this.state.format]?.registrationUnit || 'player'}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Payments go to your Stripe account. Uber Padel takes a 5% platform fee. <a href="/organiser/payouts.html" class="text-blue-600 underline">Connect Stripe →</a></p>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -445,6 +454,7 @@ const CreateWizard = {
             case 'max-pairs':    this.state.maxPairs = Number(e.target.value); break;
             case 'rating-min':   this.state.ratingLimit = { ...(this.state.ratingLimit||{}), min: e.target.value === '' ? undefined : Number(e.target.value) }; break;
             case 'rating-max':   this.state.ratingLimit = { ...(this.state.ratingLimit||{}), max: e.target.value === '' ? undefined : Number(e.target.value) }; break;
+            case 'entry-fee':    this.state.entryFeeGBP = Number(e.target.value) || 0; break;
         }
     },
 
@@ -464,6 +474,11 @@ const CreateWizard = {
         }
         if (key === 'fee-free') {
             this.state.entryFeeGBP = 0;
+            this._render();
+        }
+        if (key === 'fee-paid') {
+            this.state.entryFeeGBP = this.state.entryFeeGBP > 0 ? this.state.entryFeeGBP : 10;
+            this._render();
         }
     },
 
@@ -544,7 +559,7 @@ const CreateWizard = {
                 if (meta.registrationUnit === 'pair') meta.maxPairs = this.state.maxPairs;
                 else meta.maxPlayers = this.state.maxPairs;
             }
-            meta.entryFeeGBP = 0;
+            meta.entryFeeGBP = Math.max(0, Number(this.state.entryFeeGBP) || 0);
             meta.currency = 'GBP';
             const limit = this.state.ratingLimit || {};
             meta.ratingLimit = { type: limit.type || 'none' };

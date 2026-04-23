@@ -117,14 +117,23 @@ const PairInvite = {
             const username = el.querySelector('[data-input="username"]').value.trim().replace(/^@/, '');
             if (!username) return setMessage('error', 'Enter a username');
             state.busy = true; state.message = null; render();
+
+            const paid = state.opts.isPaid === true;
+            const fn   = paid ? 'createCheckoutSessionForRegistration' : 'registerPair';
+
             try {
-                const res = await callable('registerPair')({
+                const res = await callable(fn)({
                     tournamentId: state.opts.tournamentId,
                     partnerUsername: username
                 });
+                const payload = res.data || res;
                 state.busy = false;
+                if (paid && payload?.sessionUrl) {
+                    window.location.assign(payload.sessionUrl);
+                    return;
+                }
                 setMessage('success', `Paired! You're registered.`);
-                if (typeof state.opts.onRegistered === 'function') state.opts.onRegistered((res.data||res).pairId);
+                if (typeof state.opts.onRegistered === 'function') state.opts.onRegistered(payload.pairId);
             } catch (err) {
                 state.busy = false;
                 setMessage('error', err?.message || String(err));

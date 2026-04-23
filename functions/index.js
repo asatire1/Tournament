@@ -392,3 +392,8 @@ exports.mintInviteToken     = inviteTokens.mintInviteToken;
 exports.validateInviteToken = inviteTokens.validateInviteToken;
 exports.redeemInviteToken   = inviteTokens.redeemInviteToken;
 exports.revokeInviteToken   = inviteTokens.revokeInviteToken;
+
+// Phase E — paid entry via Stripe Checkout
+const stripeCheckout = require('./stripe-checkout.js');
+exports.createCheckoutSessionForRegistration = stripeCheckout.createCheckoutSessionForRegistration;
+exports.createRefund                         = stripeCheckout.createRefund;
