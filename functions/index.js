@@ -370,3 +370,10 @@ exports.lookupPostcode = postcodeProxy.lookupPostcode;
 const playtomicVerify = require('./playtomic-verify.js');
 exports.verifyPlaytomicScreenshot    = playtomicVerify.verifyPlaytomicScreenshot;
 exports.expireStalePlaytomicVerifications = playtomicVerify.expireStalePlaytomicVerifications;
+
+// Phase B — Stripe Connect onboarding for organisers
+const stripeConnect = require('./stripe-connect.js');
+exports.createConnectOnboardingLink = stripeConnect.createConnectOnboardingLink;
+exports.getConnectAccountStatus     = stripeConnect.getConnectAccountStatus;
+const stripeWebhook = require('./stripe-webhook.js');
+exports.stripeWebhook = stripeWebhook.stripeWebhook;

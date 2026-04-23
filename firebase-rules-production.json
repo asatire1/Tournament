@@ -319,6 +319,29 @@
       }
     },
 
+    "stripe_accounts": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid == $uid",
+        ".write": false,
+        "stripeAccountId":           { ".validate": "newData.isString() && newData.val().length <= 128" },
+        "chargesEnabled":            { ".validate": "newData.isBoolean()" },
+        "payoutsEnabled":            { ".validate": "newData.isBoolean()" },
+        "detailsSubmitted":          { ".validate": "newData.isBoolean()" },
+        "requirementsCurrentlyDue":  {},
+        "requirementsDisabledReason":{ ".validate": "newData.isString() || newData.val() == null" },
+        "country":                   { ".validate": "newData.isString() || newData.val() == null" },
+        "defaultCurrency":           { ".validate": "newData.isString() || newData.val() == null" },
+        "createdAt":                 { ".validate": "newData.isString()" },
+        "updatedAt":                 { ".validate": "newData.isString()" },
+        "lastWebhookAt":             { ".validate": "newData.isString() || newData.val() == null" }
+      }
+    },
+
+    "stripe_events": {
+      ".read":  false,
+      ".write": false
+    },
+
     "playtomic_verifications": {
       "$uid": {
         ".read":  "auth != null && (auth.uid == $uid || auth.token.admin == true)",
