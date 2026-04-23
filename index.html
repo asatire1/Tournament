@@ -616,6 +616,32 @@
         </div>
     </div>
     
+    <!-- Open Tournaments Near You (unified shell — Phase 0) -->
+    <section id="open-tournaments" class="bg-white py-16 border-b border-gray-100">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center gap-2 bg-blue-100 text-blue-700 rounded-full px-4 py-2 text-sm font-medium mb-4">
+                    <span>📍</span> Find tournaments near you
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900 mb-3" style="letter-spacing: -0.5px;">Open tournaments</h2>
+                <p class="text-gray-600 max-w-xl mx-auto">Search by UK postcode. Organiser-run, filter by radius.</p>
+            </div>
+
+            <div id="home-search" class="mb-6"></div>
+            <div id="home-results"></div>
+
+            <div class="mt-8 text-center">
+                <a href="/tournaments/browse.html" class="inline-flex items-center gap-2 text-blue-700 font-medium hover:underline">
+                    See all open tournaments →
+                </a>
+                <span class="mx-3 text-gray-300">|</span>
+                <a href="/tournaments/create.html" class="inline-flex items-center gap-2 text-blue-700 font-medium hover:underline">
+                    Create your own →
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Quick Play Format Selection Section -->
     <div id="quick-play" class="bg-gray-50 py-16">
         <div class="max-w-6xl mx-auto px-6">
@@ -2045,6 +2071,78 @@
             loadRecentTournaments();
         });
     </script>
+
+    <!-- Unified /tournaments/ shell — home-page browse section -->
+    <script src="/shared/format-config.js"></script>
+    <script src="/src/core/organizer-auth.js"></script>
+    <script src="/tournaments/js/config.js"></script>
+    <script src="/tournaments/js/firebase-config.js"></script>
+    <script src="/tournaments/js/postcode-service.js"></script>
+    <script src="/tournaments/js/state.js"></script>
+    <script src="/tournaments/js/router.js"></script>
+    <script src="/tournaments/js/components.js"></script>
+    <script src="/tournaments/js/handlers.js"></script>
+    <script>
+        // Home-page browse bootstrap — reuses Handlers.handleBrowsePage but
+        // against #home-search / #home-results so it doesn't fight the
+        // rest of the marketing home page.
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                if (typeof initializeFirebase !== 'function') return;
+                initializeFirebase();
+                const searchRoot = document.getElementById('home-search');
+                const resultsRoot = document.getElementById('home-results');
+                if (!searchRoot || !resultsRoot) return;
+
+                const lastPc = localStorage.getItem(TOURNAMENTS_CONFIG.LAST_POSTCODE_KEY) || '';
+                searchRoot.innerHTML = Components.postcodeSearchBar(lastPc);
+
+                async function run() {
+                    resultsRoot.innerHTML = '<div class="text-center py-6 text-gray-500">Loading tournaments…</div>';
+                    const pc = searchRoot.querySelector('[data-input="postcode"]').value.trim();
+                    const radius = Number(searchRoot.querySelector('[data-input="radius"]').value) || TOURNAMENTS_CONFIG.DEFAULT_RADIUS_MILES;
+                    if (pc) localStorage.setItem(TOURNAMENTS_CONFIG.LAST_POSTCODE_KEY, pc);
+
+                    const all = await queryPublicTournaments();
+                    let list = all;
+                    if (pc) {
+                        const origin = await PostcodeService.lookup(pc);
+                        if (origin) list = PostcodeService.filterByRadius(all, origin, radius);
+                    }
+                    // Cap to 5 on the home page to keep it tight
+                    const top = list.slice(0, 5);
+
+                    if (!top.length) {
+                        resultsRoot.innerHTML = `
+                            <div class="text-center py-8 text-gray-600">
+                                <div class="text-3xl mb-2">🎾</div>
+                                <p class="font-medium">No open tournaments yet${pc ? ' near that postcode' : ''}.</p>
+                                <p class="text-sm mt-1">
+                                    <a href="/tournaments/browse.html" class="text-blue-600 underline">Browse all</a> or
+                                    <a href="/tournaments/create.html" class="text-blue-600 underline">create one</a>.
+                                </p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    resultsRoot.innerHTML = `<div class="grid gap-3">${top.map(t => Components.tournamentCard(t)).join('')}</div>`;
+                }
+
+                searchRoot.addEventListener('click', e => {
+                    if (e.target.closest('[data-action="search"]')) run();
+                });
+                searchRoot.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' && e.target.matches('[data-input="postcode"]')) run();
+                });
+
+                run();
+            } catch (err) {
+                console.warn('home browse init failed:', err);
+            }
+        });
+    </script>
+
     <script src="/js/feedback-button.js" defer></script>
     <script src="shared/nav.js" defer></script>
 </body>

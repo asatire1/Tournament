@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage tournament · Uber Padel</title>
+    <meta name="description" content="Manage your padel tournament.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb">
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/tournaments/css/tournaments.css">
+</head>
+<body class="tournaments-page" data-page="manage">
+
+<header class="bg-white border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2">
+            <img src="/uberpadel-logo.svg" alt="Uber Padel" class="h-8" onerror="this.style.display='none'">
+            <span class="font-bold text-gray-900">Uber Padel</span>
+        </a>
+        <nav class="flex items-center gap-4 text-sm">
+            <a href="/tournaments/browse.html" class="text-gray-700 hover:text-blue-600 font-medium">Browse</a>
+            <a href="/tournaments/create.html" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Create</a>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div id="manage-root"></div>
+</main>
+
+<footer class="mt-12 py-6 text-center text-sm text-gray-500">
+    <p>© Uber Padel</p>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<script src="/shared/format-config.js"></script>
+<script src="/src/core/organizer-auth.js"></script>
+<script src="/tournaments/js/config.js"></script>
+<script src="/tournaments/js/firebase-config.js"></script>
+<script src="/tournaments/js/postcode-service.js"></script>
+<script src="/tournaments/js/state.js"></script>
+<script src="/tournaments/js/router.js"></script>
+<script src="/tournaments/js/components.js"></script>
+<script src="/tournaments/js/create-wizard.js"></script>
+<script src="/tournaments/js/handlers.js"></script>
+<script src="/tournaments/js/main.js"></script>
+</body>
+</html>

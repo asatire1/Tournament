@@ -1,0 +1,34 @@
+/* tournaments/css/tournaments.css — module-specific styles.
+   Keep minimal: Tailwind utility classes in the HTML cover most of the UI.
+   Only add rules here for patterns Tailwind cannot express ergonomically. */
+
+.tournaments-page {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #1f2937;
+    background-color: #f9fafb;
+    min-height: 100vh;
+}
+
+.tournaments-page h1,
+.tournaments-page h2,
+.tournaments-page h3 {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.01em;
+}
+
+/* Nudge inputs on iOS so labels line up with the text */
+.tournaments-page input[type="text"],
+.tournaments-page input[type="number"],
+.tournaments-page select {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Basic prose for empty states and help text */
+.tournaments-page code {
+    font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+    background: #f3f4f6;
+    padding: 0 4px;
+    border-radius: 4px;
+    font-size: 0.875em;
+}

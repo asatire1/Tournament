@@ -357,3 +357,11 @@ exports.applyInactivityDecay = functions
 
 const { api } = require('./api/index.js');
 exports.api = api;
+
+// ---------------------------------------------------------------------------
+// Unified /tournaments/ shell — supporting Cloud Functions
+// ---------------------------------------------------------------------------
+
+// Postcode lookup proxy + 24-h cache (browse-by-postcode in the new shell)
+const postcodeProxy = require('./postcode-proxy.js');
+exports.lookupPostcode = postcodeProxy.lookupPostcode;

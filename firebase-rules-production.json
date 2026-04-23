@@ -194,22 +194,117 @@
     },
     "tournaments": {
       ".read": true,
-      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt", "meta/isPublic", "meta/status", "meta/format", "meta/startDate", "meta/registrationMode"],
       "$tournamentId": {
         ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null",
+            "team1": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "team2": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" }
           }
         },
         "meta": {
           "name": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          },
+          "format": {
+            ".validate": "newData.isString() && (newData.val() == 'americano' || newData.val() == 'mexicano' || newData.val() == 'mix' || newData.val() == 'team-league' || newData.val() == 'fixed-pair' || newData.val() == 'mixicano' || newData.val() == 'round-robin' || newData.val() == 'knockout' || newData.val() == 'swiss')"
+          },
+          "registrationMode": {
+            ".validate": "newData.isString() && (newData.val() == 'open' || newData.val() == 'names_only')"
+          },
+          "status": {
+            ".validate": "newData.isString() && (newData.val() == 'draft' || newData.val() == 'open_for_registration' || newData.val() == 'registration_closed' || newData.val() == 'active' || newData.val() == 'completed' || newData.val() == 'cancelled')"
+          },
+          "isPublic": { ".validate": "newData.isBoolean()" },
+          "mode": { ".validate": "newData.isString() && (newData.val() == 'anyone' || newData.val() == 'locked')" },
+          "organiserKey": {
+            ".validate": "newData.isString() && newData.val().length >= 8 && newData.val().length <= 64"
+          },
+          "passcodeHash": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 128"
+          },
+          "organizerUid": {
+            ".validate": "newData.isString() && newData.val().length <= 128"
+          },
+          "createdAt": { ".validate": "newData.isString()" },
+          "updatedAt": { ".validate": "newData.isString()" },
+          "startDate": { ".validate": "newData.isString() || newData.val() == null" },
+          "registrationDeadline": { ".validate": "newData.isString() || newData.val() == null" },
+          "entryFeeGBP": { ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000) || newData.val() == null" },
+          "currency": { ".validate": "newData.isString() && newData.val() == 'GBP'" },
+          "stripeAccountId": { ".validate": "newData.isString() || newData.val() == null" },
+          "location": {
+            "postcode": { ".validate": "newData.isString() && newData.val().length <= 10" },
+            "line1":    { ".validate": "newData.isString() && newData.val().length <= 200" },
+            "venue":    { ".validate": "newData.isString() && newData.val().length <= 100" },
+            "lat":      { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+            "lng":      { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" }
+          },
+          "ratingLimit": {
+            "type": { ".validate": "newData.isString() && (newData.val() == 'none' || newData.val() == 'individual' || newData.val() == 'combined')" },
+            "min":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" },
+            "max":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" }
+          },
+          "formatConfig": {
+            "matchFormat": { ".validate": "newData.isString() && (newData.val() == 'round-robin' || newData.val() == 'groups+ko' || newData.val() == 'knockout')" },
+            "courts":      { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 20" },
+            "pointsPerMatch": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100" }
           }
         },
         "playerCount": {
-          ".validate": "newData.isNumber() && newData.val() >= 4 && newData.val() <= 32"
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 200"
+        },
+        "namesOnlyRoster": {
+          "playerNames": {
+            "$index": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50" }
+          },
+          "teamNames": {
+            "$index": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 50" }
+          }
+        },
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid",
+            ".validate": "newData.hasChildren(['name'])",
+            "name":          { ".validate": "newData.isString() && newData.val().length <= 50" },
+            "rating":        { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 20" },
+            "registeredAt":  { ".validate": "newData.isString()" },
+            "paymentStatus": { ".validate": "newData.isString() && (newData.val() == 'free' || newData.val() == 'pending' || newData.val() == 'paid' || newData.val() == 'refunded')" },
+            "stripeSessionId": { ".validate": "newData.isString()" }
+          }
+        },
+        "pairs": {
+          "$pairId": {
+            ".write": "auth != null && (newData.child('player1Uid').val() == auth.uid || newData.child('player2Uid').val() == auth.uid || data.child('player1Uid').val() == auth.uid || data.child('player2Uid').val() == auth.uid)",
+            "player1Uid":    { ".validate": "newData.isString()" },
+            "player2Uid":    { ".validate": "newData.isString()" },
+            "player1Name":   { ".validate": "newData.isString() && newData.val().length <= 50" },
+            "player2Name":   { ".validate": "newData.isString() && newData.val().length <= 50" },
+            "combinedRating":{ ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 40" },
+            "registeredAt":  { ".validate": "newData.isString()" },
+            "paymentStatus": { ".validate": "newData.isString() && (newData.val() == 'free' || newData.val() == 'pending' || newData.val() == 'paid' || newData.val() == 'refunded')" },
+            "stripeSessionId": { ".validate": "newData.isString()" },
+            "cancelledAt":   { ".validate": "newData.isString() || newData.val() == null" }
+          }
+        },
+        "finalStandings": {
+          ".write": false
+        }
+      }
+    },
+
+    "postcode_cache": {
+      ".read": true,
+      ".write": false,
+      "$key": {
+        "cachedAt": { ".validate": "newData.isNumber()" },
+        "data": {
+          "postcode": { ".validate": "newData.isString()" },
+          "lat":      { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+          "lng":      { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" }
         }
       }
     },
