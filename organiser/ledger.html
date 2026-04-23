@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payout ledger · Uber Padel organiser</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/uberpadel-icon.svg">
+    <meta name="theme-color" content="#2563eb">
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f9fafb; color: #111827; }
+        h1, h2 { font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.01em; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+<header class="bg-white border-b border-gray-200">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2">
+            <img src="/uberpadel-logo.svg" alt="Uber Padel" class="h-8" onerror="this.style.display='none'">
+            <span class="font-bold text-gray-900">Uber Padel</span>
+        </a>
+        <nav class="flex items-center gap-4 text-sm">
+            <a href="/organiser/payouts.html" class="text-gray-700 hover:text-blue-600 font-medium">Payouts</a>
+            <a href="/organiser/ledger.html" class="text-blue-600 font-semibold">Ledger</a>
+            <a href="/tournaments/create.html" class="text-gray-700 hover:text-blue-600 font-medium">Create</a>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+    <h1 class="text-3xl font-bold text-gray-900 mb-1">Payout ledger</h1>
+    <p class="text-sm text-gray-600 mb-6">Every payment for tournaments you've organised. Payouts are handled by Stripe on your connected account.</p>
+
+    <div class="mb-4 flex flex-wrap gap-3 items-end bg-white rounded-xl border border-gray-200 p-4">
+        <label class="block">
+            <span class="text-xs font-medium text-gray-700 block mb-1">From</span>
+            <input id="from" type="date" class="px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+        </label>
+        <label class="block">
+            <span class="text-xs font-medium text-gray-700 block mb-1">To</span>
+            <input id="to" type="date" class="px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+        </label>
+        <button id="apply" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700">Apply</button>
+        <button id="export" class="ml-auto px-4 py-2 bg-white border border-gray-300 text-gray-800 rounded-lg text-sm font-semibold hover:bg-gray-50">Export CSV</button>
+    </div>
+
+    <div id="totals" class="mb-4"></div>
+    <div id="rows"><div class="text-center py-8 text-gray-500">Loading…</div></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+
+<script>
+(async () => {
+    const firebaseConfig = {
+        apiKey: "AIzaSyDYIlRS_me7sy7ptNmRrvPQCeXP2H-hHzU",
+        authDomain: "stretford-padel-tournament.firebaseapp.com",
+        databaseURL: "https://stretford-padel-tournament-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "stretford-padel-tournament",
+        storageBucket: "stretford-padel-tournament.firebasestorage.app",
+        messagingSenderId: "596263602058",
+        appId: "1:596263602058:web:f69f7f8d00c60abbd0aa73"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+    const user = await new Promise(res => firebase.auth().onAuthStateChanged(u => res(u)));
+    const rowsRoot = document.getElementById('rows');
+    const totalsRoot = document.getElementById('totals');
+    if (!user) {
+        rowsRoot.innerHTML = `<div class="rounded-2xl bg-yellow-50 border border-yellow-200 p-5">Sign in to view your ledger. <a href="/account/login.html?next=/organiser/ledger.html" class="text-blue-600 underline">Sign in</a></div>`;
+        return;
+    }
+
+    const callable = firebase.app().functions('europe-west1').httpsCallable('getOrganiserLedger');
+    let latest = { rows: [], totals: {} };
+
+    async function reload() {
+        rowsRoot.innerHTML = '<div class="text-center py-8 text-gray-500">Loading…</div>';
+        totalsRoot.innerHTML = '';
+        const from = document.getElementById('from').value;
+        const to   = document.getElementById('to').value;
+        const params = {};
+        if (from) params.from = new Date(from + 'T00:00:00Z').toISOString();
+        if (to)   params.to   = new Date(to   + 'T23:59:59Z').toISOString();
+        try {
+            const r = await callable(params);
+            latest = r.data || r;
+            render();
+        } catch (err) {
+            rowsRoot.innerHTML = `<div class="rounded-2xl bg-red-50 border border-red-200 p-5 text-sm text-red-800">Could not load: ${esc(err.message || String(err))}</div>`;
+        }
+    }
+
+    function render() {
+        const t = latest.totals || {};
+        totalsRoot.innerHTML = `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                ${card('Gross', money(t.grossPence), 'text-gray-900')}
+                ${card('Platform fee', money(t.platformFeePence), 'text-gray-700')}
+                ${card('Net to you', money(t.netPence), 'text-green-700')}
+                ${card('Refunded', money(t.refundedPence), 'text-red-700')}
+            </div>`;
+        if (!latest.rows?.length) {
+            rowsRoot.innerHTML = `<div class="text-center py-8 text-gray-500">No payments in this range.</div>`;
+            return;
+        }
+        rowsRoot.innerHTML = `
+            <div class="overflow-auto">
+                <table class="w-full text-sm bg-white rounded-xl border border-gray-200">
+                    <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="text-left px-3 py-2">Date</th>
+                            <th class="text-left px-3 py-2">Tournament</th>
+                            <th class="text-left px-3 py-2">Player</th>
+                            <th class="text-right px-3 py-2">Amount</th>
+                            <th class="text-right px-3 py-2">Fee</th>
+                            <th class="text-right px-3 py-2">Net</th>
+                            <th class="text-left px-3 py-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${latest.rows.map(renderRow).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    function card(label, value, tone) {
+        return `<div class="rounded-xl bg-white border border-gray-200 p-3">
+            <div class="text-xs text-gray-500">${label}</div>
+            <div class="text-lg font-bold ${tone}">${value}</div>
+        </div>`;
+    }
+    function renderRow(r) {
+        return `<tr class="border-t border-gray-100">
+            <td class="px-3 py-2 text-gray-600 whitespace-nowrap">${r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-GB') : '—'}</td>
+            <td class="px-3 py-2">${esc(r.tournamentName || r.tournamentId)}</td>
+            <td class="px-3 py-2 text-gray-600"><code>${esc((r.playerUid || '').slice(0,8))}</code></td>
+            <td class="px-3 py-2 text-right font-mono">${money(r.amountPence)}</td>
+            <td class="px-3 py-2 text-right font-mono text-gray-500">${money(r.applicationFeePence)}</td>
+            <td class="px-3 py-2 text-right font-mono font-semibold">${money(r.amountPence - r.applicationFeePence)}</td>
+            <td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs font-semibold ${r.status === 'paid' ? 'bg-green-100 text-green-800' : r.status === 'refunded' ? 'bg-red-100 text-red-800' : r.status === 'failed' ? 'bg-gray-100 text-gray-700' : 'bg-yellow-100 text-yellow-800'}">${esc(r.status)}</span></td>
+        </tr>`;
+    }
+    function money(p) {
+        const n = (Number(p) || 0) / 100;
+        return '£' + n.toFixed(2);
+    }
+    function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+    function exportCsv() {
+        const header = ['paymentId','createdAt','tournamentId','tournamentName','playerUid','partnerUid','unit','amountGBP','feeGBP','netGBP','status','stripeSessionId','stripePaymentIntentId'];
+        const lines = [header.join(',')];
+        for (const r of latest.rows) {
+            lines.push([
+                r.paymentId,
+                r.createdAt || '',
+                r.tournamentId,
+                csvSafe(r.tournamentName || ''),
+                r.playerUid || '',
+                r.partnerUid || '',
+                r.unit || '',
+                (r.amountPence / 100).toFixed(2),
+                (r.applicationFeePence / 100).toFixed(2),
+                ((r.amountPence - r.applicationFeePence) / 100).toFixed(2),
+                r.status,
+                r.stripeSessionId || '',
+                r.stripePaymentIntentId || ''
+            ].join(','));
+        }
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `uberpadel-ledger-${new Date().toISOString().slice(0,10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+    function csvSafe(s) {
+        const str = String(s ?? '');
+        if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+        return str;
+    }
+
+    document.getElementById('apply').addEventListener('click', reload);
+    document.getElementById('export').addEventListener('click', exportCsv);
+    reload();
+})();
+</script>
+</body>
+</html>

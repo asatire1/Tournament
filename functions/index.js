@@ -402,3 +402,7 @@ exports.createRefund                         = stripeCheckout.createRefund;
 const adminVerification = require('./admin-verification.js');
 exports.overrideVerification    = adminVerification.overrideVerification;
 exports.adminVerificationQueue  = adminVerification.adminVerificationQueue;
+
+// Phase G — organiser revenue ledger
+const organiserLedger = require('./organiser-ledger.js');
+exports.getOrganiserLedger = organiserLedger.getOrganiserLedger;
