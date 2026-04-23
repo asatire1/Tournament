@@ -421,4 +421,5 @@ exports.approveVenue      = venues.approveVenue;
 exports.rejectVenue       = venues.rejectVenue;
 exports.mergeVenue        = venues.mergeVenue;
 const seedVenues = require('./seed-venues.js');
-exports.seedUKPadelVenuesFromOSM = seedVenues.seedUKPadelVenuesFromOSM;
+exports.seedUKPadelVenuesFromOSM    = seedVenues.seedUKPadelVenuesFromOSM;
+exports.seedUKPadelVenuesFromGoogle = seedVenues.seedUKPadelVenuesFromGoogle;

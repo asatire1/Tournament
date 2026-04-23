@@ -62,7 +62,15 @@ const VenuePicker = {
             state.loading = true;
             render();
             try {
-                const res = await callable('searchVenues')({ query: q, postcode: pc, limit: 8 });
+                // includePending: true — show pending venues (with a badge) so
+                // organisers can coalesce around the same entry while the
+                // admin approves it. Prevents duplicate submissions.
+                const res = await callable('searchVenues')({
+                    query: q,
+                    postcode: pc,
+                    limit: 10,
+                    includePending: true
+                });
                 state.suggestions = (res.data?.rows || res.rows || []);
             } catch (err) {
                 console.warn('searchVenues failed', err);
@@ -74,11 +82,16 @@ const VenuePicker = {
 
         function render() {
             const exactMatch = state.selection && state.selection.canonicalName === state.query;
-            const hint = exactMatch
-                ? `<span class="text-xs text-green-700">✓ ${state.selection.isPending ? 'Pending admin approval' : 'Known venue'}</span>`
-                : (state.query.length >= MIN_QUERY
-                    ? `<span class="text-xs text-gray-500">We'll save this venue for future organisers.</span>`
-                    : '');
+            let hint = '';
+            if (exactMatch) {
+                if (state.selection.isPending) {
+                    hint = `<span class="text-xs text-amber-700">⏳ Pending admin approval — your tournament will still go live and link to this venue.</span>`;
+                } else {
+                    hint = `<span class="text-xs text-green-700">✓ Known venue</span>`;
+                }
+            } else if (state.query.length >= MIN_QUERY) {
+                hint = `<span class="text-xs text-gray-500">New venue — we'll save it for review. Your tournament still goes live immediately.</span>`;
+            }
             el.innerHTML = `
                 <div class="relative">
                     <input data-input="venue" type="text" maxlength="100" autocomplete="off"
@@ -100,7 +113,10 @@ const VenuePicker = {
                         <button data-pick="${i}" type="button"
                             class="w-full text-left px-4 py-2 hover:bg-blue-50 transition flex items-center gap-3 border-t border-gray-100 first:border-t-0">
                             <span class="flex-1 min-w-0">
-                                <span class="block text-sm font-semibold text-gray-900 truncate">${esc(s.canonicalName)}</span>
+                                <span class="block text-sm font-semibold text-gray-900 truncate">
+                                    ${esc(s.canonicalName)}
+                                    ${!s.verified ? '<span class="ml-1 inline-block px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded">pending approval</span>' : ''}
+                                </span>
                                 <span class="block text-xs text-gray-500 truncate">
                                     ${s.postcode ? esc(s.postcode) : ''}
                                     ${Number.isFinite(s.distanceMiles) ? ` · ${s.distanceMiles.toFixed(1)} mi` : ''}

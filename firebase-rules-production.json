@@ -341,7 +341,11 @@
         "suggestedBy":      { ".validate": "newData.isString() && newData.val().length <= 128" },
         "approvedBy":       { ".validate": "newData.isString() || newData.val() == null" },
         "approvedAt":       { ".validate": "newData.isString() || newData.val() == null" },
-        "reviewNote":       { ".validate": "newData.isString() || newData.val() == null" }
+        "reviewNote":       { ".validate": "newData.isString() || newData.val() == null" },
+        "googlePlaceId":    { ".validate": "newData.isString() || newData.val() == null" },
+        "googleAddress":    { ".validate": "newData.isString() || newData.val() == null" },
+        "googleWebsite":    { ".validate": "newData.isString() || newData.val() == null" },
+        "googlePhone":      { ".validate": "newData.isString() || newData.val() == null" }
       }
     },
 
