@@ -49,6 +49,10 @@ class TeamLeagueState {
         this.includeThirdPlace = CONFIG.INCLUDE_THIRD_PLACE;
         this.knockoutFormat = 'quarter_final'; // 'final_only', 'semi_final', 'quarter_final', 'round_of_16'
         this.qualifiersPerGroup = 4; // For four_groups: 1, 2, or 4 (default 4)
+        // League-only mode: no knockout stage at all. Final league
+        // standings decide the result (1st = gold, 2nd = silver,
+        // 3rd = bronze). One-day single-table leagues.
+        this.leagueOnly = false;
 
         // Teams data: { id, name, player1Name, player1Rating, player2Name, player2Rating, combinedRating, group }
         this.teams = [];
@@ -339,6 +343,7 @@ class TeamLeagueState {
         this.groupMode = data.groupMode || CONFIG.DEFAULT_GROUP_MODE;
         this.includeThirdPlace = data.includeThirdPlace !== undefined ? data.includeThirdPlace : CONFIG.INCLUDE_THIRD_PLACE;
         this.knockoutFormat = data.knockoutFormat || 'quarter_final';
+        this.leagueOnly = data.leagueOnly === true;
         this.qualifiersPerGroup = data.qualifiersPerGroup || 4;
         this.courtCount = (typeof data.courtCount === 'number' && data.courtCount > 0) ? data.courtCount : 4;
         this.courtSchedule = Array.isArray(data.courtSchedule) ? data.courtSchedule : [];
