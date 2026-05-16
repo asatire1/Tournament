@@ -4,6 +4,8 @@
 
 function setTab(tab) {
     if (!state) return;
+    // League-only: there is no knockout tab.
+    if (tab === 'knockout' && state.leagueOnly) tab = 'standings';
     state.currentTab = tab;
     renderTeamLeague();
 }
@@ -865,6 +867,21 @@ function updateIncludeThirdPlace(include) {
     state.includeThirdPlace = include;
     state.saveSettingToFirebase('includeThirdPlace', include);
     showToast(`✅ 3rd place playoff ${include ? 'enabled' : 'disabled'}`);
+    renderTeamLeague();
+}
+
+// League-only mode: removes the knockout stage entirely. Final
+// league standings decide it (1st gold / 2nd silver / 3rd bronze).
+function toggleLeagueOnly(enabled) {
+    if (!state || !state.canEdit()) return;
+    state.leagueOnly = !!enabled;
+    state.saveSettingToFirebase('leagueOnly', state.leagueOnly);
+    if (state.leagueOnly && state.currentTab === 'knockout') {
+        state.currentTab = 'standings';
+    }
+    showToast(enabled
+        ? '✅ League-only mode on — knockout stage removed'
+        : '✅ Knockout stage re-enabled');
     renderTeamLeague();
 }
 

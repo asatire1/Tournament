@@ -586,7 +586,7 @@ function StandingsTab() {
                             const colourClass = getTeamColourClass(row.team.id);
                             return `
                                 <tr>
-                                    <td class="position ${isQualified ? 'qualified' : ''}">${idx + 1}</td>
+                                    <td class="position ${(!state.leagueOnly && isQualified) ? 'qualified' : ''}">${state.leagueOnly && idx < 3 ? (idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉') + ' ' : ''}${idx + 1}</td>
                                     <td>
                                         <div class="team-cell">
                                             <div class="team-mini-badge ${colourClass}">${row.team.name.substring(0, 2).toUpperCase()}</div>
@@ -610,8 +610,12 @@ function StandingsTab() {
                     </tbody>
                 </table>
             </div>
-            <div class="mt-4 flex items-center gap-2">
-                <span class="qualification-badge qualified">Top ${qualifyCount} qualify</span>
+            <div class="mt-4 flex items-center gap-2 flex-wrap">
+                ${state.leagueOnly
+                    ? `<span class="qualification-badge qualified">🥇 1st gold</span>
+                       <span class="qualification-badge qualified">🥈 2nd silver</span>
+                       <span class="qualification-badge qualified">🥉 3rd bronze</span>`
+                    : `<span class="qualification-badge qualified">Top ${qualifyCount} qualify</span>`}
             </div>
         `;
     };
@@ -1431,8 +1435,24 @@ function KnockoutSettingsSection() {
     const hasKnockoutStarted = checkKnockoutHasStarted();
     
     return `
+        <div class="bg-emerald-50 border-2 ${state.leagueOnly ? 'border-emerald-400' : 'border-gray-200'} rounded-xl p-4 mb-6">
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" class="mt-1 w-5 h-5" ${state.leagueOnly ? 'checked' : ''}
+                    onchange="toggleLeagueOnly(this.checked)">
+                <span>
+                    <span class="font-bold text-gray-800">League only — no knockout stage</span>
+                    <span class="block text-sm text-gray-600 mt-1">
+                        One-day single-table league. No bracket. Final standings
+                        decide it: 1st 🥇 gold, 2nd 🥈 silver, 3rd 🥉 bronze.
+                        Hides the Knockout tab for everyone.
+                    </span>
+                </span>
+            </label>
+        </div>
+
+        ${state.leagueOnly ? '' : `
         <h3 class="text-lg font-bold text-gray-800 mb-4">Knockout Format</h3>
-        
+
         ${hasKnockoutStarted ? `
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
                 <p class="text-amber-800 text-sm">
@@ -1495,6 +1515,7 @@ function KnockoutSettingsSection() {
                 </div>
             </label>
         </div>
+        `}
     `;
 }
 
@@ -1574,7 +1595,9 @@ const TeamLeagueApp = {
             return;
         }
         
-        const currentTab = state.currentTab || 'fixtures';
+        let currentTab = state.currentTab || 'fixtures';
+        // League-only: knockout tab/content don't exist — fall back.
+        if (state.leagueOnly && currentTab === 'knockout') currentTab = 'standings';
         const activeGroupCount = state.getActiveGroupLetters().length;
 
         document.getElementById('app').innerHTML = `
@@ -1598,9 +1621,11 @@ const TeamLeagueApp = {
                             <button onclick="setTab('standings')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'standings' ? 'tab-active' : 'tab-inactive'}">
                                 📊 Standings
                             </button>
+                            ${!state.leagueOnly ? `
                             <button onclick="setTab('knockout')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'knockout' ? 'tab-active' : 'tab-inactive'}">
                                 🏆 Knockout
                             </button>
+                            ` : ''}
                             <button onclick="setTab('partners')" class="px-4 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${currentTab === 'partners' ? 'tab-active' : 'tab-inactive'}">
                                 👥 Teams
                             </button>
