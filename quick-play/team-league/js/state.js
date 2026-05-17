@@ -741,52 +741,54 @@ class TeamLeagueState {
     // Flush all pending score updates to Firebase in a single batch
     async flushPendingScores() {
         const basePath = this.getBasePath();
-        const updates = {};
         let hasUpdates = false;
 
-        // Add pending group scores
-        for (const key in this.pendingGroupScores) {
-            const { group, matchKey, team1Score, team2Score } = this.pendingGroupScores[key];
-            updates[`groupMatchScores/${group}/${matchKey}`] = { team1Score, team2Score };
-            hasUpdates = true;
-        }
+        // Guard: prevent the Firebase listener from overwriting local
+        // state with a stale snapshot while this write is in flight.
+        this.isSaving = true;
 
-        // Add pending knockout scores
-        for (const matchId in this.pendingKnockoutScores) {
-            const { team1Score, team2Score } = this.pendingKnockoutScores[matchId];
-            updates[`knockoutScores/${matchId}`] = { team1Score, team2Score };
-            hasUpdates = true;
-        }
-
-        if (hasUpdates) {
+        try {
+            // Write group scores directly to groupMatchScores/ path
+            // (has its own .write rule: "auth != null", no ownership needed)
+            const groupUpdates = {};
+            for (const key in this.pendingGroupScores) {
+                const { group, matchKey, team1Score, team2Score } = this.pendingGroupScores[key];
+                groupUpdates[`${group}/${matchKey}`] = { team1Score, team2Score };
+                hasUpdates = true;
+            }
             const groupCount = Object.keys(this.pendingGroupScores).length;
-            const knockoutCount = Object.keys(this.pendingKnockoutScores).length;
-
             this.pendingGroupScores = {};
+
+            if (Object.keys(groupUpdates).length > 0) {
+                await database.ref(`${basePath}/groupMatchScores`).update(groupUpdates);
+            }
+
+            // Write knockout scores directly to knockoutScores/ path
+            // (has its own .write rule: "auth != null", no ownership needed)
+            const knockoutUpdates = {};
+            for (const matchId in this.pendingKnockoutScores) {
+                const { team1Score, team2Score } = this.pendingKnockoutScores[matchId];
+                knockoutUpdates[matchId] = { team1Score, team2Score };
+                hasUpdates = true;
+            }
+            const knockoutCount = Object.keys(this.pendingKnockoutScores).length;
             this.pendingKnockoutScores = {};
 
-            // Guard: prevent the Firebase listener from overwriting local
-            // state with a stale snapshot while this write is in flight.
-            this.isSaving = true;
-
-            // Make sure this session still owns the tournament on the server.
-            // If the cached organizerUid on Firebase no longer matches our
-            // current anon UID (returning-on-different-device scenario), try
-            // to re-claim it before issuing the write so the rule passes.
-            await this.ensureWriteOwnership();
-
-            try {
-                await database.ref(basePath).update(updates);
-                console.log(`✅ Saved ${groupCount} group + ${knockoutCount} knockout scores`);
-            } catch (err) {
-                console.error('❌ Error saving scores:', err.code || err.message);
-                if (typeof showToast === 'function') {
-                    showToast('⚠️ Score save failed — ' + (err.code || 'permission denied'));
-                }
-            } finally {
-                // Brief delay so the listener ignores the echo snapshot
-                setTimeout(() => { this.isSaving = false; }, 300);
+            if (Object.keys(knockoutUpdates).length > 0) {
+                await database.ref(`${basePath}/knockoutScores`).update(knockoutUpdates);
             }
+
+            if (hasUpdates) {
+                console.log(`✅ Saved ${groupCount} group + ${knockoutCount} knockout scores`);
+            }
+        } catch (err) {
+            console.error('❌ Error saving scores:', err.code || err.message);
+            if (typeof showToast === 'function') {
+                showToast('⚠️ Score save failed — ' + (err.code || 'permission denied'));
+            }
+        } finally {
+            // Brief delay so the listener ignores the echo snapshot
+            setTimeout(() => { this.isSaving = false; }, 300);
         }
 
         this.scoreDebounceTimer = null;
