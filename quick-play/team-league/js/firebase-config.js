@@ -15,4 +15,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// Anonymous sign-in — required for all writes (Firebase rules check auth != null)
+firebase.auth().signInAnonymously().then(() => {
+    console.log('✅ Firebase anonymous auth ready');
+}).catch((err) => {
+    console.error('❌ Firebase anonymous auth failed:', err.code, err.message);
+});
+
 console.log('✅ Firebase initialized (Team Tournament)');
