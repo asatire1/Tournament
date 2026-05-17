@@ -99,8 +99,6 @@ function GroupMatchCard(match, group, roundNum, matchNum, slot, courtName, crIdx
                 <div class="match-info flex items-center gap-2 flex-wrap">
                     <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-${groupColor}-500 text-white text-xs font-bold">${group}</span>
                     <span class="match-round">R${roundNum}</span>
-                    <span class="text-gray-300">•</span>
-                    <span class="match-number">Match ${matchNum}</span>
                     ${courtName ? `<span class="text-gray-300">•</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">${courtName}</span>` : ''}
                 </div>
                 <div class="flex items-center gap-1 relative">
@@ -363,7 +361,8 @@ function FixturesTab() {
     const schedule = Array.isArray(state.courtSchedule) ? state.courtSchedule : [];
     const totalCRs = schedule.length;
 
-    const hasFilters = filterCourtRound !== 'all' || filterGroup !== 'all';
+    const filterTeam = state.fixturesFilterTeam || 'all';
+    const hasFilters = filterCourtRound !== 'all' || filterGroup !== 'all' || filterTeam !== 'all';
 
     return `
         <div class="space-y-6">
@@ -386,7 +385,14 @@ function FixturesTab() {
                         </select>
                     </div>
                     ` : ''}
-                    ${hasFilters ? `<button onclick="state.fixturesFilterRound = 'all'; state.fixturesFilterGroup = 'all'; renderTeamLeague();" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors text-gray-600">Clear</button>` : ''}
+                    <div class="w-52">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Team</label>
+                        <select onchange="state.fixturesFilterTeam = this.value; renderTeamLeague();" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-50 transition-all text-sm font-medium">
+                            <option value="all" ${(state.fixturesFilterTeam || 'all') === 'all' ? 'selected' : ''}>All Teams</option>
+                            ${activeGroups.flatMap(g => state.getTeamsInGroup(g).map(t => `<option value="${t.id}" ${state.fixturesFilterTeam == t.id ? 'selected' : ''}>${t.name}</option>`)).join('')}
+                        </select>
+                    </div>
+                    ${hasFilters ? `<button onclick="state.fixturesFilterRound = 'all'; state.fixturesFilterGroup = 'all'; state.fixturesFilterTeam = 'all'; renderTeamLeague();" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors text-gray-600">Clear</button>` : ''}
                     <button onclick="exportFixturesCsv()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-1.5" title="Download all fixtures as CSV">
                         ⬇ CSV
                     </button>
@@ -429,10 +435,18 @@ function FixturesTab() {
 
                 let renderedAnyMatch = false;
                 const html = visibleCRs.map(({ crIdx, cr }) => {
-                    // Apply group filter to the visible match list in this CR
+                    // Apply group + team filters to the visible match list in this CR
                     const visibleMatches = cr
                         .map((ref, posInCR) => ({ ref, posInCR }))
-                        .filter(({ ref }) => filterGroup === 'all' || filterGroup === ref.group);
+                        .filter(({ ref }) => filterGroup === 'all' || filterGroup === ref.group)
+                        .filter(({ ref }) => {
+                            if (filterTeam === 'all') return true;
+                            const groupFixtures = state[`group${ref.group}Fixtures`] || [];
+                            const genRoundEntry = groupFixtures[ref.genRound - 1];
+                            const match = genRoundEntry && genRoundEntry.matches ? genRoundEntry.matches[ref.matchIdx] : null;
+                            if (!match) return false;
+                            return match.team1Id == filterTeam || match.team2Id == filterTeam;
+                        });
                     if (visibleMatches.length === 0) return '';
                     renderedAnyMatch = true;
 
