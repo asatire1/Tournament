@@ -765,6 +765,10 @@ class TeamLeagueState {
             this.pendingGroupScores = {};
             this.pendingKnockoutScores = {};
 
+            // Guard: prevent the Firebase listener from overwriting local
+            // state with a stale snapshot while this write is in flight.
+            this.isSaving = true;
+
             // Make sure this session still owns the tournament on the server.
             // If the cached organizerUid on Firebase no longer matches our
             // current anon UID (returning-on-different-device scenario), try
@@ -779,6 +783,9 @@ class TeamLeagueState {
                 if (typeof showToast === 'function') {
                     showToast('⚠️ Score save failed — ' + (err.code || 'permission denied'));
                 }
+            } finally {
+                // Brief delay so the listener ignores the echo snapshot
+                setTimeout(() => { this.isSaving = false; }, 300);
             }
         }
 
