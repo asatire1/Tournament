@@ -473,25 +473,27 @@ class AmericanoState {
     }
     
     /**
-     * Save a single match score to Firebase using fixture index - DEBOUNCED
+     * Save a single match score to Firebase using fixture index.
+     *
+     * Was previously debounced ~500ms. That window silently lost writes
+     * whenever the organiser navigated away / closed the tab before the
+     * timer fired — scores stayed in localStorage on the organiser's
+     * device but the Firebase doc kept its empty /scores tree, so other
+     * viewers saw nothing. Write immediately instead; the /scores subtree
+     * rule is `.write: true` so each per-match write is one cheap RTDB
+     * set, well within free-tier limits even for fast scorers.
      */
     saveMatchScoreToFirebase(fixtureIndex, team1Score, team2Score) {
         if (!this.tournamentId) return;
-        
-        // Queue the update
         const key = `f_${fixtureIndex}`;
-        if (team1Score !== null && team1Score >= 0 && team2Score !== null && team2Score >= 0) {
-            this.pendingScoreUpdates[key] = {
-                team1: team1Score,
-                team2: team2Score
-            };
-        } else {
-            // Remove unplayed score from Firebase
-            this.pendingScoreUpdates[key] = null;
-        }
-        
-        // Debounce the actual save
-        this.debouncedScoreSave();
+        const path = `${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/scores/${key}`;
+        const played =
+            team1Score !== null && team1Score >= 0 &&
+            team2Score !== null && team2Score >= 0;
+        const value = played ? { team1: team1Score, team2: team2Score } : null;
+        database.ref(path).set(value).catch((err) => {
+            console.error('❌ Score save failed:', err);
+        });
     }
     
     /**
