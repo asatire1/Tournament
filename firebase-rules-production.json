@@ -13,7 +13,16 @@
           ".validate": "newData.isString() && (newData.val() == 'guest' || newData.val() == 'registered')"
         },
         "status": {
-          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'verified')"
+          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'verified') && (newData.val() == 'pending' || (data.exists() && newData.val() == data.val()) || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)"
+        },
+        "isAdmin": {
+          ".validate": "newData.isBoolean() && (newData.val() == false || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)"
+        },
+        "verifiedAt": {
+          ".validate": "auth.token.admin == true || root.child('admins').child(auth.uid).val() == true"
+        },
+        "verifiedBy": {
+          ".validate": "auth.token.admin == true || root.child('admins').child(auth.uid).val() == true"
         },
         "email": {
           ".validate": "newData.isString() && newData.val().length <= 100"
@@ -91,11 +100,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true,
+            ".write": "auth != null",
             "team1": {
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
             },
@@ -152,11 +161,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true,
+            ".write": "auth != null",
             "team1": {
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
             },
@@ -196,11 +205,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "meta": {
@@ -217,11 +226,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "groupMatchScores": {
@@ -231,7 +240,7 @@
           ".write": "auth != null"
         },
         "knockoutTeams": {
-          ".write": "auth != null"
+          ".write": "auth != null && (!data.parent().child('meta').child('organizerUid').exists() || data.parent().child('meta').child('organizerUid').val() == auth.uid)"
         },
         "meta": {
           "name": {
@@ -247,11 +256,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "meta": {
@@ -277,11 +286,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "meta": {
@@ -301,11 +310,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true,
+            ".write": "auth != null",
             "team1": {
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
             },
@@ -334,11 +343,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         },
         "meta": {
@@ -358,11 +367,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         }
       }
@@ -371,11 +380,11 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || (newData.child('meta/organizerUid').val() == auth.uid && data.child('meta/organiserKey').exists() && newData.child('meta/organiserKey').val() == data.child('meta/organiserKey').val()))",
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
-            ".write": true
+            ".write": "auth != null"
           }
         }
       }
@@ -414,8 +423,8 @@
         },
         "registeredPlayers": {
           "$playerId": {
-            ".write": "auth != null",
-            ".validate": "newData.hasChildren(['id', 'name'])",
+            ".write": "auth != null && (auth.uid == $playerId || root.child('competitions').child($competitionId).child('meta').child('organizerId').val() == auth.uid || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)",
+            ".validate": "newData.hasChildren(['id', 'name']) && newData.child('id').val() == $playerId",
             "name": {
               ".validate": "newData.isString() && newData.val().length <= 50"
             }
@@ -427,7 +436,7 @@
       "messages": {
         ".read": true,
         "$messageId": {
-          ".write": "auth != null",
+          ".write": "auth != null && (!data.exists() || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true || (newData.exists() && newData.child('text').val() == data.child('text').val() && newData.child('name').val() == data.child('name').val() && newData.child('timestamp').val() == data.child('timestamp').val()))",
           ".validate": "newData.hasChildren(['name', 'text', 'timestamp'])",
           "name": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
@@ -479,15 +488,15 @@
       ".indexOn": ["status", "organizerId", "submittedAt"],
       "$competitionId": {
         ".read": "auth != null",
-        ".write": "auth != null",
+        ".write": "auth != null && (auth.token.admin == true || root.child('admins').child(auth.uid).val() == true || (!data.exists() && newData.child('organizerId').val() == auth.uid) || data.child('organizerId').val() == auth.uid)",
         ".validate": "newData.hasChildren(['competitionId', 'status', 'organizerId'])",
         "competitionId": { ".validate": "newData.isString()" },
-        "organizerId":   { ".validate": "newData.isString()" },
+        "organizerId":   { ".validate": "newData.isString() && (!data.exists() || newData.val() == data.val())" },
         "status": {
-          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'submitted' || newData.val() == 'approved' || newData.val() == 'rejected')"
+          ".validate": "newData.isString() && (((newData.val() == 'pending' || newData.val() == 'submitted') && newData.val() != data.val()) || newData.val() == data.val() || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)"
         },
         "paymentStatus": {
-          ".validate": "newData.isString() && (newData.val() == 'awaiting_approval' || newData.val() == 'processing' || newData.val() == 'paid' || newData.val() == 'failed')"
+          ".validate": "newData.isString() && ((newData.val() == 'awaiting_approval' && newData.val() != data.val()) || newData.val() == data.val() || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)"
         },
         "photos": {
           "$photoId": {
@@ -496,26 +505,42 @@
         },
         "playerConfirmations": {
           "$playerId": {
+            ".write": "auth != null && (auth.uid == $playerId || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true || root.child('verifications').child($competitionId).child('organizerId').val() == auth.uid)",
             ".validate": "newData.hasChildren(['agrees', 'confirmedAt'])"
           }
         },
         "organiserConfirmed": { ".validate": "newData.isBoolean()" },
-        "prizePool":          { ".validate": "newData.isNumber() && newData.val() >= 0" },
+        "prizePool":          { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000 && (!data.exists() || newData.val() == data.val() || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)" },
         "currency":           { ".validate": "newData.isString() && newData.val() == 'GBP'" }
       }
     },
 
     "admins": {
-      ".read": "auth != null",
       ".write": false,
       "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)",
         ".validate": "newData.isBoolean()"
       }
     },
 
     "bug-reports": {
-      ".read": true,
-      ".write": true
+      ".read": "auth != null && (auth.token.admin == true || root.child('admins').child(auth.uid).val() == true)",
+      ".indexOn": ["createdAt", "status"],
+      "$reportId": {
+        ".write": "!data.exists() || auth.token.admin == true || (auth != null && root.child('admins').child(auth.uid).val() == true)",
+        ".validate": "newData.hasChildren(['description', 'createdAt']) || !newData.exists()",
+        "title":       { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 200)" },
+        "description": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 5000" },
+        "priority":    { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "type":        { ".validate": "newData.isString() && (newData.val() == 'bug' || newData.val() == 'enhancement')" },
+        "screenshot":  { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 3000000)" },
+        "pageUrl":     { ".validate": "newData.isString() && newData.val().length <= 1000" },
+        "userAgent":   { ".validate": "newData.isString() && newData.val().length <= 1000" },
+        "createdAt":   { ".validate": "newData.isString() && newData.val().length <= 40" },
+        "status":      { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "resolvedAt":  { ".validate": "newData.val() == null || newData.isString()" },
+        "$other":      { ".validate": false }
+      }
     },
 
     ".read": false,

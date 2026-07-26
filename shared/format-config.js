@@ -251,7 +251,49 @@ function getAllFormats() {
     return Object.keys(FORMAT_CONFIG);
 }
 
+/**
+ * Escape a value for interpolation into HTML.
+ *
+ * This file is loaded by every format page, so it is the one place a shared
+ * helper can live without adding another script tag. Player names, team names,
+ * tournament names and scores all come from other users via the database, and
+ * are rendered with innerHTML throughout the app.
+ *
+ * Quotes are escaped too, so this is safe in attribute positions
+ * (value="...", title="..."), not only in text nodes. Prefer setting
+ * .textContent or .value as a property where you can — this is for the many
+ * places that build markup as strings.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * Coerce a score to a safe numeric string for rendering.
+ * Scores arrive from the database as unvalidated JSON on several roots, so a
+ * non-number must never reach innerHTML.
+ * @param {unknown} value
+ * @returns {string} The number as a string, or '' if it is not a finite number.
+ */
+function safeScore(value) {
+    return Number.isFinite(Number(value)) && value !== '' && value !== null ? String(Number(value)) : '';
+}
+
+// Make available globally — plain-script pages use these directly
+if (typeof window !== 'undefined') {
+    window.escapeHtml = escapeHtml;
+    window.safeScore  = safeScore;
+}
+
 // Export for use in modules (if using ES modules)
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { FORMAT_CONFIG, validateFormatCount, getFormatConfig, getAllFormats };
+    module.exports = { FORMAT_CONFIG, validateFormatCount, getFormatConfig, getAllFormats, escapeHtml, safeScore };
 }

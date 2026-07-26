@@ -15,6 +15,17 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// Anonymous sign-in — the database rules require auth != null for every write,
+// including scores, so this must complete before any save. Exposed as a promise
+// so callers can await it rather than racing it.
+window.firebaseAuthReady = firebase.auth().signInAnonymously()
+    .then((cred) => cred.user)
+    .catch((err) => {
+        console.error('Firebase anonymous auth failed:', err.code, err.message);
+        return null;
+    });
+
+
 // Firebase path for knockout tournaments
 const KNOCKOUT_PATH = 'knockout-tournaments';
 

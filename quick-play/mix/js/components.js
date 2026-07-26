@@ -9,7 +9,7 @@ function PlayerBadge(playerId, showRating = false) {
     return `
         <div class="player-badge-enhanced text-white tier-${tier}">
             <span class="font-bold">#${playerId}</span>
-            <span>${name}</span>
+            <span>${escapeHtml(name)}</span>
             ${showRating ? `<span class="opacity-90 text-xs">(${rating})</span>` : ''}
         </div>
     `;
@@ -23,7 +23,7 @@ function CompactPlayerBadge(playerId) {
     return `
         <div class="player-badge-compact text-white tier-${tier}">
             <span class="font-bold">#${playerId}</span>
-            <span class="player-name-truncate">${name}</span>
+            <span class="player-name-truncate">${escapeHtml(name)}</span>
         </div>
     `;
 }
@@ -182,7 +182,7 @@ function TournamentFixturesTab() {
                         <label class="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Player</label>
                         <select class="w-full border border-gray-200 rounded-xl px-3 py-2.5 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all text-sm font-medium" onchange="state.filterPlayer = this.value; render();">
                             <option value="all" ${state.filterPlayer === 'all' ? 'selected' : ''}>All Players</option>
-                            ${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => `<option value="${i + 1}" ${state.filterPlayer == (i + 1) ? 'selected' : ''}>#${i + 1} ${state.playerNames[i]}</option>`).join('')}
+                            ${Array.from({length: CONFIG.TOTAL_PLAYERS}, (_, i) => `<option value="${i + 1}" ${state.filterPlayer == (i + 1) ? 'selected' : ''}>#${i + 1} ${escapeHtml(state.playerNames[i])}</option>`).join('')}
                         </select>
                     </div>
                     ${hasFilters ? `<button onclick="state.filterRound = 'all'; state.filterPlayer = 'all'; render();" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors text-gray-600">Clear</button>` : ''}

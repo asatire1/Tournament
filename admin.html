@@ -29,6 +29,7 @@
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
     <style>
@@ -45,21 +46,25 @@
             <div class="text-center mb-6">
                 <span class="text-5xl">🛡️</span>
                 <h1 class="text-2xl font-bold text-gray-800 mt-4">Admin Access</h1>
-                <p class="text-gray-500 mt-2">Enter the admin password to continue</p>
+                <p class="text-gray-500 mt-2">Sign in with your admin account to continue</p>
             </div>
-            
+
             <div class="space-y-4">
-                <input type="password" id="admin-password" placeholder="Admin password"
+                <input type="email" id="admin-email" placeholder="Admin email" autocomplete="username"
                     class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
                     onkeypress="if(event.key==='Enter') attemptLogin()" />
-                
-                <button onclick="attemptLogin()" 
+
+                <input type="password" id="admin-password" placeholder="Password" autocomplete="current-password"
+                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none"
+                    onkeypress="if(event.key==='Enter') attemptLogin()" />
+
+                <button onclick="attemptLogin()" id="admin-login-btn"
                     class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
                     Login
                 </button>
-                
+
                 <p id="login-error" class="text-red-500 text-center text-sm hidden">
-                    Incorrect password
+                    Sign-in failed
                 </p>
             </div>
             
@@ -407,32 +412,61 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         
-        // Admin password (in production, use proper authentication!)
-        // This is a simple hash - change "uberpadel2024" to your desired password
-        const ADMIN_HASH = 'dWJlcnBhZGVsMjAyNA=='; // base64 of password
-        
         const COMMENTS_PATH = 'community/messages';
         let currentTab = 'reported';
         let allMessages = [];
         let deleteTargetKey = null;
-        
-        // Check if already logged in
-        document.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('adminAuth') === ADMIN_HASH) {
-                showDashboard();
-            }
+
+        // Admin access is granted server-side: the signed-in uid must be listed
+        // under /admins in the database, which is write-protected by the rules.
+        // Add an admin from the Firebase console: /admins/<uid> = true
+        async function isAdminUser(user) {
+            if (!user || user.isAnonymous) return false;
+            const token = await user.getIdTokenResult().catch(() => null);
+            if (token?.claims?.admin === true) return true;
+            const snap = await database.ref(`admins/${user.uid}`).once('value').catch(() => null);
+            return snap?.val() === true;
+        }
+
+        function showLoginError(message) {
+            const el = document.getElementById('login-error');
+            el.textContent = message;
+            el.classList.remove('hidden');
+        }
+
+        // Restore an existing session on load
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (await isAdminUser(user)) showDashboard();
         });
-        
+
         // Login attempt
-        function attemptLogin() {
+        async function attemptLogin() {
+            const email = document.getElementById('admin-email').value.trim();
             const password = document.getElementById('admin-password').value;
-            const hash = btoa(password);
-            
-            if (hash === ADMIN_HASH) {
-                sessionStorage.setItem('adminAuth', ADMIN_HASH);
-                showDashboard();
-            } else {
-                document.getElementById('login-error').classList.remove('hidden');
+            const btn = document.getElementById('admin-login-btn');
+            document.getElementById('login-error').classList.add('hidden');
+
+            if (!email || !password) {
+                showLoginError('Enter your admin email and password');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            try {
+                const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
+                if (await isAdminUser(cred.user)) {
+                    showDashboard();
+                } else {
+                    await firebase.auth().signOut();
+                    showLoginError('This account does not have admin access');
+                }
+            } catch (err) {
+                console.error('Admin sign-in failed:', err.code);
+                showLoginError('Sign-in failed. Check your email and password.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Login';
                 document.getElementById('admin-password').value = '';
             }
         }
@@ -448,8 +482,7 @@
         
         // Logout
         function logout() {
-            sessionStorage.removeItem('adminAuth');
-            location.reload();
+            firebase.auth().signOut().finally(() => location.reload());
         }
         
         // Load all messages
@@ -664,10 +697,26 @@
         }
         
         // Escape HTML
+        // Escapes quotes as well as angle brackets, so it is safe in attribute
+        // positions. The textContent/innerHTML trick that used to be here does
+        // not escape " or ', so any value placed in an attribute could break
+        // out of it — and this page renders text submitted by anonymous users.
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            return String(text ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Bug-report screenshots are attacker-supplied strings that get
+        // interpolated into an img src. Only pass through genuine base64.
+        function isBase64(value) {
+            return typeof value === 'string'
+                && value.length > 0
+                && value.length <= 3000000
+                && /^[A-Za-z0-9+/]+={0,2}$/.test(value);
         }
         
         // Show toast
@@ -2322,7 +2371,9 @@
                             ${r.screenshot ? `
                             <div>
                                 <p class="text-xs font-semibold text-gray-400 uppercase mb-1">Screenshot</p>
-                                <img src="data:image/png;base64,${r.screenshot}" alt="Screenshot" class="rounded-lg border border-gray-200 max-h-64 object-contain cursor-pointer" onclick="window.open(this.src)">
+                                ${isBase64(r.screenshot)
+                                    ? `<img src="data:image/png;base64,${r.screenshot}" alt="Screenshot" class="rounded-lg border border-gray-200 max-h-64 object-contain cursor-pointer" onclick="window.open(this.src)">`
+                                    : `<p class="text-xs text-red-500">Screenshot rejected: not valid base64 image data.</p>`}
                             </div>
                             ` : ''}
                             <div class="grid grid-cols-2 gap-2 text-xs text-gray-500">
@@ -2383,12 +2434,8 @@
             }
         }
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
+        // escapeHtml is defined once above — a second definition here used to
+        // shadow it with a version that does not escape quotes.
 
         function formatTimeAgo(isoString) {
             if (!isoString) return '';

@@ -389,7 +389,7 @@ function renderMatchCard(match, courtIndex) {
                         ${team1Players.map(p => `
                             <div class="player-badge-compact ${getPlayerColorClass(p)} ${team1Wins ? 'ring-2 ring-green-400 ring-offset-1' : ''}">
                                 <span class="font-bold">#${p}</span>
-                                <span class="player-name-truncate">${getPlayerName(p)}</span>
+                                <span class="player-name-truncate">${escapeHtml(getPlayerName(p))}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -401,7 +401,7 @@ function renderMatchCard(match, courtIndex) {
                         ${team2Players.map(p => `
                             <div class="player-badge-compact ${getPlayerColorClass(p)} ${team2Wins ? 'ring-2 ring-green-400 ring-offset-1' : ''}">
                                 <span class="font-bold">#${p}</span>
-                                <span class="player-name-truncate">${getPlayerName(p)}</span>
+                                <span class="player-name-truncate">${escapeHtml(getPlayerName(p))}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -519,7 +519,7 @@ function renderLeaderboardTab() {
                                                 #${player.playerNum}
                                             </div>
                                             <div class="team-info">
-                                                <div class="team-name">${player.name}</div>
+                                                <div class="team-name">${escapeHtml(player.name)}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -613,7 +613,7 @@ function renderPlayersSettings(canEdit) {
                     <div class="flex items-center gap-3">
                         <div class="team-mini-badge ${getPlayerColorClass(index + 1)}">#${index + 1}</div>
                         <input type="text" 
-                            value="${name}" 
+                            value="${escapeHtml(name)}" 
                             placeholder="Player ${index + 1}"
                             class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
                             ${!canEdit ? 'disabled' : ''}
@@ -680,7 +680,7 @@ function renderCourtsSettings(canEdit) {
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold">${index + 1}</div>
                             <input type="text" 
-                                value="${name}" 
+                                value="${escapeHtml(name)}" 
                                 placeholder="Court ${index + 1}"
                                 class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
                                 ${!canEdit ? 'disabled' : ''}
@@ -1064,7 +1064,7 @@ function renderGroupCard(groupLetter, colors) {
                                     <td class="py-2 px-2">
                                         <span class="inline-flex items-center gap-1">
                                             <span class="w-6 h-6 rounded-full ${getPlayerColorClass(player.playerNum)} text-white text-xs font-bold flex items-center justify-center">${player.playerNum}</span>
-                                            <span class="truncate max-w-[100px]">${player.name}</span>
+                                            <span class="truncate max-w-[100px]">${escapeHtml(player.name)}</span>
                                         </span>
                                     </td>
                                     <td class="text-center py-2 px-1">${player.gamesPlayed}</td>
@@ -1224,7 +1224,7 @@ function renderKnockoutMatch(match, canEdit) {
                                 ${match.team1.map(p => `
                                     <span class="inline-flex items-center gap-1">
                                         <span class="w-6 h-6 rounded-full ${getPlayerColorClass(p)} text-white text-xs font-bold flex items-center justify-center">${p}</span>
-                                        <span class="text-sm truncate max-w-[60px]">${getPlayerName(p)}</span>
+                                        <span class="text-sm truncate max-w-[60px]">${escapeHtml(getPlayerName(p))}</span>
                                     </span>
                                 `).join('')}
                             </div>
@@ -1252,7 +1252,7 @@ function renderKnockoutMatch(match, canEdit) {
                             <div class="flex items-center justify-end gap-2">
                                 ${match.team2.map(p => `
                                     <span class="inline-flex items-center gap-1">
-                                        <span class="text-sm truncate max-w-[60px]">${getPlayerName(p)}</span>
+                                        <span class="text-sm truncate max-w-[60px]">${escapeHtml(getPlayerName(p))}</span>
                                         <span class="w-6 h-6 rounded-full ${getPlayerColorClass(p)} text-white text-xs font-bold flex items-center justify-center">${p}</span>
                                     </span>
                                 `).join('')}

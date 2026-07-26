@@ -166,7 +166,7 @@ function renderMatchCard(match, index, canEditScores) {
         <div class="match-card ${done ? 'complete' : ''} p-4 animate-slide-up" style="animation-delay: ${index * 0.05}s">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
-                    <span class="bg-teal-100 text-teal-700 text-xs font-bold px-2 py-1 rounded-lg">Court ${match.court}</span>
+                    <span class="bg-teal-100 text-teal-700 text-xs font-bold px-2 py-1 rounded-lg">Court ${escapeHtml(match.court)}</span>
                     ${done ? '<span class="text-green-600 text-xs font-semibold">✓ Complete</span>' : ''}
                 </div>
                 ${done && canEdit ? `
@@ -177,8 +177,8 @@ function renderMatchCard(match, index, canEditScores) {
             <div class="match-row">
                 <!-- Team 1 -->
                 <div class="team-stack ${done && match.score1 > match.score2 ? 'winner' : ''}">
-                    <span class="player-badge-compact ${colorFn(t1Idx[0])}">${t1Name0}</span>
-                    <span class="player-badge-compact ${colorFn(t1Idx[1])}">${t1Name1}</span>
+                    <span class="player-badge-compact ${colorFn(t1Idx[0])}">${escapeHtml(t1Name0)}</span>
+                    <span class="player-badge-compact ${colorFn(t1Idx[1])}">${escapeHtml(t1Name1)}</span>
                 </div>
                 
                 <!-- Score Box -->
@@ -210,8 +210,8 @@ function renderMatchCard(match, index, canEditScores) {
                 
                 <!-- Team 2 -->
                 <div class="team-stack ${done && match.score2 > match.score1 ? 'winner' : ''}">
-                    <span class="player-badge-compact ${colorFn(t2Idx[0])}">${t2Name0}</span>
-                    <span class="player-badge-compact ${colorFn(t2Idx[1])}">${t2Name1}</span>
+                    <span class="player-badge-compact ${colorFn(t2Idx[0])}">${escapeHtml(t2Name0)}</span>
+                    <span class="player-badge-compact ${colorFn(t2Idx[1])}">${escapeHtml(t2Name1)}</span>
                 </div>
             </div>
         </div>
@@ -256,7 +256,7 @@ function renderStandingsTab() {
                                             ${isIndividual ? item.name.charAt(0).toUpperCase() : origIdx + 1}
                                         </div>
                                         <span class="font-semibold text-gray-800">
-                                            ${isIndividual ? item.name : `${item.player1} & ${item.player2}`}
+                                            ${isIndividual ? item.name : `${escapeHtml(item.player1)} & ${escapeHtml(item.player2)}`}
                                         </span>
                                     </div>
                                 </td>
@@ -429,7 +429,7 @@ function renderCourtsSettings(canEdit) {
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center text-teal-600 font-bold">${index + 1}</div>
                         <input type="text" 
-                            value="${name}" 
+                            value="${escapeHtml(name)}" 
                             placeholder="Court ${index + 1}"
                             class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-teal-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
                             ${!canEdit ? 'disabled' : ''}
@@ -548,7 +548,7 @@ function renderCompletedScreen() {
                     <div class="text-6xl mb-4">🏆</div>
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Tournament Complete!</h1>
                     <p class="text-xl text-teal-600 font-semibold">
-                        ${isIndividual ? winner.name : `${winner.player1} & ${winner.player2}`} wins with ${winner.totalPoints} points!
+                        ${isIndividual ? winner.name : `${escapeHtml(winner.player1)} & ${escapeHtml(winner.player2)}`} wins with ${winner.totalPoints} points!
                     </p>
                 </div>
                 
@@ -565,7 +565,7 @@ function renderCompletedScreen() {
                             ${items.map((item, i) => `
                                 <tr class="${i === 0 ? 'bg-yellow-50' : i < 3 ? 'bg-teal-50/50' : ''}">
                                     <td class="text-center font-bold">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</td>
-                                    <td class="font-semibold">${isIndividual ? item.name : `${item.player1} & ${item.player2}`}</td>
+                                    <td class="font-semibold">${isIndividual ? item.name : `${escapeHtml(item.player1)} & ${escapeHtml(item.player2)}`}</td>
                                     <td class="text-center font-bold text-lg">${item.totalPoints}</td>
                                 </tr>
                             `).join('')}

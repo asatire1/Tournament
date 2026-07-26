@@ -191,7 +191,41 @@ class TournamentState {
             console.warn('claimOwnership: server still has', actualUid, 'expected', currentUid);
             return false;
         } catch (e) {
-            console.warn('claimOwnership failed:', e.code || e.message);
+            // The rules accept a direct write only when the tournament is
+            // unowned or already ours. A returning organiser on a new device
+            // has a different anonymous UID, so their claim lands here and has
+            // to be proved server-side with the organiser key.
+            console.warn('claimOwnership: direct write rejected, trying server claim:', e.code || e.message);
+            return await this._claimOwnershipViaServer();
+        }
+    }
+
+    /**
+     * Ask the server to transfer ownership to this session, proving we hold the
+     * tournament's organiser key. Replaces the old database rule that let any
+     * client re-point organizerUid at itself.
+     * @returns {Promise<boolean>}
+     */
+    async _claimOwnershipViaServer() {
+        if (!this.organiserKey) {
+            console.warn('claimOwnership: no organiser key held, cannot claim');
+            return false;
+        }
+        try {
+            const claim = firebase.app().functions('europe-west1')
+                .httpsCallable('claimTournamentOwnership');
+            const res = await claim({
+                format: 'tournament',
+                tournamentId: this.tournamentId,
+                organiserKey: this.organiserKey,
+            });
+            if (res?.data?.success) {
+                console.log('🔑 Ownership claimed via server');
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.warn('claimOwnership: server claim failed:', e.code || e.message);
             return false;
         }
     }

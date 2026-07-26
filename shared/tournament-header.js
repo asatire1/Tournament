@@ -86,8 +86,8 @@ function renderTournamentHeader(options) {
                     
                     <!-- Center: Title + Subtitle (absolute for true center) -->
                     <div class="absolute left-1/2 transform -translate-x-1/2 text-center pointer-events-none">
-                        <h1 class="font-bold text-lg leading-tight">${tournamentName}</h1>
-                        ${subtitle ? `<p class="text-sm text-white/70">${subtitle}</p>` : ''}
+                        <h1 class="font-bold text-lg leading-tight">${escapeHtml(tournamentName)}</h1>
+                        ${subtitle ? `<p class="text-sm text-white/70">${escapeHtml(subtitle)}</p>` : ''}
                     </div>
                     
                     <!-- Right: Status + Code + Share -->

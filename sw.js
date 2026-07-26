@@ -3,7 +3,10 @@
  * Provides offline caching and PWA support.
  */
 
-const CACHE_VERSION = 'v30';
+// Bump this on every deploy that changes JS or CSS. Assets are cached
+// cache-first with no revalidation, so returning users keep running the old
+// bundle until this version changes — including after a security fix.
+const CACHE_VERSION = 'v31';
 const PRECACHE = 'uberpadel-precache-' + CACHE_VERSION;
 const RUNTIME = 'uberpadel-runtime-' + CACHE_VERSION;
 

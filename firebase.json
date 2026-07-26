@@ -13,6 +13,7 @@
         "firebase-debug.*.log"
       ],
       "predeploy": [
+        "node \"$PROJECT_DIR/scripts/vendor-rating-engine.js\"",
         "npm --prefix \"$RESOURCE_DIR\" install"
       ]
     }

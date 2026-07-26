@@ -103,16 +103,7 @@ async function rateLimit(req, res, next) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const TOURNAMENT_FORMAT_ROOTS = {
-    americano:    'americano-tournaments',
-    mexicano:     'mexicano-tournaments',
-    mix:          'mix-tournaments',
-    mixicano:     'mixicano-tournaments',
-    'team-league':'team-league-tournaments',
-    knockout:     'knockout-tournaments',
-    'round-robin':'round-robin-tournaments',
-    swiss:        'swiss-tournaments',
-};
+const { FORMAT_ROOTS: TOURNAMENT_FORMAT_ROOTS } = require('../lib/format-roots.js');
 
 function notFound(res, resource = 'Resource') {
     return res.status(404).json({ error: `${resource} not found` });

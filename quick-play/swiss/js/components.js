@@ -11,7 +11,7 @@ function TeamBadge(team, size = 'full') {
 
     if (size === 'mini') {
         return `
-            <div class="team-mini-badge ${colourClass}" title="${team.name}">
+            <div class="team-mini-badge ${colourClass}" title="${escapeHtml(team.name)}">
                 ${team.name.substring(0, 2).toUpperCase()}
             </div>
         `;
@@ -20,8 +20,8 @@ function TeamBadge(team, size = 'full') {
     if (size === 'compact') {
         return `
             <div class="team-badge-compact ${colourClass}">
-                <span class="team-name">${team.name}</span>
-                <span class="team-players">${team.player1Name} & ${team.player2Name}</span>
+                <span class="team-name">${escapeHtml(team.name)}</span>
+                <span class="team-players">${escapeHtml(team.player1Name)} & ${escapeHtml(team.player2Name)}</span>
             </div>
         `;
     }
@@ -29,8 +29,8 @@ function TeamBadge(team, size = 'full') {
     // Full size
     return `
         <div class="team-badge ${colourClass}">
-            <span class="team-badge-name">${team.name}</span>
-            <span class="team-badge-players">${team.player1Name} & ${team.player2Name}</span>
+            <span class="team-badge-name">${escapeHtml(team.name)}</span>
+            <span class="team-badge-players">${escapeHtml(team.player1Name)} & ${escapeHtml(team.player2Name)}</span>
             <span class="team-badge-rating">${team.combinedRating.toFixed(1)} combined</span>
         </div>
     `;
@@ -464,7 +464,7 @@ function renderTeamsSettings() {
                                 <div class="grid gap-3 md:grid-cols-2">
                                     <div>
                                         <label class="block text-xs font-medium text-gray-600 mb-1">Player 1</label>
-                                        <input type="text" id="edit-p1-name-${team.id}" value="${team.player1Name}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-amber-500 focus:outline-none" />
+                                        <input type="text" id="edit-p1-name-${team.id}" value="${escapeHtml(team.player1Name)}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-amber-500 focus:outline-none" />
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-600 mb-1">Rating</label>
@@ -472,7 +472,7 @@ function renderTeamsSettings() {
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-600 mb-1">Player 2</label>
-                                        <input type="text" id="edit-p2-name-${team.id}" value="${team.player2Name}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-amber-500 focus:outline-none" />
+                                        <input type="text" id="edit-p2-name-${team.id}" value="${escapeHtml(team.player2Name)}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-amber-500 focus:outline-none" />
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-600 mb-1">Rating</label>
@@ -481,7 +481,7 @@ function renderTeamsSettings() {
                                 </div>
                                 <div class="mt-3">
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Team Name</label>
-                                    <input type="text" id="edit-team-name-${team.id}" value="${team.name}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-amber-500 focus:outline-none" />
+                                    <input type="text" id="edit-team-name-${team.id}" value="${escapeHtml(team.name)}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-amber-500 focus:outline-none" />
                                 </div>
                                 <div class="mt-3 flex gap-2">
                                     <button onclick="saveTeamEdit(${team.id})" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium text-sm transition-colors">
@@ -499,8 +499,8 @@ function renderTeamsSettings() {
                         <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                             <div class="team-mini-badge ${colourClass}">${team.id}</div>
                             <div class="flex-1 min-w-0">
-                                <div class="font-semibold text-gray-800">${team.name}</div>
-                                <div class="text-sm text-gray-500">${team.player1Name} (${team.player1Rating}) & ${team.player2Name} (${team.player2Rating})</div>
+                                <div class="font-semibold text-gray-800">${escapeHtml(team.name)}</div>
+                                <div class="text-sm text-gray-500">${escapeHtml(team.player1Name)} (${team.player1Rating}) & ${escapeHtml(team.player2Name)} (${team.player2Rating})</div>
                                 <div class="text-xs text-gray-400">Combined: ${team.combinedRating.toFixed(1)}</div>
                             </div>
                             <div class="flex gap-1">

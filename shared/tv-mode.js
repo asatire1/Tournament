@@ -81,7 +81,7 @@ const TVMode = {
                     <div class="flex items-center gap-4 min-w-0">
                         <span class="text-3xl flex-shrink-0">${data.formatEmoji || ''}</span>
                         <div class="min-w-0">
-                            <h1 class="text-2xl md:text-3xl font-bold truncate">${data.tournamentName || 'Tournament'}</h1>
+                            <h1 class="text-2xl md:text-3xl font-bold truncate">${escapeHtml(data.tournamentName || 'Tournament')}</h1>
                             <span class="text-white/60 text-sm">${data.formatName || ''}</span>
                         </div>
                     </div>
@@ -176,7 +176,7 @@ const TVMode = {
                             ${hasWins ? '<th class="py-3 px-2 text-center w-14">W</th>' : ''}
                             ${hasLosses ? '<th class="py-3 px-2 text-center w-14">L</th>' : ''}
                             ${hasPD ? '<th class="py-3 px-2 text-center w-16">PD</th>' : ''}
-                            ${hasExtra ? standings[0].extraColumns.map(c => `<th class="py-3 px-2 text-center w-16">${c.label}</th>`).join('') : ''}
+                            ${hasExtra ? standings[0].extraColumns.map(c => `<th class="py-3 px-2 text-center w-16">${escapeHtml(c.label)}</th>`).join('') : ''}
                             <th class="py-3 px-2 text-right w-20">PTS</th>
                         </tr>
                     </thead>
@@ -192,8 +192,8 @@ const TVMode = {
                                 <tr class="tv-row ${rowHighlight} border-b border-white/5">
                                     <td class="py-3 px-2 font-bold text-lg ${rankClass}">${s.rank}</td>
                                     <td class="py-3 px-2">
-                                        <span class="font-semibold text-lg">${s.name}</span>
-                                        ${s.subtitle ? `<span class="text-gray-500 text-sm ml-2">${s.subtitle}</span>` : ''}
+                                        <span class="font-semibold text-lg">${escapeHtml(s.name)}</span>
+                                        ${s.subtitle ? `<span class="text-gray-500 text-sm ml-2">${escapeHtml(s.subtitle)}</span>` : ''}
                                     </td>
                                     <td class="py-3 px-2 text-center text-gray-400">${s.played}</td>
                                     ${hasWins ? `<td class="py-3 px-2 text-center text-green-400">${s.wins ?? ''}</td>` : ''}
@@ -261,7 +261,7 @@ const TVMode = {
                                 <div class="${bgColor} border ${borderColor} rounded-lg p-3" style="height: 77px; display: flex; flex-direction: column; justify-content: center;">
                                     <div class="flex items-center justify-between gap-3">
                                         <div class="flex-1 text-right min-w-0">
-                                            <span class="font-semibold text-base ${isDone && m.score1 > m.score2 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team1}</span>
+                                            <span class="font-semibold text-base ${isDone && m.score1 > m.score2 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${escapeHtml(m.team1)}</span>
                                         </div>
                                         <div class="flex items-center gap-2 flex-shrink-0" style="min-width: 84px; justify-content: center;">
                                             ${m.score1 != null ? `
@@ -276,10 +276,10 @@ const TVMode = {
                                             `}
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <span class="font-semibold text-base ${isDone && m.score2 > m.score1 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${m.team2}</span>
+                                            <span class="font-semibold text-base ${isDone && m.score2 > m.score1 ? 'text-white' : isDone ? 'text-gray-400' : isNext ? 'text-gray-400' : 'text-white'}">${escapeHtml(m.team2)}</span>
                                         </div>
                                     </div>
-                                    ${m.courtName ? `<div class="text-xs text-gray-600 text-center mt-1">${m.courtName}</div>` : ''}
+                                    ${m.courtName ? `<div class="text-xs text-gray-600 text-center mt-1">${escapeHtml(m.courtName)}</div>` : ''}
                                 </div>
                             `;
                         }).join('')}

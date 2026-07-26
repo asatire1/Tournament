@@ -177,8 +177,11 @@ const Auth = {
         if (typeof Permissions !== 'undefined' && Permissions.can) {
             return Permissions.can(this.getCurrentUser(), permission);
         }
-        console.warn('Permissions module not loaded, defaulting to true');
-        return true;
+        // Fail closed, matching hasRole() below: these globals have no
+        // dependency management, so an unloaded Permissions must not grant
+        // every capability to every visitor.
+        console.error('Permissions module not loaded — denying permission:', permission);
+        return false;
     },
 
     /**

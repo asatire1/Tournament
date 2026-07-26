@@ -141,11 +141,11 @@ async function renderLandingPage() {
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-4 flex-1 min-w-0">
                                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                                            ${t.name ? t.name.charAt(0).toUpperCase() : '🏓'}
+                                            ${t.name ? escapeHtml(t.name.charAt(0).toUpperCase()) : '🏓'}
                                         </div>
                                         <div class="min-w-0">
                                             <h3 class="font-semibold text-gray-800 truncate flex items-center gap-2">
-                                                ${t.name || 'Unnamed Tournament'}
+                                                ${escapeHtml(t.name || 'Unnamed Tournament')}
                                                 ${t.source === 'cloud' ? '<span class="text-green-500 text-xs" title="Synced across devices">☁️</span>' : ''}
                                             </h3>
                                             <div class="flex items-center gap-2 text-sm text-gray-500">
@@ -936,10 +936,10 @@ function renderRecentTournaments(tournaments) {
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                            ${t.name ? t.name.charAt(0).toUpperCase() : '🏓'}
+                            ${t.name ? escapeHtml(t.name.charAt(0).toUpperCase()) : '🏓'}
                         </div>
                         <div>
-                            <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${t.name || 'Unnamed Tournament'}</h3>
+                            <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${escapeHtml(t.name || 'Unnamed Tournament')}</h3>
                             <div class="flex items-center gap-2 text-sm text-gray-500">
                                 <span class="font-mono font-medium text-gray-600">${t.id.toUpperCase()}</span>
                                 <span class="text-gray-300">•</span>

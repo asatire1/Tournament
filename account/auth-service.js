@@ -539,7 +539,26 @@ const AuthService = {
      */
     getRedirectUrl() {
         const params = new URLSearchParams(window.location.search);
-        return params.get('redirect') || '/';
+        return this.sanitizeRedirect(params.get('redirect'));
+    },
+
+    /**
+     * Reduce a redirect parameter to a same-origin destination.
+     * An absolute URL to another host would let a link that carries our own
+     * domain drop the user on an attacker's page immediately after a real
+     * sign-in, which is a convincing place to ask for the password again.
+     * @param {string|null} target
+     * @returns {string} A same-origin path, or '/' if the target is not one.
+     */
+    sanitizeRedirect(target) {
+        if (!target) return '/';
+        try {
+            const url = new URL(target, window.location.origin);
+            if (url.origin !== window.location.origin) return '/';
+            return url.pathname + url.search + url.hash;
+        } catch {
+            return '/';
+        }
     },
     
     /**

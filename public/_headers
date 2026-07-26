@@ -1,0 +1,20 @@
+# Cloudflare Pages security headers.
+#
+# Production deploys via .github/workflows/deploy.yml to Cloudflare Pages, so
+# the "headers" block in firebase.json is never served — that file only applies
+# to Firebase Hosting. Vite copies public/ to the root of dist/, which is where
+# Pages looks for this file.
+#
+# No Content-Security-Policy yet: the pages rely heavily on inline scripts and
+# CDN-hosted Tailwind and Firebase, so a policy needs to be worked out and
+# tested page by page before it can be enforced.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

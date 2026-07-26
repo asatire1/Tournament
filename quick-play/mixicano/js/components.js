@@ -138,7 +138,7 @@ function renderMatchCard(match, index, canEditScores) {
         <div class="match-card ${done ? 'complete' : ''} p-4 animate-slide-up" style="animation-delay: ${index * 0.05}s">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
-                    <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-lg">Court ${match.court}</span>
+                    <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-lg">Court ${escapeHtml(match.court)}</span>
                     ${done ? '<span class="text-green-600 text-xs font-semibold">✓ Complete</span>' : ''}
                 </div>
                 ${done && canEdit ? `
@@ -224,10 +224,10 @@ function renderStandingsTab() {
                                 <td>
                                     <div class="flex items-center gap-3">
                                         <div class="team-mini-badge ${colorClass}">
-                                            ${item.name.charAt(0).toUpperCase()}
+                                            ${escapeHtml(item.name.charAt(0).toUpperCase())}
                                         </div>
                                         <span class="font-semibold text-gray-800">
-                                            <span class="${gColor} mr-1">${gIcon}</span>${item.name}
+                                            <span class="${gColor} mr-1">${gIcon}</span>${escapeHtml(item.name)}
                                         </span>
                                     </div>
                                 </td>
@@ -388,7 +388,7 @@ function renderCourtsSettings(canEdit) {
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-rose-600 font-bold">${index + 1}</div>
                         <input type="text"
-                            value="${name}"
+                            value="${escapeHtml(name)}"
                             placeholder="Court ${index + 1}"
                             class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-rose-500 focus:outline-none transition-colors ${!canEdit ? 'bg-gray-50' : ''}"
                             ${!canEdit ? 'disabled' : ''}
@@ -497,7 +497,7 @@ function renderCompletedScreen() {
                     <div class="text-6xl mb-4">🏆</div>
                     <h1 class="text-3xl font-bold text-gray-800 mb-2">Tournament Complete!</h1>
                     <p class="text-xl text-rose-600 font-semibold">
-                        ${winner.name} wins with ${winner.totalPoints} points!
+                        ${escapeHtml(winner.name)} wins with ${winner.totalPoints} points!
                     </p>
                 </div>
 
@@ -517,7 +517,7 @@ function renderCompletedScreen() {
                                 return `
                                     <tr class="${i === 0 ? 'bg-yellow-50' : i < 3 ? 'bg-rose-50/50' : ''}">
                                         <td class="text-center font-bold">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</td>
-                                        <td class="font-semibold"><span class="${gColor} mr-1">${gIcon}</span>${item.name}</td>
+                                        <td class="font-semibold"><span class="${gColor} mr-1">${gIcon}</span>${escapeHtml(item.name)}</td>
                                         <td class="text-center font-bold text-lg">${item.totalPoints}</td>
                                     </tr>
                                 `;

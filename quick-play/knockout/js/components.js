@@ -210,7 +210,7 @@ function renderGroupStageView() {
                                     : 'bg-white text-gray-600 hover:bg-gray-100'
                             }"
                         >
-                            Group ${group.groupName}
+                            Group ${escapeHtml(group.groupName)}
                         </button>
                     `).join('')}
                     ${groupStageComplete ? `
@@ -252,7 +252,7 @@ function renderGroupContent(group, state) {
         <div class="grid lg:grid-cols-2 gap-6">
             <!-- Standings -->
             <div class="bg-white rounded-2xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">Group ${group.groupName} Standings</h3>
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Group ${escapeHtml(group.groupName)} Standings</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
@@ -438,7 +438,7 @@ function renderKnockoutMatch(match, stage, matchIndex, isOrganizer) {
 
             <!-- Team 1 -->
             <div class="flex items-center gap-2 p-2 rounded-lg ${team1Winner ? 'bg-green-100' : 'bg-gray-50'} mb-2">
-                <span class="flex-1 text-sm font-medium truncate ${team1Winner ? 'text-green-700' : ''}">${team1Name}</span>
+                <span class="flex-1 text-sm font-medium truncate ${team1Winner ? 'text-green-700' : ''}">${escapeHtml(team1Name)}</span>
                 ${isOrganizer && match.team1 && match.team2 ? `
                     <input
                         type="number"
@@ -458,7 +458,7 @@ function renderKnockoutMatch(match, stage, matchIndex, isOrganizer) {
 
             <!-- Team 2 -->
             <div class="flex items-center gap-2 p-2 rounded-lg ${team2Winner ? 'bg-green-100' : 'bg-gray-50'}">
-                <span class="flex-1 text-sm font-medium truncate ${team2Winner ? 'text-green-700' : ''}">${team2Name}</span>
+                <span class="flex-1 text-sm font-medium truncate ${team2Winner ? 'text-green-700' : ''}">${escapeHtml(team2Name)}</span>
                 ${isOrganizer && match.team1 && match.team2 ? `
                     <input
                         type="number"
