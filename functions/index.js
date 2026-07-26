@@ -19,10 +19,15 @@
 
 'use strict';
 
-const functions = require('firebase-functions');
+// firebase-functions v7 keeps the v1 trigger API behind this entry point,
+// so the existing region()/database.ref()/onCall handlers keep working.
+const functions = require('firebase-functions/v1');
 const admin     = require('firebase-admin');
 
-admin.initializeApp();
+// Guarded so loading this module twice (or alongside api/index.js) cannot
+// throw "app already exists". firebase-admin v13 removed `admin.apps`.
+const { getApps } = require('firebase-admin/app');
+if (!getApps().length) admin.initializeApp();
 
 // admin.database() opens a Realtime Database connection the moment it is
 // called. Doing that at module scope keeps the event loop busy while the

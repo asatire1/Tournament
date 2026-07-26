@@ -34,13 +34,16 @@
 
 'use strict';
 
-const functions  = require('firebase-functions');
+// v1 entry point — see the note in ../index.js
+const functions  = require('firebase-functions/v1');
 const admin      = require('firebase-admin');
 const express    = require('express');
 const cors       = require('cors');
 
-// Only initialise the admin SDK once across all functions
-if (!admin.apps.length) admin.initializeApp();
+// Only initialise the admin SDK once across all functions.
+// firebase-admin v13 removed the `admin.apps` array; getApps() replaces it.
+const { getApps } = require('firebase-admin/app');
+if (!getApps().length) admin.initializeApp();
 
 // Resolved lazily: admin.database() opens a connection immediately, and doing
 // that while this module loads keeps the event loop busy during deployment
