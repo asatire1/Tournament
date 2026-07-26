@@ -41,7 +41,17 @@ const cors       = require('cors');
 
 // Only initialise the admin SDK once across all functions
 if (!admin.apps.length) admin.initializeApp();
-const db = admin.database();
+
+// Resolved lazily: admin.database() opens a connection immediately, and doing
+// that while this module loads keeps the event loop busy during deployment
+// analysis, which fails with "Cannot determine backend specification".
+let _db = null;
+const db = {
+    ref(path) {
+        if (!_db) _db = admin.database();
+        return _db.ref(path);
+    },
+};
 
 // ---------------------------------------------------------------------------
 // Express app

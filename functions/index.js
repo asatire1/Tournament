@@ -24,7 +24,18 @@ const admin     = require('firebase-admin');
 
 admin.initializeApp();
 
-const db = admin.database();
+// admin.database() opens a Realtime Database connection the moment it is
+// called. Doing that at module scope keeps the event loop busy while the
+// Firebase CLI is analysing the source, which fails the deploy with
+// "Cannot determine backend specification. Timeout after 10000".
+// Resolve it lazily so merely loading this file stays cheap.
+let _db = null;
+const db = {
+    ref(path) {
+        if (!_db) _db = admin.database();
+        return _db.ref(path);
+    },
+};
 
 // ---------------------------------------------------------------------------
 // Shared helpers
