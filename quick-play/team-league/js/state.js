@@ -258,9 +258,9 @@ class TeamLeagueState {
     }
 
     /**
-     * Ask the server to transfer ownership to this session, proving we hold the
-     * tournament's organiser key. Replaces the old database rule that let any
-     * client re-point organizerUid at itself.
+     * Transfer ownership to this session by proving we hold the tournament's
+     * organiser key. Replaces the old database rule that let any client
+     * re-point organizerUid at itself without proving anything.
      * @returns {Promise<boolean>}
      */
     async _claimOwnershipViaServer() {
@@ -269,20 +269,21 @@ class TeamLeagueState {
             return false;
         }
         try {
-            const claim = firebase.app().functions('europe-west1')
-                .httpsCallable('claimTournamentOwnership');
-            const res = await claim({
-                format: 'team-league',
-                tournamentId: this.tournamentId,
-                organiserKey: this.organiserKey,
+            // Prove we hold the organiser key by writing it as `proof` to
+            // tournamentSecrets/<id>. That node is unreadable (".read": false),
+            // so only someone who already knows the key can satisfy the rule —
+            // and the same write records us as the claimant, which the
+            // tournament write rule accepts as ownership.
+            const uid = await this._awaitFirebaseAuthUid();
+            if (!uid) return false;
+            await database.ref(`tournamentSecrets/${this.tournamentId}`).update({
+                proof: this.organiserKey,
+                claimant: uid,
             });
-            if (res?.data?.success) {
-                console.log('🔑 Ownership claimed via server');
-                return true;
-            }
-            return false;
+            console.log('\u{1F511} Ownership claimed via organiser-key proof');
+            return true;
         } catch (e) {
-            console.warn('claimOwnership: server claim failed:', e.code || e.message);
+            console.warn('claimOwnership: key proof rejected:', e.code || e.message);
             return false;
         }
     }
