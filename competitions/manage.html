@@ -88,24 +88,19 @@
             </a>
         </div>
         
-        <!-- Organizer Key Entry -->
-        <div id="key-entry" class="hidden">
+        <!-- Organizer sign-in required -->
+        <div id="organiser-signin" class="hidden">
             <div class="bg-white rounded-3xl shadow-xl p-8 max-w-md mx-auto animate-fade-in-up">
                 <div class="text-center mb-6">
-                    <div class="text-4xl mb-3">🔑</div>
+                    <div class="text-4xl mb-3">🔒</div>
                     <h1 class="text-2xl font-bold text-gray-800 mb-2">Organizer Access</h1>
-                    <p class="text-gray-600">Enter your organizer key to manage this competition</p>
+                    <p class="text-gray-600">Sign in with the account that created this competition to manage it.</p>
                 </div>
-                
-                <form id="key-form" class="space-y-4">
-                    <input type="text" id="organiser-key-input" required maxlength="6"
-                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none text-center text-2xl font-mono tracking-widest uppercase"
-                        placeholder="------" />
-                    <button type="submit"
-                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors">
-                        Access
-                    </button>
-                </form>
+
+                <a href="/login.html" id="organiser-signin-link"
+                    class="block w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors text-center">
+                    Sign In
+                </a>
             </div>
         </div>
         
@@ -342,53 +337,39 @@
             
             document.getElementById('loading-state').classList.add('hidden');
             
-            // Check if user is organizer
+            // Only the recorded organiser gets in. There used to be a second
+            // way — typing an "organiser key" — but that key was stored in the
+            // competition's own world-readable meta, so anyone could read it
+            // and let themselves in. It bought nothing either: the database
+            // rules only ever honoured meta/organizerId, so a key holder who
+            // was not the organiser saw the management UI and then had every
+            // write rejected. Signing in is now the only path, which is what
+            // the rules have always enforced.
             if (currentUser && competition.meta.organizerId === currentUser.id) {
                 hasAccess = true;
                 showManagement();
             } else {
-                // Check for stored key
-                const storedKey = sessionStorage.getItem(`organiser_key_${competitionId}`);
-                if (storedKey && await CompetitionService.verifyOrganiserKey(competitionId, storedKey)) {
-                    hasAccess = true;
-                    showManagement();
-                } else {
-                    showKeyEntry();
-                }
+                showOrganiserSignIn();
             }
         }
-        
+
         function showAccessDenied() {
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('access-denied').classList.remove('hidden');
         }
-        
-        function showKeyEntry() {
-            document.getElementById('key-entry').classList.remove('hidden');
+
+        function showOrganiserSignIn() {
+            const link = document.getElementById('organiser-signin-link');
+            if (link) link.href = `/login.html?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+            document.getElementById('organiser-signin').classList.remove('hidden');
         }
-        
+
         function showManagement() {
-            document.getElementById('key-entry').classList.add('hidden');
+            document.getElementById('organiser-signin').classList.add('hidden');
             document.getElementById('management-content').classList.remove('hidden');
             renderManagement();
         }
-        
-        // ===== KEY VERIFICATION =====
-        
-        document.getElementById('key-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const key = document.getElementById('organiser-key-input').value.toUpperCase();
-            
-            if (await CompetitionService.verifyOrganiserKey(competitionId, key)) {
-                sessionStorage.setItem(`organiser_key_${competitionId}`, key);
-                hasAccess = true;
-                showManagement();
-            } else {
-                showToast('Invalid organizer key', 'error');
-            }
-        });
-        
+
         // ===== TABS =====
         
         function showTab(tabName) {

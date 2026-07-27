@@ -339,8 +339,7 @@ const CompetitionService = {
         }
         
         const id = this._generateId();
-        const organiserKey = this._generateOrganiserKey();
-        
+
         // Build competition object with safe defaults (Firebase rejects undefined)
         const competition = {
             meta: {
@@ -369,10 +368,12 @@ const CompetitionService = {
                 pointsPerGame: parseInt(data.pointsPerGame) || 32,
                 roundCount: data.roundCount !== undefined ? data.roundCount : null,
                 
-                // Organizer
+                // Organizer. Deliberately no organiser key: competitions live
+                // under a world-readable node, so a key stored here would be
+                // public — and the database rules only ever honoured
+                // organizerId anyway. Ownership is the signed-in account.
                 organizerId: data.organizerId,
                 organizerName: data.organizerName || 'Unknown',
-                organiserKey,
 
                 // Prize money (optional — UK only)
                 prizeMoney: (data.prizeMoney && data.prizeMoney.enabled) ? {
@@ -422,7 +423,7 @@ const CompetitionService = {
             console.log('Competition created successfully with ID:', id);
             
             competition.id = id;
-            return { competition, organiserKey };
+            return { competition };
         } catch (firebaseError) {
             console.error('Firebase error:', firebaseError);
             throw new Error(`Database error: ${firebaseError.message}`);
@@ -441,6 +442,8 @@ const CompetitionService = {
         // Don't allow updating certain fields
         delete updates.id;
         delete updates.organizerId;
+        // Kept after the field itself was removed: a stale cached client could
+        // still send one, and it must not be written back into public meta.
         delete updates.organiserKey;
         delete updates.createdAt;
         
@@ -672,18 +675,14 @@ const CompetitionService = {
     },
     
     // ===== ORGANIZER ACCESS =====
-    
-    /**
-     * Verify organizer key
-     * @param {string} competitionId - Competition ID
-     * @param {string} key - Organizer key to verify
-     * @returns {Promise<boolean>}
-     */
-    async verifyOrganiserKey(competitionId, key) {
-        const comp = await this.getById(competitionId);
-        return comp && comp.meta.organiserKey === key;
-    },
-    
+
+    // verifyOrganiserKey() used to live here. It compared against
+    // meta.organiserKey, which sits under a ".read": true node — so the
+    // "secret" it checked was readable by anyone who wanted to pass the check.
+    // It also gated nothing real: the database rules honour meta/organizerId
+    // alone, so a key holder who was not the organiser got the management UI
+    // and then had every write rejected. Use isOrganizer() below instead.
+
     /**
      * Check if user is the organizer
      * @param {string} competitionId - Competition ID
@@ -950,14 +949,6 @@ const CompetitionService = {
         return id.toLowerCase();
     },
     
-    _generateOrganiserKey() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        let key = '';
-        for (let i = 0; i < 6; i++) {
-            key += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return key;
-    },
     
     _getDefaultMinPlayers(format) {
         switch (format) {
