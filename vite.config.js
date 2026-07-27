@@ -1,10 +1,58 @@
 import { defineConfig } from 'vite';
 import { resolve }      from 'path';
-import { readdirSync, statSync } from 'fs';
+import { readdirSync, statSync, cpSync, existsSync } from 'fs';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Source trees loaded through classic `<script src>` tags.
+ *
+ * Vite only bundles `<script type="module">`. Classic tags are passed through
+ * to the built HTML untouched and their targets are never copied, so without
+ * this step these files are simply absent from dist/ and every page that
+ * references them 404s — silently, because the HTML itself builds fine.
+ *
+ * Only add a directory here when its scripts are genuinely classic. Anything
+ * using `import`/`export` must stay in the module graph instead: served from
+ * here it would be untransformed and throw on the first `export`.
+ *
+ * To check for drift after adding pages, build and then resolve every local
+ * `<script src>` in dist/ against dist/ — anything unresolved belongs here.
+ */
+const CLASSIC_SCRIPT_DIRS = ['account', 'competitions', 'js', 'league', 'quick-play', 'src'];
+
+/**
+ * Copy CLASSIC_SCRIPT_DIRS into dist, preserving paths.
+ *
+ * Runs at closeBundle, after Vite has written the built HTML and copied
+ * publicDir. `.html` is filtered out so the unprocessed source pages can never
+ * overwrite their built counterparts — those are real entries with injected
+ * CSS and hashed asset URLs.
+ */
+function copyClassicScripts() {
+    return {
+        name: 'copy-classic-scripts',
+        apply: 'build',
+        closeBundle() {
+            let copied = 0;
+            for (const dir of CLASSIC_SCRIPT_DIRS) {
+                const from = resolve(__dirname, dir);
+                if (!existsSync(from)) continue;
+                cpSync(from, resolve(__dirname, 'dist', dir), {
+                    recursive: true,
+                    filter: src => {
+                        if (/\.(html|md)$/i.test(src)) return false;
+                        copied++;
+                        return true;
+                    }
+                });
+            }
+            this.info(`copied ${copied} classic-script paths into dist/`);
+        }
+    };
+}
 
 /**
  * Recursively collect all .html files under `dir`, returning a rollupOptions
@@ -53,6 +101,8 @@ export default defineConfig({
 
   // Public assets directory
   publicDir: 'public',
+
+  plugins: [copyClassicScripts()],
 
   // Build configuration
   build: {

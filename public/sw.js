@@ -1,25 +1,47 @@
 /**
  * Uber Padel — Service Worker
+ *
  * Provides offline caching and PWA support.
+ *
+ * This file MUST live in public/. Vite copies public/ to the root of dist/
+ * verbatim, which is the only way it reaches the deploy as /sw.js — a service
+ * worker's scope is capped by its own URL, and anything Vite processes gets a
+ * content hash in its filename. Moving it back to the repo root silently drops
+ * it from the build, and registration in public/shared/nav.js 404s.
  */
 
 // Bump this on every deploy that changes JS or CSS. Assets are cached
 // cache-first with no revalidation, so returning users keep running the old
 // bundle until this version changes — including after a security fix.
-const CACHE_VERSION = 'v31';
+const CACHE_VERSION = 'v32';
 const PRECACHE = 'uberpadel-precache-' + CACHE_VERSION;
 const RUNTIME = 'uberpadel-runtime-' + CACHE_VERSION;
 
+// Only paths that exist in the deployed build belong here. Everything below is
+// either a built HTML page or a file in public/, which Vite copies to the root
+// of dist/ verbatim — that is what keeps these literal URLs stable. Anything
+// Vite processes instead gets a content hash, so it can never be named here.
+//
+// Still absent: the per-format quick-play/*/js/ and src/ trees. Those load as
+// classic <script src> tags, which Vite neither bundles nor copies, so they are
+// not in dist at all and cannot be named here. That costs less than it looks —
+// the cache-first handler below caches whatever it can fetch on first use, into
+// a RUNTIME cache carrying the same CACHE_VERSION, so a version bump still
+// evicts it. Precaching only buys availability before a file is first fetched.
+//
+// Verify against a real build (`npm run build && ls dist/`) before adding.
 const PRECACHE_URLS = [
     '/',
     '/quick-play/',
     '/offline.html',
-    '/uberpadel-icon-512.png',
-    '/uberpadel-icon-192.png',
-    '/uberpadel-icon.svg',
-    '/favicon.svg',
+    '/manifest.json',
     '/favicon.ico',
+    '/favicon.svg',
+    '/uberpadel-icon.svg',
+    '/uberpadel-icon-192.png',
+    '/uberpadel-icon-512.png',
     '/shared/nav.js',
+    '/shared/crypto.js',
     '/shared/format-config.js',
     '/shared/tournament-header.js',
     '/shared/tv-mode.js',
@@ -31,7 +53,14 @@ const PRECACHE_URLS = [
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(PRECACHE)
-            .then(cache => cache.addAll(PRECACHE_URLS))
+            // Cached one at a time on purpose: cache.addAll() is atomic, so a
+            // single 404 (or a host redirect on a directory URL) rejects the
+            // whole install, and every existing user stays pinned to the
+            // previous service worker with no way to update. A precache miss
+            // should cost offline availability for one file, nothing more.
+            .then(cache => Promise.allSettled(
+                PRECACHE_URLS.map(url => cache.add(url))
+            ))
             .then(() => self.skipWaiting())
     );
 });
