@@ -376,6 +376,18 @@
         }
       }
     },
+    "leagues": {
+      ".read": true,
+      ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
+      "$leagueId": {
+        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($leagueId).child('claimant').val() == auth.uid)",
+        ".validate": "$leagueId.matches(/^[a-zA-Z0-9]{6,20}$/)",
+        "meta": {
+          "organiserKey": { ".validate": false },
+          "passcodeHash": { ".validate": false }
+        }
+      }
+    },
     "fixed-tournaments": {
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],

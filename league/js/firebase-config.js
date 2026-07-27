@@ -20,6 +20,19 @@ function initializeFirebase() {
         firebase.initializeApp(firebaseConfig);
     }
     database = firebase.database();
+
+    // Anonymous sign-in — the league rules require auth != null for every
+    // write, so this must complete before any save. Exposed as a promise so
+    // callers can await it rather than racing it.
+    if (!window.firebaseAuthReady) {
+        window.firebaseAuthReady = firebase.auth().signInAnonymously()
+            .then((cred) => cred.user)
+            .catch((err) => {
+                console.error('Firebase anonymous auth failed:', err.code, err.message);
+                return null;
+            });
+    }
+
     return database;
 }
 
@@ -118,41 +131,65 @@ async function updateMatchStatus(leagueId, seasonNumber, weekNumber, matchIndex,
     }
 }
 
+// ===== ORGANISER SECRETS =====
+//
+// The organiser key and passcode hash are NOT stored on the league node —
+// that node is world-readable, so anything kept there is not a secret. They
+// live under tournamentSecrets/<leagueId>, which has ".read": false.
+//
+// Because clients cannot read that node, verification is inverted: instead of
+// fetching the stored secret and comparing locally, we *write* the candidate
+// back as `proof`/`passcodeProof`. The security rule compares it against data
+// only the server can see, so the write succeeds only for someone who already
+// holds the secret — and the same write records `claimant`, which the league
+// write rule accepts as proof of ownership.
+
 /**
- * Verify organiser key
+ * Seed the unreadable secrets node for a freshly created league.
+ * Must run *after* the league node exists with meta/organizerUid set to the
+ * caller's uid — that is the rule's precondition for creating the node.
+ * @returns {Promise<boolean>}
  */
-async function verifyOrganiserKey(leagueId, key) {
+async function seedLeagueSecrets(leagueId, organiserKey, passcodeHash) {
     try {
-        const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${leagueId}/meta/organiserKey`).once('value');
-        return snapshot.val() === key;
+        await database.ref(`tournamentSecrets/${leagueId}`).set({
+            root: CONFIG.FIREBASE_ROOT,
+            key: organiserKey,
+            passcodeHash: passcodeHash
+        });
+        return true;
     } catch (error) {
-        console.error('Error verifying organiser key:', error);
+        console.error('Error seeding league secrets:', error.code || error.message);
         return false;
     }
 }
 
 /**
- * Get passcode hash for login
+ * Claim organiser ownership by proving possession of the organiser key.
+ * @returns {Promise<boolean>} true if the rule accepted the proof
  */
-async function getPasscodeHash(leagueId) {
-    try {
-        const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${leagueId}/meta/passcodeHash`).once('value');
-        return snapshot.val();
-    } catch (error) {
-        console.error('Error getting passcode hash:', error);
-        return null;
-    }
+async function claimLeagueWithKey(leagueId, organiserKey, uid) {
+    return claimLeagueSecret(leagueId, { proof: organiserKey, claimant: uid });
 }
 
 /**
- * Get organiser key after passcode verification
+ * Claim organiser ownership by proving possession of the passcode.
+ * Takes the *hash*, since that is what the secrets node stores.
+ * @returns {Promise<boolean>} true if the rule accepted the proof
  */
-async function getOrganiserKey(leagueId) {
+async function claimLeagueWithPasscode(leagueId, passcodeHash, uid) {
+    return claimLeagueSecret(leagueId, { passcodeProof: passcodeHash, claimant: uid });
+}
+
+async function claimLeagueSecret(leagueId, payload) {
+    if (!leagueId || !payload.claimant) return false;
     try {
-        const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${leagueId}/meta/organiserKey`).once('value');
-        return snapshot.val();
+        await database.ref(`tournamentSecrets/${leagueId}`).update(payload);
+        return true;
     } catch (error) {
-        console.error('Error getting organiser key:', error);
-        return null;
+        // A rejected write is the expected outcome for a wrong secret, so this
+        // is a normal failure path rather than an error worth shouting about.
+        console.log('League claim rejected:', error.code || error.message);
+        return false;
     }
 }

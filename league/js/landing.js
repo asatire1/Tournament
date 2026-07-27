@@ -559,28 +559,35 @@ async function verifyPasscode(leagueId) {
     }
 
     try {
-        const storedHash = await getPasscodeHash(leagueId);
-        let isValid = false;
+        // The stored hash is unreadable, so we cannot compare locally. Hash the
+        // entered passcode and submit it as proof: the rule accepts the write
+        // only on a match, which also records us as the league's claimant and
+        // grants write access. The organiser key itself is never retrieved.
+        const passcodeHash = (typeof CryptoUtils !== 'undefined')
+            ? await CryptoUtils.hashPasscode(passcode)
+            : passcode; // Fallback: legacy plaintext data
 
-        if (typeof CryptoUtils !== 'undefined') {
-            isValid = await CryptoUtils.verifyPasscode(passcode, storedHash);
-        } else {
-            // Fallback: direct comparison (for legacy data)
-            isValid = passcode === storedHash;
+        const uid = (typeof OrganizerAuth !== 'undefined')
+            ? await OrganizerAuth.ensureUid().catch(() => null)
+            : null;
+
+        if (!uid) {
+            if (errorDiv) {
+                errorDiv.querySelector('p').textContent = 'Could not connect to the server. Please try again.';
+                errorDiv.classList.remove('hidden');
+            }
+            return;
         }
 
+        const isValid = await claimLeagueWithPasscode(leagueId, passcodeHash, uid);
+
         if (isValid) {
-            const organiserKey = await getOrganiserKey(leagueId);
-            if (organiserKey) {
-                saveLeagueToLocalStorage(leagueId, null, organiserKey);
-                closeModal();
-                Router.navigate('league', leagueId, organiserKey);
-            } else {
-                if (errorDiv) {
-                    errorDiv.querySelector('p').textContent = 'Could not retrieve organiser key.';
-                    errorDiv.classList.remove('hidden');
-                }
-            }
+            saveLeagueToLocalStorage(leagueId, null, null);
+            closeModal();
+            // No ?key= in the URL: ownership now rests on the claimant record
+            // written above, which resolveOrganiserAccess() picks up from the
+            // session's uid on the next route change.
+            Router.navigate('league', leagueId, null);
         } else {
             if (errorDiv) {
                 errorDiv.querySelector('p').textContent = 'Incorrect passcode. Please try again.';
@@ -1564,6 +1571,25 @@ async function createLeague() {
             passcodeHash = WizardState._passcode; // Fallback
         }
 
+        // Anonymous UID that owns this league. The write rule requires
+        // auth != null, so creation fails outright without it.
+        let organizerUid = null;
+        try {
+            if (typeof OrganizerAuth !== 'undefined') {
+                organizerUid = await OrganizerAuth.ensureUid();
+            }
+        } catch (e) {
+            console.error('Could not establish organiser identity:', e.message);
+        }
+        if (!organizerUid) {
+            showWizardError('Could not connect to the server. Please check your connection and try again.');
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create League ✨';
+            }
+            return;
+        }
+
         // Build division data
         const divisionsData = {};
         WizardState.divisions.forEach((div, i) => {
@@ -1610,8 +1636,9 @@ async function createLeague() {
                 name: WizardState.leagueName,
                 venue: WizardState.venue,
                 description: WizardState.description,
-                organiserKey: organiserKey,
-                passcodeHash: passcodeHash,
+                // organiserKey / passcodeHash deliberately absent: this node is
+                // world-readable. They go to tournamentSecrets/<id> below.
+                organizerUid: organizerUid,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 status: CONFIG.LEAGUE_STATUS.SETUP,
@@ -1650,6 +1677,18 @@ async function createLeague() {
         const success = await createLeagueInFirebase(leagueId, leagueData);
 
         if (success) {
+            // Seed the unreadable secrets node. Must follow league creation:
+            // the rule only permits creating it when meta/organizerUid on the
+            // league already matches the caller's uid.
+            const seeded = await seedLeagueSecrets(leagueId, organiserKey, passcodeHash);
+            if (!seeded) {
+                // Without secrets there is no way to recover organiser access
+                // later, so surface it rather than handing over a league the
+                // organiser can be locked out of.
+                console.error('League created but organiser secrets were not stored');
+                showToast('League created, but organiser recovery could not be set up. Save your link!');
+            }
+
             // Save to local storage
             saveLeagueToLocalStorage(leagueId, WizardState.leagueName, organiserKey);
 

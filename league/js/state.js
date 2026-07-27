@@ -96,6 +96,39 @@ class LeagueState {
         return this.isOrganiser;
     }
 
+    /**
+     * Wait for Firebase anonymous auth to finish signing the user in so
+     * firebase.auth().currentUser is available. The league loader can easily
+     * race the initial sign-in, so anything needing currentUser must await
+     * this first. Resolves to the UID, or null if none appears in time.
+     */
+    async _awaitFirebaseAuthUid(timeoutMs = 8000) {
+        if (typeof firebase === 'undefined' || !firebase.auth) return null;
+        const auth = firebase.auth();
+        if (auth.currentUser) return auth.currentUser.uid;
+        return new Promise(resolve => {
+            let done = false;
+            const unsub = auth.onAuthStateChanged(user => {
+                if (done) return;
+                if (user) { done = true; unsub(); resolve(user.uid); }
+            });
+            setTimeout(() => {
+                if (done) return;
+                done = true;
+                unsub();
+                resolve(auth.currentUser ? auth.currentUser.uid : null);
+            }, timeoutMs);
+        });
+    }
+
+    /**
+     * Verify organiser access by proving possession of the organiser key.
+     *
+     * The key is no longer readable (it lives on the unreadable
+     * tournamentSecrets node), so the proof write *is* the verification: it
+     * succeeds only if the key matches, and it simultaneously claims write
+     * ownership for this session's UID.
+     */
     async verifyOrganiserKey(key) {
         if (!this.leagueId || !key) {
             this.isOrganiser = false;
@@ -103,15 +136,33 @@ class LeagueState {
         }
 
         try {
-            const isValid = await verifyOrganiserKey(this.leagueId, key);
+            const uid = await this._awaitFirebaseAuthUid();
+            if (!uid) {
+                console.warn('verifyOrganiserKey: no Firebase auth UID (sign-in timed out)');
+                this.isOrganiser = false;
+                return false;
+            }
+
+            const isValid = await claimLeagueWithKey(this.leagueId, key, uid);
             this.isOrganiser = isValid;
             this.organiserKey = isValid ? key : null;
 
             if (isValid) {
                 console.log('Organiser access granted');
+                // Persist the verified key for this tab so navigating to a
+                // keyless route and back does not drop write ownership.
+                // sessionStorage is tab-scoped, the right lifetime for a
+                // shared secret.
+                try {
+                    sessionStorage.setItem('league_key_' + this.leagueId, key);
+                } catch (e) { /* private mode / disabled — ignore */ }
+                await this.claimOwnership();
                 this.upgradeToRealtime();
             } else {
                 console.log('Invalid organiser key');
+                try {
+                    sessionStorage.removeItem('league_key_' + this.leagueId);
+                } catch (e) { /* ignore */ }
             }
 
             return isValid;
@@ -120,6 +171,122 @@ class LeagueState {
             this.isOrganiser = false;
             return false;
         }
+    }
+
+    /**
+     * Verify organiser access from a passcode rather than the organiser key.
+     * Same proof mechanism, against the stored passcode hash. The organiser
+     * key is never learned, so ownership rests on the `claimant` record.
+     * @returns {Promise<boolean>}
+     */
+    async verifyOrganiserPasscode(passcode) {
+        if (!this.leagueId || !passcode) {
+            this.isOrganiser = false;
+            return false;
+        }
+        try {
+            const hash = (typeof CryptoUtils !== 'undefined')
+                ? await CryptoUtils.hashPasscode(passcode)
+                : passcode; // Fallback: legacy plaintext data
+            const uid = await this._awaitFirebaseAuthUid();
+            if (!uid) {
+                this.isOrganiser = false;
+                return false;
+            }
+            this.isOrganiser = await claimLeagueWithPasscode(this.leagueId, hash, uid);
+            if (this.isOrganiser) {
+                console.log('Organiser access granted (passcode)');
+                await this.claimOwnership();
+                this.upgradeToRealtime();
+            }
+            return this.isOrganiser;
+        } catch (error) {
+            console.error('Error verifying passcode:', error);
+            this.isOrganiser = false;
+            return false;
+        }
+    }
+
+    /**
+     * Anchor meta/organizerUid to this session's UID so writes pass the
+     * league write rule directly, then read back to confirm it stuck.
+     * Sessions that already proved a secret are accepted via the rule's
+     * `claimant` clause even if this direct write is refused.
+     * @returns {Promise<boolean>}
+     */
+    async claimOwnership() {
+        if (!this.leagueId) return false;
+        const uid = await this._awaitFirebaseAuthUid();
+        if (!uid) return false;
+
+        const path = `${this.getBasePath()}/meta/organizerUid`;
+        try {
+            await database.ref(path).set(uid);
+            const snap = await database.ref(path).once('value');
+            if (snap.val() === uid) {
+                console.log('🔑 Ownership claimed for current session');
+                return true;
+            }
+            console.warn('claimOwnership: server still has', snap.val(), 'expected', uid);
+            return false;
+        } catch (e) {
+            // Expected when returning on a different device: the direct write
+            // is refused, but the earlier secret proof already registered this
+            // UID as `claimant`, which the write rule honours.
+            console.warn('claimOwnership: direct write refused, relying on claimant proof:', e.code || e.message);
+            return false;
+        }
+    }
+
+    /**
+     * Work out whether this session is the organiser, in preference order:
+     *   1. a key supplied in the URL,
+     *   2. a key cached in sessionStorage from earlier in this tab,
+     *   3. an existing ownership record — meta/organizerUid already matches
+     *      our uid, which is how a passcode login (which never learns the
+     *      key) keeps organiser access.
+     * @returns {Promise<boolean>}
+     */
+    async resolveOrganiserAccess(keyFromUrl) {
+        if (keyFromUrl) return this.verifyOrganiserKey(keyFromUrl);
+
+        let cached = null;
+        try {
+            cached = sessionStorage.getItem('league_key_' + this.leagueId);
+        } catch (e) { /* private mode / disabled — ignore */ }
+        if (cached) return this.verifyOrganiserKey(cached);
+
+        const uid = await this._awaitFirebaseAuthUid();
+        if (!uid) {
+            this.isOrganiser = false;
+            return false;
+        }
+        try {
+            const snap = await database.ref(`${this.getBasePath()}/meta/organizerUid`).once('value');
+            this.isOrganiser = snap.val() === uid;
+        } catch (e) {
+            this.isOrganiser = false;
+        }
+        if (this.isOrganiser) {
+            console.log('Organiser access restored for this session');
+            this.upgradeToRealtime();
+        }
+        return this.isOrganiser;
+    }
+
+    /**
+     * Guard before writes: does this session still hold write ownership?
+     * If not, re-claim. Returns true if the session can write.
+     */
+    async ensureWriteOwnership() {
+        if (!this.isOrganiser || !this.leagueId) return false;
+        const uid = await this._awaitFirebaseAuthUid();
+        if (!uid) return false;
+        try {
+            const snap = await database.ref(`${this.getBasePath()}/meta/organizerUid`).once('value');
+            if (snap.val() === uid) return true;
+        } catch (e) { /* fall through to claim attempt */ }
+        return await this.claimOwnership();
     }
 
     // ===== FIREBASE OPERATIONS =====
@@ -174,7 +341,9 @@ class LeagueState {
         // Metadata
         if (data.meta) {
             this.leagueName = data.meta.name || '';
-            this.organiserKey = data.meta.organiserKey || this.organiserKey;
+            // organiserKey is deliberately not read back from meta — it is not
+            // stored there any more. The session's key comes from the URL or
+            // sessionStorage and is verified by proof against tournamentSecrets.
             this.createdAt = data.meta.createdAt || null;
         }
 
@@ -396,13 +565,14 @@ class LeagueState {
 
         const basePath = this.getBasePath();
 
+        // Scoped meta paths, not a whole `meta` object: passing a nested object
+        // to update() replaces that child wholesale, which would drop
+        // meta/organizerUid (losing write ownership) along with venue,
+        // description, matchFormat and the rest of the creation metadata.
         database.ref(basePath).update({
-            meta: {
-                name: this.leagueName,
-                organiserKey: this.organiserKey,
-                createdAt: this.createdAt,
-                updatedAt: new Date().toISOString()
-            },
+            'meta/name': this.leagueName,
+            'meta/createdAt': this.createdAt,
+            'meta/updatedAt': new Date().toISOString(),
             status: this.status,
             currentSeason: this.currentSeason,
             divisions: this.divisions,
