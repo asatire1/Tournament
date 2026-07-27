@@ -5,9 +5,15 @@ name: Deploy Database Rules
 # `firebase deploy --only database`, so production regularly drifted behind
 # main whenever someone forgot.
 #
-# Deliberately a separate workflow, not a step in deploy.yml. Rules need
-# neither the build nor dist/, and deploy.yml's Cloudflare step fails on every
-# run (no CLOUDFLARE_API_TOKEN), so a step sequenced after it would never run.
+# This is the only deploy workflow in the repo. The site itself is published by
+# Cloudflare Pages' native GitHub integration, which needs no workflow of ours
+# (the old deploy.yml duplicated it, never once succeeded for want of
+# CLOUDFLARE_API_TOKEN, and was removed).
+#
+# Note that ordering against the site deploy cannot be enforced: the native
+# Pages build is outside GitHub Actions. Rules releases take seconds and Pages
+# builds take minutes, so rules normally land first — but when the ordering
+# genuinely matters, deploy rules by hand before merging.
 
 on:
   push:
