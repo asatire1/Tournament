@@ -57,7 +57,7 @@ CompetitionService.getById(id);               // Single competition
 CompetitionService.getByOrganizer(userId);    // By organizer
 
 // Create & Update
-CompetitionService.create(data);              // Returns { competition, organiserKey }
+CompetitionService.create(data);              // Returns { competition }
 CompetitionService.update(id, updates);       // Update metadata
 CompetitionService.updateStatus(id, status);  // Change status
 
@@ -159,9 +159,8 @@ competitions/
       maxLevel: number
       accessRestriction: 'anyone' | 'registered' | 'verified'
       courts: number
-      organizerId: string
+      organizerId: string   // the owner; the only thing write rules honour
       organizerName: string
-      organiserKey: string
       createdAt: string (ISO)
       updatedAt: string (ISO)
     registeredPlayers/
