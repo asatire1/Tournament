@@ -405,10 +405,10 @@ exports.processRatingUpdate = functions
 //    tournament to anyone. Ownership transfer now happens here, where the key
 //    is actually compared, and the rules only accept the recorded owner.
 //
-//    NOTE: meta/organiserKey still sits under a world-readable node, so this
-//    check is only as strong as that key's secrecy. Moving the key (and
-//    passcodeHash) to a non-readable node is what makes this genuinely
-//    tamper-proof; this function is where that change lands when it happens.
+//    The key is read from tournamentSecrets/<id>, which is ".read": false, so
+//    no client can fetch it — only this function (admin SDK) can compare it.
+//    That is what makes the check genuinely tamper-proof; reading it from the
+//    world-readable meta/organiserKey never was.
 // ---------------------------------------------------------------------------
 
 exports.claimTournamentOwnership = functions
@@ -438,11 +438,23 @@ exports.claimTournamentOwnership = functions
             throw new functions.https.HttpsError('not-found', 'Tournament not found');
         }
 
-        const storedKey = meta.organiserKey;
+        const secretSnap = await db.ref(`tournamentSecrets/${tournamentId}`).once('value');
+        const secret = secretSnap.val() || {};
+        const storedKey = secret.key;
         if (typeof storedKey !== 'string' || storedKey.length === 0) {
             throw new functions.https.HttpsError(
                 'failed-precondition',
                 'This tournament has no organiser key, so ownership cannot be transferred',
+            );
+        }
+
+        // The secrets node records the root it belongs to. Refuse a claim whose
+        // declared format resolves elsewhere, so an id cannot be replayed
+        // against a different root's tournament of the same name.
+        if (secret.root !== root) {
+            throw new functions.https.HttpsError(
+                'invalid-argument',
+                'Format does not match the tournament this key belongs to',
             );
         }
 

@@ -222,6 +222,21 @@ class BaseTournament {
             const data = this.toFirebaseData();
             
             await Firebase.createTournament(this.format, this.id, data);
+
+            // Seed the unreadable secrets node so this organiser can prove
+            // ownership later. Must follow the write above: the rule permits
+            // the create only while meta/organizerUid already equals auth.uid.
+            // Without it the key would exist nowhere, since toFirebaseData()
+            // no longer puts it in meta.
+            if (this.organiserKey && typeof window.seedTournamentSecret === 'function') {
+                const root = Firebase.getTournamentRef(this.format, this.id).parent.key;
+                await window.seedTournamentSecret(this.id, {
+                    root,
+                    key: this.organiserKey,
+                    passcodeHash: this.passcodeHash || undefined
+                });
+            }
+
             this.meta.updatedAt = new Date().toISOString();
             return true;
         } catch (error) {
@@ -279,11 +294,11 @@ class BaseTournament {
      */
     toFirebaseData() {
         return {
-            meta: {
-                ...this.meta,
-                organiserKey: this.organiserKey,
-                passcodeHash: this.passcodeHash
-            },
+            // The organiser key and passcode hash are deliberately NOT included:
+            // meta sits under a world-readable node, so anything stored here can
+            // be fetched by any visitor. Both live in tournamentSecrets/<id>
+            // instead, seeded by save() once the tournament row exists.
+            meta: { ...this.meta },
             players: this.players,
             courts: this.courts,
             rounds: this.rounds,
@@ -300,8 +315,9 @@ class BaseTournament {
     _applyData(data) {
         if (data.meta) {
             this.meta = { ...this.meta, ...data.meta };
-            this.organiserKey = data.meta.organiserKey || this.organiserKey;
-            this.passcodeHash = data.meta.passcodeHash || this.passcodeHash;
+            // organiserKey / passcodeHash are not read back from meta: they are
+            // not stored there any more, and a locally held key must never be
+            // overwritten by whatever a world-readable node happens to carry.
         }
         if (data.players) this.players = data.players;
         if (data.courts) this.courts = data.courts;
@@ -462,11 +478,10 @@ class BaseTournament {
      * @returns {Promise<boolean>}
      */
     async verifyOrganiserKey(key) {
-        if (this.organiserKey) {
-            return this.organiserKey === key;
-        }
-
-        // Check Firebase
+        // Always prove against the database, even when this instance still
+        // holds the key from creation: the proof write is also what records
+        // `claimant`, which is what the tournament write rule accepts as
+        // ownership. A local string compare would verify without claiming.
         try {
             const Firebase = window.Firebase;
             return await Firebase.verifyOrganiserKey(this.format, this.id, key);
