@@ -1083,7 +1083,7 @@ async function createTournamentFromWizard() {
 
     } catch (error) {
         console.error('Error creating tournament:', error);
-        showCreateWizardError('Failed to create tournament. Please try again.');
+        showCreateWizardError('Failed to create tournament: ' + (error.message || error));
     }
 }
 
