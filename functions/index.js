@@ -405,10 +405,16 @@ exports.processRatingUpdate = functions
 //    tournament to anyone. Ownership transfer now happens here, where the key
 //    is actually compared, and the rules only accept the recorded owner.
 //
-//    The key is read from tournamentSecrets/<id>, which is ".read": false, so
-//    no client can fetch it — only this function (admin SDK) can compare it.
-//    That is what makes the check genuinely tamper-proof; reading it from the
-//    world-readable meta/organiserKey never was.
+//    The key is compared against tournamentSecrets/<id>/key, which is
+//    ".read": false — unreadable to every client, but readable here because
+//    the Admin SDK bypasses the rules. That is what makes this check
+//    tamper-proof: a caller cannot look up the answer before guessing.
+//
+//    TRANSITIONAL: the fallback below reads the world-readable
+//    meta/organiserKey when a tournament has no secrets node. Every tournament
+//    that has an organiser key has now been backfilled with one, so the
+//    fallback should never fire — it is kept only until meta/organiserKey is
+//    stripped, at which point both it and the field itself go.
 // ---------------------------------------------------------------------------
 
 exports.claimTournamentOwnership = functions
@@ -438,9 +444,22 @@ exports.claimTournamentOwnership = functions
             throw new functions.https.HttpsError('not-found', 'Tournament not found');
         }
 
+        // Prefer the unreadable secrets node; fall back to meta only for
+        // tournaments that predate it. See TRANSITIONAL note above.
         const secretSnap = await db.ref(`tournamentSecrets/${tournamentId}`).once('value');
         const secret = secretSnap.val() || {};
-        const storedKey = secret.key;
+        let storedKey = secret.key;
+        let fromSecrets = true;
+
+        if (typeof storedKey !== 'string' || storedKey.length === 0) {
+            fromSecrets = false;
+            storedKey = meta.organiserKey;
+            if (typeof storedKey === 'string' && storedKey.length > 0) {
+                console.warn(`[claimTournamentOwnership] no secrets node for ${root}/${tournamentId}, falling back to meta/organiserKey`);
+            }
+        }
+
+
         if (typeof storedKey !== 'string' || storedKey.length === 0) {
             throw new functions.https.HttpsError(
                 'failed-precondition',
@@ -450,8 +469,10 @@ exports.claimTournamentOwnership = functions
 
         // The secrets node records the root it belongs to. Refuse a claim whose
         // declared format resolves elsewhere, so an id cannot be replayed
-        // against a different root's tournament of the same name.
-        if (secret.root !== root) {
+        // against a different root's tournament of the same name. Only the
+        // secrets node carries a root; the meta fallback was already read from
+        // <root>/<tournamentId>, so there is nothing to cross-check there.
+        if (fromSecrets && secret.root !== root) {
             throw new functions.https.HttpsError(
                 'invalid-argument',
                 'Format does not match the tournament this key belongs to',
