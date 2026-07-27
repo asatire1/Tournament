@@ -1080,11 +1080,14 @@ async function handleOrganiserLogin() {
         return;
     }
 
-    const isValid = await state.verifyOrganiserKey(passcode);
+    // This dialog takes the passcode, not the organiser key — they are
+    // different secrets in a league. Keep the passcode out of the URL: access
+    // comes from the claimant record the proof writes.
+    const isValid = await state.verifyOrganiserPasscode(passcode);
 
     if (isValid) {
         closeModal();
-        Router.navigate('league', state.leagueId, passcode);
+        Router.navigate('league', state.leagueId, null);
         showToast('Logged in as organiser');
     } else {
         errorDiv?.classList.remove('hidden');

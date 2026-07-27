@@ -148,26 +148,25 @@ function onRouteChange(route, leagueId, organiserKey) {
     // Reset tab to overview when entering a new league
     activeTab = 'overview';
 
-    // Set up state
+    // Set up state. isOrganiser stays false until access is actually proved —
+    // the key in the URL is a claim, not evidence.
     state.leagueId = leagueId;
     state.organiserKey = organiserKey;
-    state.isOrganiser = !!organiserKey;
+    state.isOrganiser = false;
 
     // Show loading state
     render();
 
-    // Verify organiser key if provided
-    if (organiserKey) {
-        state.verifyOrganiserKey(organiserKey).then(valid => {
-            state.loadFromFirebase(leagueId);
-            // Save to local storage for My Leagues
-            if (state.leagueName) {
-                MyLeagues.add(leagueId, state.leagueName);
-            }
-        });
-    } else {
+    // Resolve organiser access (URL key, cached key, or existing ownership),
+    // then load. Always loads, whatever the outcome — a failed check just
+    // means viewer mode.
+    state.resolveOrganiserAccess(organiserKey).then(() => {
         state.loadFromFirebase(leagueId);
-    }
+        // Save to local storage for My Leagues
+        if (state.leagueName) {
+            MyLeagues.add(leagueId, state.leagueName);
+        }
+    });
 }
 
 // switchTab is declared in components.js (loaded before main.js)
