@@ -322,7 +322,6 @@
                     createdAt: new Date().toISOString(),
                     accessMode: 'passcode'
                 },
-                organiserKey: passcode,
                 playerCount: 8,
                 courtCount: 2,
                 playerNames: ['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7', 'Player 8'],
@@ -381,7 +380,6 @@
         try {
             const data = {
                 meta: { name: 'Test Americano 12P', createdAt: new Date().toISOString() },
-                organiserKey: passcode12,
                 playerCount: 12,
                 courtCount: 3,
                 playerNames: Array.from({length: 12}, (_, i) => `Player ${i + 1}`),
@@ -405,7 +403,6 @@
         try {
             const data = {
                 meta: { name: 'Test Americano 16P', createdAt: new Date().toISOString() },
-                organiserKey: passcode16,
                 playerCount: 16,
                 courtCount: 4,
                 playerNames: Array.from({length: 16}, (_, i) => `Player ${i + 1}`),
@@ -447,7 +444,6 @@
                     createdAt: new Date().toISOString(),
                     status: 'active'
                 },
-                organiserKey: passcode,
                 players: players,
                 teams: [],
                 rounds: [],
@@ -511,7 +507,6 @@
                     createdAt: new Date().toISOString(),
                     status: 'active'
                 },
-                organiserKey: passcodeTeam,
                 players: [],
                 teams: teams,
                 rounds: [],
@@ -575,7 +570,6 @@
                     createdAt: new Date().toISOString(),
                     status: 'group_stage'
                 },
-                organiserKey: passcode,
                 teams: teams,
                 groups: {
                     'Group A': ['team_0', 'team_1', 'team_2', 'team_3'],
@@ -660,7 +654,6 @@
             }));
             const data = {
                 meta: { name: 'Test League 12T', createdAt: new Date().toISOString(), status: 'group_stage' },
-                organiserKey: passcode12,
                 teams: teams,
                 groups: {
                     'Group A': ['team_0', 'team_1', 'team_2', 'team_3'],
@@ -706,7 +699,6 @@
                     playerSize: 24,
                     status: 'active'
                 },
-                organiserKey: passcode,
                 playerNames: playerNames,
                 skillRatings: skillRatings,
                 scores: {},
@@ -782,7 +774,6 @@
         try {
             const data = {
                 meta: { name: 'Test Mix 20P', createdAt: new Date().toISOString(), playerSize: 20, status: 'active' },
-                organiserKey: passcode20,
                 playerNames: Array.from({length: 20}, (_, i) => `Player ${i + 1}`),
                 skillRatings: Object.fromEntries(Array.from({length: 20}, (_, i) => [i+1, 2.5])),
                 scores: {},
@@ -812,7 +803,6 @@
         // Create test tournament first
         await database.ref(`americano-tournaments/${testId}`).set({
             meta: { name: 'Settings Test', createdAt: new Date().toISOString() },
-            organiserKey: passcode,
             playerCount: 8,
             playerNames: Array.from({length: 8}, (_, i) => `Player ${i + 1}`),
             courtNames: ['Court 1', 'Court 2'],
@@ -822,13 +812,16 @@
         });
         logTournament('Settings Test', testId, passcode);
         
-        // Test 1: Verify passcode matches
-        renderTestResult(container, 'Passcode Verification', 'running');
+        // Test 1: the organiser key must NOT be readable from the tournament.
+        // It used to be asserted the other way round — read it back and compare
+        // — which only passed because the secret was public. It now lives in
+        // tournamentSecrets, which is ".read": false, so absence is the pass.
+        renderTestResult(container, 'Organiser Key Not Public', 'running');
         try {
             const snapshot = await database.ref(`americano-tournaments/${testId}/organiserKey`).once('value');
-            await assert(snapshot.val() === passcode, 'Passcode Verification', container, 'Organiser key matches stored value');
+            await assert(!snapshot.exists(), 'Organiser Key Not Public', container, 'Organiser key is not exposed on the tournament node');
         } catch (e) {
-            await assert(false, 'Passcode Verification', container, e.message);
+            await assert(false, 'Organiser Key Not Public', container, e.message);
         }
         
         // Test 2: Update all player names

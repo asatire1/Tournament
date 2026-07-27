@@ -2083,11 +2083,13 @@
                 // limit in createFixedFixturesTournament).
                 if (!result) return;
 
-                // Update competition with tournament link
+                // Update competition with tournament link. The organiser key is
+                // deliberately NOT stored here: competitions are world-readable,
+                // so this would republish the secret that seedAdminTournamentSecret()
+                // just put in the unreadable node. The key is shown once, below.
                 await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/meta`).update({
                     status: 'active',
                     tournamentId: result.tournamentId,
-                    organiserKey: result.organiserKey,
                     tournamentCreatedAt: new Date().toISOString()
                 });
                 
