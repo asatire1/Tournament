@@ -213,24 +213,15 @@ class TournamentState {
             console.warn('claimOwnership: no organiser key held, cannot claim');
             return false;
         }
-        try {
-            // Prove we hold the organiser key by writing it as `proof` to
-            // tournamentSecrets/<id>. That node is unreadable (".read": false),
-            // so only someone who already knows the key can satisfy the rule —
-            // and the same write records us as the claimant, which the
-            // tournament write rule accepts as ownership.
-            const uid = await this._awaitFirebaseAuthUid();
-            if (!uid) return false;
-            await database.ref(`tournamentSecrets/${this.tournamentId}`).update({
-                proof: this.organiserKey,
-                claimant: uid,
-            });
-            console.log('\u{1F511} Ownership claimed via organiser-key proof');
-            return true;
-        } catch (e) {
-            console.warn('claimOwnership: key proof rejected:', e.code || e.message);
-            return false;
-        }
+        // Prove we hold the organiser key by writing it as `proof` to the
+        // unreadable tournamentSecrets/<id> node — only someone who already
+        // knows the key can satisfy the rule, and the same write records us as
+        // the claimant, which the tournament write rule accepts as ownership.
+        const claimed = await proveTournamentSecret(this.tournamentId, { key: this.organiserKey });
+        console.log(claimed
+            ? '\u{1F511} Ownership claimed via organiser-key proof'
+            : 'claimOwnership: key proof rejected');
+        return claimed;
     }
 
     /**
