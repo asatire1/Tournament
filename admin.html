@@ -31,7 +31,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
+
+    <!-- seedTournamentSecret(), used by the tournament-creation flows below -->
+    <script src="shared/format-config.js"></script>
+
     <style>
         body {
             font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1557,6 +1560,7 @@
                     'americano': 4,
                     'mexicano': 4,
                     'mix': 20,
+                    'tournament': 20,   // smallest prebuilt fixture set
                     'team-league': 8
                 };
                 const minPlayers = minPlayersForFormat[meta.format] || 4;
@@ -1578,7 +1582,7 @@
                                 </div>
                                 ${meta.tournamentId ? `
                                     <div class="mt-2">
-                                        <a href="${getTournamentUrl(meta.format, meta.tournamentId, meta.organiserKey)}" target="_blank" 
+                                        <a href="${getTournamentUrl(meta.format, meta.tournamentId)}" target="_blank"
                                             class="text-blue-600 hover:underline text-sm font-medium">
                                             🔗 View Tournament →
                                         </a>
@@ -1850,25 +1854,64 @@
         // ===== TOURNAMENT CREATION FUNCTIONS =====
         
         const TOURNAMENT_PATHS = {
-            'americano': 'americano-tournaments',
-            'mexicano': 'mexicano-tournaments',
-            'mix': 'tournaments',
+            'americano':   'americano-tournaments',
+            'mexicano':    'mexicano-tournaments',
+            'mix':         'tournaments',
+            'tournament':  'tournaments',
             'team-league': 'team-tournaments'
         };
         
+        // Quick-play page per format. These used to point at the bare
+        // /americano/-style paths, which are now redirect stubs that forward
+        // only the hash — so any query string was dropped on the way through.
         const TOURNAMENT_URLS = {
-            'americano': '/americano/',
-            'mexicano': '/mexicano/',
-            'mix': '/tournament/',
-            'team-league': '/team-league/'
+            'americano':   '/quick-play/americano/',
+            'mexicano':    '/quick-play/mexicano/',
+            'mix':         '/quick-play/tournament/',
+            'tournament':  '/quick-play/tournament/',
+            'team-league': '/quick-play/team-league/'
         };
-        
+
+        /**
+         * Build a link to a tournament.
+         *
+         * The quick-play router parses `#/t/<id>?key=<key>`: the tournament id
+         * and the organiser key both ride in the HASH. The old `?id=&key=`
+         * query form was read by nothing, so organiser links handed out here
+         * granted no organiser access even before the redirect stubs ate the
+         * query string. Omit the key for a spectator link.
+         */
         function getTournamentUrl(format, tournamentId, organiserKey) {
-            const baseUrl = TOURNAMENT_URLS[format] || '/';
-            if (organiserKey) {
-                return `${baseUrl}?id=${tournamentId}&key=${organiserKey}`;
-            }
-            return `${baseUrl}?id=${tournamentId}`;
+            const baseUrl = TOURNAMENT_URLS[format];
+            if (!baseUrl) return '/';
+
+            const route = `${baseUrl}#/t/${encodeURIComponent(tournamentId)}`;
+            return organiserKey
+                ? `${route}?key=${encodeURIComponent(organiserKey)}`
+                : route;
+        }
+
+        /** The signed-in admin's uid, recorded as the tournament's organizerUid. */
+        function adminUid() {
+            const user = firebase.auth().currentUser;
+            return user ? user.uid : null;
+        }
+
+        /**
+         * Give a tournament created here the same unreadable secrets node the
+         * quick-play create flows write. Organiser access is proved against
+         * tournamentSecrets now, so without this the organiser link handed out
+         * below silently grants nothing.
+         *
+         * Requires meta/organizerUid to already equal the caller's uid, which
+         * is why every create flow here sets it from adminUid().
+         */
+        async function seedAdminTournamentSecret(format, tournamentId, organiserKey, hashedPasscode) {
+            return await seedTournamentSecret(tournamentId, {
+                root: TOURNAMENT_PATHS[format],
+                key: organiserKey,
+                passcodeHash: hashedPasscode
+            });
         }
         
         function generateTournamentId() {
@@ -2027,11 +2070,19 @@
                     case 'team-league':
                         result = await createTeamLeagueTournament(comp, playerList, passcode);
                         break;
+                    case 'tournament':
+                        result = await createFixedFixturesTournament(comp, playerList, passcode);
+                        break;
                     default:
                         showToast('❌ Unknown format');
                         return;
                 }
-                
+
+                // A create flow returns null when it has already explained why
+                // it could not build this competition (see the player-count
+                // limit in createFixedFixturesTournament).
+                if (!result) return;
+
                 // Update competition with tournament link
                 await database.ref(`${COMPETITIONS_DB_PATH}/${competitionId}/meta`).update({
                     status: 'active',
@@ -2078,6 +2129,7 @@
                     passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 playerCount,
@@ -2089,8 +2141,9 @@
                 scores,
                 tournamentStarted: true
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['americano']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('americano', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         
@@ -2119,6 +2172,7 @@
                     status: 'active',
                     organiserKey,
                     passcodeHash: hashedPasscode,
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 currentRound: 0,
@@ -2126,8 +2180,9 @@
                 players,
                 rounds: []
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['mexicano']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('mexicano', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         
@@ -2149,12 +2204,14 @@
                     passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 players
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['mix']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('mix', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         
@@ -2186,14 +2243,115 @@
                     passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 teams,
                 currentWeek: 1,
                 status: 'setup'
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['team-league']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('team-league', tournamentId, organiserKey, hashedPasscode);
+            return { tournamentId, organiserKey };
+        }
+
+        // The fixed-fixtures format plays a prebuilt fixture set rather than
+        // generating rounds as it goes, and one exists per player count — so
+        // 20, 24 and 28 are the only sizes it can run.
+        const FIXED_FIXTURE_CONFIGS = {
+            20: { totalRounds: 11, matchesPerRound: 5, fixturesFile: 'fixtures-20.json' },
+            24: { totalRounds: 14, matchesPerRound: 6, fixturesFile: 'fixtures.json' },
+            28: { totalRounds: 15, matchesPerRound: 7, fixturesFile: 'fixtures-28.json' }
+        };
+        const FIXED_FIXTURES_DATA_PATH = '/quick-play/tournament/data';
+
+        /**
+         * Build a fixed-fixtures tournament, matching the structure the
+         * quick-play create flow writes so the same page can read it back.
+         *
+         * @returns {Promise<{tournamentId: string, organiserKey: string}|null>}
+         *          null when the competition cannot be run in this format, in
+         *          which case the reason has already been shown to the admin.
+         */
+        async function createFixedFixturesTournament(comp, playerList, passcode) {
+            // Round up to the smallest supported size so no registered player
+            // is dropped; spare slots get placeholder names, exactly as the
+            // quick-play create flow does.
+            const playerCount = Object.keys(FIXED_FIXTURE_CONFIGS)
+                .map(Number)
+                .sort((a, b) => a - b)
+                .find(size => size >= playerList.length);
+
+            if (!playerCount) {
+                showToast(`❌ Fixed fixtures support at most 28 players (${playerList.length} registered)`);
+                return null;
+            }
+
+            const playerConfig = FIXED_FIXTURE_CONFIGS[playerCount];
+
+            const [fixturesRes, matchNamesRes] = await Promise.all([
+                fetch(`${FIXED_FIXTURES_DATA_PATH}/${playerConfig.fixturesFile}`),
+                fetch(`${FIXED_FIXTURES_DATA_PATH}/match-names.json`)
+            ]);
+            if (!fixturesRes.ok || !matchNamesRes.ok) {
+                showToast('❌ Could not load the fixed-fixtures data files');
+                return null;
+            }
+            const fixtures = await fixturesRes.json();
+            const matchNamesData = await matchNamesRes.json();
+
+            const tournamentId = generateTournamentId();
+            const organiserKey = generateOrganiserKey();
+            const hashedPasscode = btoa(passcode);
+
+            // Registered players first, placeholders for the unfilled slots.
+            // skillRatings is keyed 1-based, unlike playerNames.
+            const playerNames = [];
+            const skillRatings = {};
+            for (let i = 0; i < playerCount; i++) {
+                const registered = playerList[i];
+                playerNames.push(registered ? registered[1].name : `Player ${i + 1}`);
+                skillRatings[i + 1] = Number(registered?.[1]?.level) || 0;
+            }
+
+            const matchNames = {};
+            for (let i = 1; i <= playerConfig.matchesPerRound; i++) {
+                matchNames[i] = `Court ${i + 2}`;   // Courts 1 and 2 are the knockout courts
+            }
+
+            const data = {
+                meta: {
+                    name: comp.meta.name,
+                    organiserKey,
+                    passcodeHash: hashedPasscode,
+                    playerCount,
+                    totalRounds: playerConfig.totalRounds,
+                    matchesPerRound: playerConfig.matchesPerRound,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    organizerUid: adminUid(),
+                    createdFromCompetition: comp.id
+                },
+                playerNames,
+                skillRatings,
+                fixtures,
+                matchNames,
+                knockoutNames: matchNamesData.knockoutMatches,
+                knockoutFormat: 'quarter',
+                matchScores: {},
+                knockoutScores: {},
+                fixtureMaxScore: 16,
+                knockoutMaxScore: 16,
+                semiMaxScore: 16,
+                finalMaxScore: 16,
+                showFairnessTabs: true,
+                savedVersions: [],
+                registeredPlayers: {}
+            };
+
+            await database.ref(`${TOURNAMENT_PATHS['tournament']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('tournament', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         

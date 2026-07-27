@@ -374,7 +374,7 @@ function showCreateTournamentModal() {
                             type="password" 
                             id="organiser-passcode-input" 
                             class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors text-lg"
-                            placeholder="Create a passcode"
+                            placeholder="Create a passcode (min 6 chars)"
                         />
                         <p class="text-xs text-gray-500 mt-1">You'll need this to edit the tournament</p>
                     </div>
@@ -653,9 +653,12 @@ async function createTournament() {
     passcodeInput?.classList.remove('border-red-500');
     passcodeConfirm?.classList.remove('border-red-500');
     
-    // Validate passcode
-    if (!passcode || passcode.length < 4) {
-        passcodeErrorText.textContent = '❌ Passcode must be at least 4 characters';
+    // Validate passcode. Minimum 6: the passcode is this format's organiser
+    // key, and tournamentSecrets rejects a key shorter than 6 characters —
+    // a shorter one could not be seeded and the organiser could never
+    // re-claim the tournament on another device.
+    if (!passcode || passcode.length < 6) {
+        passcodeErrorText.textContent = '❌ Passcode must be at least 6 characters';
         passcodeError?.classList.remove('hidden');
         passcodeInput?.classList.add('border-red-500');
         passcodeInput?.focus();
@@ -836,7 +839,12 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
     
     // Save to Firebase
     await database.ref(`tournaments/${tournamentId}`).set(tournamentData);
-    
+
+    // Seed the unreadable secrets node so this organiser can prove ownership
+    // later. Must follow the write above — the rule checks meta/organizerUid.
+    // The passcode is the organiser key for this format.
+    await seedTournamentSecret(tournamentId, { root: 'tournaments', key: organiserKey });
+
     console.log(`✅ Tournament ${tournamentId} created successfully with ${playerCount} players (mode: ${modeSettings?.mode || 'anyone'})`);
     return tournamentData;
 }

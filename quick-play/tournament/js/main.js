@@ -55,30 +55,33 @@ function updateConnectionIndicator(isConnected) {
 
 // Handle route changes
 async function handleRouteChange(route, tournamentId, organiserKey) {
-    // Recover organiser key from sessionStorage when the URL doesn't carry
-    // one. Handles round-trips into TV mode (keyless) and any in-app
-    // navigation that loses the ?key= query string. sessionStorage is
-    // tab-scoped so it can't leak beyond the current tab.
+    // Recover organiser status from sessionStorage when the URL doesn't carry
+    // a key. Handles round-trips into TV mode (keyless) and any in-app
+    // navigation that loses the ?key= query string. We store only the fact
+    // that this tab verified — the key itself is never cached — because the
+    // successful proof already recorded this session as the claimant
+    // server-side, so no second proof is needed. sessionStorage is tab-scoped
+    // so it can't leak beyond the current tab.
+    let organiserVerified = false;
     if (!organiserKey && tournamentId) {
         try {
-            const cached = sessionStorage.getItem('tournament_key_' + tournamentId);
-            if (cached) organiserKey = cached;
+            organiserVerified = sessionStorage.getItem('tournament_organiser_' + tournamentId) === '1';
         } catch (e) { /* private mode / disabled — ignore */ }
     }
 
-    console.log(`📍 Route: ${route}, Tournament: ${tournamentId}, Key: ${organiserKey ? 'present' : 'none'}`);
+    console.log(`📍 Route: ${route}, Tournament: ${tournamentId}, Organiser: ${organiserKey ? 'key' : (organiserVerified ? 'verified' : 'none')}`);
 
     if (route === Router.routes.HOME) {
         // Show landing page
         await renderLandingPageView();
     } else if (route === Router.routes.TV) {
-        // Forward the recovered key into the loader so the same session
-        // keeps write ownership while viewing the presentation screen.
-        await initializeTournament(tournamentId, organiserKey);
+        // Forward the recovered organiser status into the loader so the same
+        // session keeps write ownership while viewing the presentation screen.
+        await initializeTournament(tournamentId, organiserKey, organiserVerified);
         TVMode.init(getTvData);
     } else if (route === Router.routes.TOURNAMENT) {
         // Show tournament view
-        await initializeTournament(tournamentId, organiserKey);
+        await initializeTournament(tournamentId, organiserKey, organiserVerified);
     }
 }
 
@@ -98,7 +101,10 @@ async function renderLandingPageView() {
 }
 
 // Initialize tournament view
-async function initializeTournament(tournamentId, organiserKey) {
+// organiserVerified: this tab already proved the organiser key earlier in the
+// session (see handleRouteChange). There is no key to re-verify — and no need
+// to, the server already holds this session's claim — so trust the marker.
+async function initializeTournament(tournamentId, organiserKey, organiserVerified = false) {
     // Clean up existing state
     if (state) {
         state.stopListening();
@@ -123,8 +129,10 @@ async function initializeTournament(tournamentId, organiserKey) {
     // Only verify organiser key/passcode if explicitly provided in URL
     if (organiserKey) {
         await state.verifyOrganiserKey(organiserKey);
+    } else if (organiserVerified) {
+        state.isOrganiser = true;
     }
-    
+
     // Start listening to Firebase
     state.loadFromFirebase();
     

@@ -84,6 +84,35 @@ const CryptoUtils = {
     },
     
     /**
+     * Every hash shape a stored passcode could have, best first.
+     *
+     * verifyPasscode() could compare one entered passcode against all of these
+     * locally because it could read the stored hash. That hash is no longer
+     * readable (it lives under tournamentSecrets, ".read": false), so a
+     * passcode is now proved by writing a candidate hash back and letting the
+     * database rule do the comparison — which means the caller has to offer
+     * each shape in turn instead of testing them itself.
+     *
+     * @param {string} passcode
+     * @returns {Promise<string[]>} Candidate hashes; empty for a blank passcode.
+     */
+    async passcodeProofCandidates(passcode) {
+        if (!passcode) return [];
+
+        const candidates = [await this.hashPasscode(passcode)];
+
+        // Legacy shapes still present on older tournaments.
+        const add = (value) => {
+            if (value && !candidates.includes(value)) candidates.push(value);
+        };
+        add(this.hashPasscodeSync(passcode));   // pre-Web-Crypto fallback hash
+        add(this._legacyHash(passcode));        // original 32-bit hash
+        try { add(btoa(passcode)); } catch (e) { /* non-latin1 passcode */ }
+
+        return candidates;
+    },
+
+    /**
      * Check if a string is base64 encoded
      * @private
      */

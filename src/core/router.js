@@ -24,6 +24,28 @@ const ROUTES = {
 };
 
 /**
+ * Has this tab already proved the organiser secret for this tournament?
+ *
+ * The organiser key used to be cached in sessionStorage so organiser status
+ * survived navigation. It isn't any more: the key is proved by writing it to
+ * an unreadable node (see proveTournamentSecret in shared/format-config.js),
+ * and that proof records this session as the claimant server-side. So what
+ * persists is the fact of verification, written by markOrganiserVerified()
+ * in core/compat.js — never the secret itself.
+ *
+ * @param {string} tournamentId
+ * @returns {boolean}
+ */
+function isOrganiserVerified(tournamentId) {
+    if (!tournamentId) return false;
+    try {
+        return sessionStorage.getItem(`organiser_verified_${tournamentId}`) === '1';
+    } catch (e) {
+        return false; // sessionStorage unavailable
+    }
+}
+
+/**
  * Create a router instance
  * @param {object} [config] - Optional configuration override
  * @returns {object} Router instance
@@ -69,8 +91,11 @@ function createRouter(config = {}) {
         
         /**
          * Parse current hash and update route state.
-         * Organiser keys are NEVER stored in the URL — they live in sessionStorage only.
-         * If a legacy URL contains ?key=... we migrate it to sessionStorage and clean the URL.
+         * Organiser keys are NEVER stored — not in the URL, and no longer in
+         * sessionStorage either. A key arriving in a legacy ?key= URL is held
+         * in memory for this page and stripped from the URL; what survives
+         * navigation is the "verified" marker written once the key has been
+         * proved (see isOrganiserVerified above).
          */
         handleRoute() {
             const hash = window.location.hash.slice(1);
@@ -86,30 +111,28 @@ function createRouter(config = {}) {
                 this.currentRoute = ROUTES.TOURNAMENT;
                 const pathAndQuery = hash.slice(3);
                 const [path, queryString] = pathAndQuery.split('?');
+
+                // Carry an in-memory key across hash changes within the same
+                // tournament — it is never written anywhere.
+                const carriedKey = this.tournamentId === path ? this.organiserKey : null;
                 this.tournamentId = path;
 
-                // Migrate legacy ?key= URLs: move to sessionStorage and strip from URL
+                // Legacy ?key= URLs: take the key into memory and strip it
+                // from the URL so it doesn't leak into history/logs.
+                let keyFromUrl = null;
                 if (queryString) {
                     const params = new URLSearchParams(queryString);
-                    const keyFromUrl = params.get('key');
+                    keyFromUrl = params.get('key');
                     if (keyFromUrl && this.tournamentId) {
-                        try {
-                            sessionStorage.setItem(`organiserKey_${this.tournamentId}`, keyFromUrl);
-                        } catch (e) { /* sessionStorage unavailable */ }
-                        // Replace URL without the key so it doesn't leak in history/logs
                         const cleanHash = `/t/${this.tournamentId}`;
                         history.replaceState(null, '', `${window.location.pathname}#${cleanHash}`);
                     }
                 }
 
-                // Read key from sessionStorage (never from URL)
-                try {
-                    this.organiserKey = sessionStorage.getItem(`organiserKey_${this.tournamentId}`);
-                } catch (e) {
-                    this.organiserKey = null;
-                }
-
-                this.isOrganiser = !!this.organiserKey;
+                this.organiserKey = keyFromUrl || carriedKey;
+                // A held key still needs proving by the caller; a stored
+                // marker means this tab already proved one.
+                this.isOrganiser = !!this.organiserKey || isOrganiserVerified(this.tournamentId);
             } else if (hash === '/create') {
                 this.currentRoute = ROUTES.CREATE;
                 this.tournamentId = null;
@@ -134,10 +157,12 @@ function createRouter(config = {}) {
         
         /**
          * Navigate to a route.
-         * If organiserKey is provided it is stored in sessionStorage — never in the URL.
+         * An organiserKey is held in memory for this page only — never put in
+         * the URL and never persisted. Organiser status persists instead as
+         * the verified-marker set once the key has been proved.
          * @param {string} route - Route name or ROUTES constant
          * @param {string} [tournamentId] - Tournament ID for tournament route
-         * @param {string} [organiserKey] - Organiser key — stored in sessionStorage, not URL
+         * @param {string} [organiserKey] - Organiser key — in-memory only
          */
         navigate(route, tournamentId = null, organiserKey = null) {
             let hash = '';
@@ -146,11 +171,10 @@ function createRouter(config = {}) {
                 hash = '';
             } else if (route === 'tournament' || route === ROUTES.TOURNAMENT) {
                 hash = `/t/${tournamentId}`;
-                // Store organiser key in sessionStorage — keep it out of the URL
+                // Carry the key in memory so handleRoute() can pick it up.
                 if (organiserKey && tournamentId) {
-                    try {
-                        sessionStorage.setItem(`organiserKey_${tournamentId}`, organiserKey);
-                    } catch (e) { /* sessionStorage unavailable */ }
+                    this.tournamentId = tournamentId;
+                    this.organiserKey = organiserKey;
                 }
             } else if (route === 'create' || route === ROUTES.CREATE) {
                 hash = '/create';
@@ -197,8 +221,9 @@ function createRouter(config = {}) {
         
         /**
          * Generate organiser link.
-         * The organiser key is NOT included in the URL — it lives in sessionStorage.
-         * Organiser access is regained via passcode entry after a new session starts.
+         * The organiser key is NOT included in the URL, and is not stored
+         * anywhere on the client. Organiser access is regained via passcode
+         * entry after a new session starts.
          * @param {string} tournamentId
          * @returns {string} Full URL (same as player link — access controlled by passcode)
          */

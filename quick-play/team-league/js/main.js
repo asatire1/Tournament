@@ -3,19 +3,21 @@
 // ===== ROUTE CHANGE HANDLER =====
 
 Router.onRouteChange = async function(route, tournamentId, organiserKey) {
-    // Recover organiser key from sessionStorage when the URL doesn't carry
-    // one. This handles the round-trip into TV mode (which is keyless) and
+    // Recover organiser status from sessionStorage when the URL doesn't carry
+    // a key. This handles the round-trip into TV mode (which is keyless) and
     // any other keyless navigation within the same tab: as long as the key
-    // was verified earlier in this session, the user stays in organiser
-    // mode. sessionStorage is cleared on tab close, so it can't leak.
+    // was verified earlier in this session, the user stays in organiser mode.
+    // Only the fact of verification is stored, never the key — the successful
+    // proof already recorded this session as the claimant server-side, so
+    // there is nothing to re-verify. sessionStorage is cleared on tab close.
+    let organiserVerified = false;
     if (!organiserKey && tournamentId) {
         try {
-            const cached = sessionStorage.getItem('teamLeague_key_' + tournamentId);
-            if (cached) organiserKey = cached;
+            organiserVerified = sessionStorage.getItem('teamLeague_organiser_' + tournamentId) === '1';
         } catch (e) { /* private mode / disabled — ignore */ }
     }
 
-    console.log(`📍 Route changed: ${route}, Tournament: ${tournamentId}, Key: ${organiserKey ? 'provided' : 'none'}`);
+    console.log(`📍 Route changed: ${route}, Tournament: ${tournamentId}, Organiser: ${organiserKey ? 'key' : (organiserVerified ? 'verified' : 'none')}`);
 
     // Cleanup previous state
     if (state) {
@@ -27,20 +29,23 @@ Router.onRouteChange = async function(route, tournamentId, organiserKey) {
         // Landing page
         await renderLandingPage();
     } else if (route === Router.routes.TV) {
-        // TV route: load with whatever key we have so the same state instance
-        // can still write (an organiser viewing their own TV preview should
-        // not lose ownership). Viewers without a key just render read-only.
-        await loadTournament(tournamentId, organiserKey);
+        // TV route: carry whatever organiser status we have so the same state
+        // instance can still write (an organiser viewing their own TV preview
+        // should not lose ownership). Everyone else renders read-only.
+        await loadTournament(tournamentId, organiserKey, organiserVerified);
         TVMode.init(getTvData);
     } else if (route === Router.routes.TOURNAMENT && tournamentId) {
         // Tournament page
-        await loadTournament(tournamentId, organiserKey);
+        await loadTournament(tournamentId, organiserKey, organiserVerified);
     }
 };
 
 // ===== TOURNAMENT LOADING =====
 
-async function loadTournament(tournamentId, organiserKey) {
+// organiserVerified: this tab already proved the organiser key earlier in the
+// session (see Router.onRouteChange). There is no key to re-verify — and no
+// need to, the server already holds this session's claim — so trust the marker.
+async function loadTournament(tournamentId, organiserKey, organiserVerified = false) {
     // Show loading
     document.getElementById('app').innerHTML = `
         <div class="min-h-screen flex items-center justify-center">
@@ -77,8 +82,10 @@ async function loadTournament(tournamentId, organiserKey) {
     // Verify organiser key if provided
     if (organiserKey) {
         await state.verifyOrganiserKey(organiserKey);
+    } else if (organiserVerified) {
+        state.isOrganiser = true;
     }
-    
+
     // Get tournament name for MyTournaments
     try {
         const snapshot = await database.ref(`team-tournaments/${tournamentId}/meta/name`).once('value');

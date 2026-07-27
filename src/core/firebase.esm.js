@@ -233,17 +233,25 @@ class FirebaseManager {
     }
     
     /**
-     * Verify organiser key
-     * @param {string} format
+     * Verify an organiser key by proving it to the database rules.
+     *
+     * Mirrors verifyOrganiserKey() in firebase.js. The key lives under
+     * tournamentSecrets/<id>, which is ".read": false, so it cannot be
+     * fetched and compared here — it is proved by writing it back and letting
+     * the rule do the comparison.
+     *
+     * @param {string} format - Unused: tournamentSecrets is keyed by id alone.
      * @param {string} id
      * @param {string} key
      * @returns {Promise<boolean>}
      */
     async verifyOrganiserKey(format, id, key) {
-        const snapshot = await this.getTournamentRef(format, id)
-            .child('organiserKey')
-            .once('value');
-        return snapshot.val() === key;
+        const prove = typeof window !== 'undefined' && window.proveTournamentSecret;
+        if (typeof prove !== 'function') {
+            console.error('verifyOrganiserKey: shared/format-config.js must be loaded');
+            return false;
+        }
+        return await prove(id, { key });
     }
 }
 

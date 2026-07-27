@@ -82,42 +82,28 @@ async function updateTournamentInFirebase(tournamentId, data) {
 }
 
 /**
- * Verify organiser key against stored key
+ * Verify an organiser key by proving it to the database rules.
+ * See proveTournamentSecret() in shared/format-config.js — the key is never
+ * read back to the client, it is written as proof and compared server-side.
+ * @param {string} tournamentId
+ * @param {string} key
+ * @returns {Promise<boolean>}
  */
 async function verifyOrganiserKey(tournamentId, key) {
-    try {
-        const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/organiserKey`).once('value');
-        return snapshot.val() === key;
-    } catch (error) {
-        console.error('Error verifying organiser key:', error);
-        return false;
-    }
+    return await proveTournamentSecret(tournamentId, { key });
 }
 
 /**
- * Get passcode hash for login verification
+ * Verify an organiser passcode by proving its hash to the database rules.
+ * Replaces the old getPasscodeHash(): the stored hash is unreadable now, so
+ * the caller hashes the entered passcode and we prove that value instead of
+ * fetching the stored one and comparing locally.
+ * @param {string} tournamentId
+ * @param {string} passcodeHash - Hash of the entered passcode.
+ * @returns {Promise<boolean>}
  */
-async function getPasscodeHash(tournamentId) {
-    try {
-        const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/passcodeHash`).once('value');
-        return snapshot.val();
-    } catch (error) {
-        console.error('Error getting passcode hash:', error);
-        return null;
-    }
-}
-
-/**
- * Get organiser key after passcode verification
- */
-async function getOrganiserKey(tournamentId) {
-    try {
-        const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/organiserKey`).once('value');
-        return snapshot.val();
-    } catch (error) {
-        console.error('Error getting organiser key:', error);
-        return null;
-    }
+async function verifyPasscode(tournamentId, passcodeHash) {
+    return await proveTournamentSecret(tournamentId, { passcodeHash });
 }
 
 console.log('✅ Mexicano Firebase Config loaded');

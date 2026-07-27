@@ -222,6 +222,21 @@ class BaseTournament {
             const data = this.toFirebaseData();
             
             await Firebase.createTournament(this.format, this.id, data);
+
+            // Seed the unreadable secrets node so this organiser can prove
+            // ownership later. Must follow the write above: the rule permits
+            // the create only while meta/organizerUid already equals auth.uid.
+            // Without it the key would exist nowhere, since toFirebaseData()
+            // no longer puts it in meta.
+            if (this.organiserKey && typeof window.seedTournamentSecret === 'function') {
+                const root = Firebase.getTournamentRef(this.format, this.id).parent.key;
+                await window.seedTournamentSecret(this.id, {
+                    root,
+                    key: this.organiserKey,
+                    passcodeHash: this.passcodeHash || undefined
+                });
+            }
+
             this.meta.updatedAt = new Date().toISOString();
             return true;
         } catch (error) {
@@ -279,11 +294,11 @@ class BaseTournament {
      */
     toFirebaseData() {
         return {
-            meta: {
-                ...this.meta,
-                organiserKey: this.organiserKey,
-                passcodeHash: this.passcodeHash
-            },
+            // The organiser key and passcode hash are deliberately NOT included:
+            // meta sits under a world-readable node, so anything stored here can
+            // be fetched by any visitor. Both live in tournamentSecrets/<id>
+            // instead, seeded by save() once the tournament row exists.
+            meta: { ...this.meta },
             players: this.players,
             courts: this.courts,
             rounds: this.rounds,
@@ -300,8 +315,9 @@ class BaseTournament {
     _applyData(data) {
         if (data.meta) {
             this.meta = { ...this.meta, ...data.meta };
-            this.organiserKey = data.meta.organiserKey || this.organiserKey;
-            this.passcodeHash = data.meta.passcodeHash || this.passcodeHash;
+            // organiserKey / passcodeHash are not read back from meta: they are
+            // not stored there any more, and a locally held key must never be
+            // overwritten by whatever a world-readable node happens to carry.
         }
         if (data.players) this.players = data.players;
         if (data.courts) this.courts = data.courts;
@@ -462,11 +478,10 @@ class BaseTournament {
      * @returns {Promise<boolean>}
      */
     async verifyOrganiserKey(key) {
-        if (this.organiserKey) {
-            return this.organiserKey === key;
-        }
-
-        // Check Firebase
+        // Always prove against the database, even when this instance still
+        // holds the key from creation: the proof write is also what records
+        // `claimant`, which is what the tournament write rule accepts as
+        // ownership. A local string compare would verify without claiming.
         try {
             const Firebase = window.Firebase;
             return await Firebase.verifyOrganiserKey(this.format, this.id, key);
@@ -477,37 +492,39 @@ class BaseTournament {
     }
 
     /**
-     * Verify passcode and return organiser key.
-     * Only SHA-256 hashes are accepted. Legacy weak hashes (base64, Java hashCode)
-     * are no longer supported — tournaments using them must be recreated.
+     * Verify a passcode.
+     *
+     * The stored hash can no longer be fetched and compared here — it lives
+     * under tournamentSecrets, which is unreadable by every client. Instead we
+     * hash the entered passcode and prove that value: the database rule holds
+     * the comparison. Only SHA-256 hashes are proved, so legacy weak hashes
+     * (base64, Java hashCode) stay unsupported exactly as before.
+     *
+     * Returns a boolean, not the organiser key: the key is unreadable by
+     * design, and a successful proof already claims write ownership for this
+     * session, so there is nothing left for a caller to do with a key.
+     *
      * @param {string} passcode
-     * @returns {Promise<string|null>} Organiser key if valid, null otherwise
+     * @returns {Promise<boolean>} True if the passcode was accepted.
      */
     async verifyPasscode(passcode) {
         try {
             const Firebase = window.Firebase;
-            const storedHash = await Firebase.getPasscodeHash(this.format, this.id);
-
-            if (!storedHash) return null;
-
-            // SHA-256 hashes are 64 hex chars. Reject anything that isn't.
-            if (!/^[0-9a-f]{64}$/i.test(storedHash)) {
-                console.warn(
-                    'Tournament uses a legacy passcode format that is no longer supported. ' +
-                    'The organiser should recreate the tournament to set a new passcode.'
-                );
-                return null;
-            }
-
             const hash = await this.hashPasscode(passcode);
-            if (storedHash === hash) {
-                return await Firebase.getOrganiserKey(this.format, this.id);
+
+            // SHA-256 hashes are 64 hex chars — the only shape we prove.
+            if (!/^[0-9a-f]{64}$/i.test(hash)) {
+                console.warn(
+                    'Passcode could not be hashed with SHA-256, so it cannot be verified. ' +
+                    'This browser is missing the Web Crypto API.'
+                );
+                return false;
             }
 
-            return null;
+            return await Firebase.verifyPasscode(this.format, this.id, hash);
         } catch (error) {
             console.error('Error verifying passcode:', error);
-            return null;
+            return false;
         }
     }
 
