@@ -623,10 +623,9 @@ class MexicanoState {
      */
     async verifyOrganiserKey(key) {
         try {
-            const snapshot = await database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}/meta/organiserKey`).once('value');
-            const storedKey = snapshot.val();
-            
-            if (storedKey && storedKey === key) {
+            // Prove the key instead of reading it back: see
+            // proveTournamentSecret() in shared/format-config.js.
+            if (key && await proveTournamentSecret(this.tournamentId, { key })) {
                 this.organiserKey = key;
                 this.isOrganiser = true;
                 return true;

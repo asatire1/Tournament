@@ -213,55 +213,42 @@ const Firebase = {
     },
 
     /**
-     * Verify organiser key
-     * @param {string} format - Tournament format
+     * Verify an organiser key by proving it to the database rules.
+     *
+     * Requires proveTournamentSecret() from shared/format-config.js — the
+     * secret lives under tournamentSecrets/<id>, which no client can read, so
+     * it is proved by writing rather than fetched and compared here.
+     *
+     * @param {string} format - Tournament format. Unused: tournamentSecrets is
+     *        keyed by tournament id alone and records its own root.
      * @param {string} tournamentId - Tournament ID
      * @param {string} key - Key to verify
      * @returns {Promise<boolean>}
      */
     async verifyOrganiserKey(format, tournamentId, key) {
-        try {
-            const ref = this.getTournamentRef(format, tournamentId);
-            const snapshot = await ref.child('meta/organiserKey').once('value');
-            return snapshot.val() === key;
-        } catch (error) {
-            console.error('Error verifying organiser key:', error);
+        if (typeof proveTournamentSecret !== 'function') {
+            console.error('verifyOrganiserKey: shared/format-config.js must be loaded');
             return false;
         }
+        return await proveTournamentSecret(tournamentId, { key });
     },
 
     /**
-     * Get passcode hash for login verification
-     * @param {string} format - Tournament format
+     * Verify an organiser passcode by proving its hash to the database rules.
+     * Replaces getPasscodeHash(): the stored hash is unreadable, so the caller
+     * hashes the entered passcode and that value is proved instead.
+     *
+     * @param {string} format - Tournament format. Unused, see above.
      * @param {string} tournamentId - Tournament ID
-     * @returns {Promise<string|null>}
+     * @param {string} passcodeHash - Hash of the entered passcode
+     * @returns {Promise<boolean>}
      */
-    async getPasscodeHash(format, tournamentId) {
-        try {
-            const ref = this.getTournamentRef(format, tournamentId);
-            const snapshot = await ref.child('meta/passcodeHash').once('value');
-            return snapshot.val();
-        } catch (error) {
-            console.error('Error getting passcode hash:', error);
-            return null;
+    async verifyPasscode(format, tournamentId, passcodeHash) {
+        if (typeof proveTournamentSecret !== 'function') {
+            console.error('verifyPasscode: shared/format-config.js must be loaded');
+            return false;
         }
-    },
-
-    /**
-     * Get organiser key after passcode verification
-     * @param {string} format - Tournament format
-     * @param {string} tournamentId - Tournament ID
-     * @returns {Promise<string|null>}
-     */
-    async getOrganiserKey(format, tournamentId) {
-        try {
-            const ref = this.getTournamentRef(format, tournamentId);
-            const snapshot = await ref.child('meta/organiserKey').once('value');
-            return snapshot.val();
-        } catch (error) {
-            console.error('Error getting organiser key:', error);
-            return null;
-        }
+        return await proveTournamentSecret(tournamentId, { passcodeHash });
     },
 
     /**

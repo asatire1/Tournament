@@ -742,7 +742,7 @@ function renderCreateStep5() {
                         id="wizard-passcode"
                         value="${CreateWizard.passcode}"
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 focus:outline-none transition-colors text-lg text-center tracking-widest"
-                        placeholder="Min 4 characters"
+                        placeholder="Min 6 characters"
                         maxlength="20"
                     />
                     <p class="text-xs text-gray-500 mt-1">You will need this to edit scores. Keep it secret!</p>
@@ -856,8 +856,12 @@ async function createTournamentFromWizard() {
     const passcode = document.getElementById('wizard-passcode')?.value;
     const passcodeConfirm = document.getElementById('wizard-passcode-confirm')?.value;
 
-    if (!passcode || passcode.length < 4) {
-        showCreateWizardError('Passcode must be at least 4 characters');
+    // Minimum 6: the passcode is this format's organiser key, and
+    // tournamentSecrets rejects a key shorter than 6 characters — a shorter
+    // one could not be seeded and the organiser could never re-claim the
+    // tournament on another device.
+    if (!passcode || passcode.length < 6) {
+        showCreateWizardError('Passcode must be at least 6 characters');
         return;
     }
 
@@ -916,6 +920,14 @@ async function createTournamentFromWizard() {
     try {
         await database.ref(`roundrobin-tournaments/${tournamentId}`).set(data);
         console.log(`Tournament ${tournamentId} created`);
+
+        // Seed the unreadable secrets node so this organiser can prove
+        // ownership later. Must follow the write above — the rule checks
+        // meta/organizerUid. The passcode is the organiser key here.
+        await seedTournamentSecret(tournamentId, {
+            root: 'roundrobin-tournaments',
+            key: CreateWizard.passcode
+        });
 
         // Save to My Tournaments
         if (typeof MyTournaments !== 'undefined') {

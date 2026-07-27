@@ -732,7 +732,16 @@ async function handleCreateTournament() {
         }
         
         console.log('✅ Saved to Firebase');
-        
+
+        // Seed the unreadable secrets node so this organiser can prove
+        // ownership later. Must follow the write above — the rule checks
+        // meta/organizerUid.
+        await seedTournamentSecret(tournamentId, {
+            root: CONFIG.FIREBASE_ROOT,
+            key: organiserKey,
+            passcodeHash: hashedPasscode
+        });
+
         // Save to local storage
         MyTournaments.save({
             id: tournamentId,
@@ -959,15 +968,33 @@ async function handleOrganiserLogin() {
     }
     
     try {
-        const storedHash = await getPasscodeHash(state.tournamentId);
-        
-        if (storedHash && await CryptoUtils.verifyPasscode(passcode, storedHash)) {
-            const organiserKey = await getOrganiserKey(state.tournamentId);
+        // The stored passcode hash is no longer readable, so we prove the
+        // entered passcode by writing a candidate hash back and letting the
+        // database rule compare it. Older sessions stored the hash in older
+        // shapes, so offer each one the local check used to accept.
+        const candidates = await CryptoUtils.passcodeProofCandidates(passcode);
+        let verified = false;
+        for (const candidate of candidates) {
+            if (await verifyPasscode(state.tournamentId, candidate)) {
+                verified = true;
+                break;
+            }
+        }
+
+        if (verified) {
             state.isOrganiser = true;
-            state.organiserKey = organiserKey;
+            // The organiser key itself is unreadable by design, so remember
+            // only that this tab verified. The proof also claimed write
+            // ownership server-side, so this marker is all that navigation
+            // (including TV mode) needs to restore organiser status.
+            try {
+                sessionStorage.setItem('mexicano_organiser_' + state.tournamentId, '1');
+            } catch (e) { /* private mode / disabled — ignore */ }
             closeModal();
             showToast('✅ Logged in as organiser!');
-            Router.navigate('tournament', state.tournamentId, organiserKey);
+            // Re-render in place: there is no key to add to the URL any more,
+            // so the hash doesn't change and no route event would fire.
+            render();
         } else {
             document.getElementById('login-error').classList.remove('hidden');
         }

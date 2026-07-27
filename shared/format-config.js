@@ -287,13 +287,195 @@ function safeScore(value) {
     return Number.isFinite(Number(value)) && value !== '' && value !== null ? String(Number(value)) : '';
 }
 
+/**
+ * Resolve the current Firebase auth uid, waiting briefly for the anonymous
+ * sign-in kicked off at page load if it hasn't landed yet. Tournament loading
+ * routinely races signInAnonymously(), so anything that needs currentUser has
+ * to be prepared to wait for it.
+ * @param {number} [timeoutMs]
+ * @returns {Promise<string|null>} The uid, or null if none appears in time.
+ */
+function _awaitProofAuthUid(timeoutMs = 8000) {
+    const auth = firebase.auth();
+    if (auth.currentUser) return Promise.resolve(auth.currentUser.uid);
+    return new Promise(resolve => {
+        let done = false;
+        let timer = null;
+        const unsub = auth.onAuthStateChanged(user => {
+            if (done || !user) return;
+            done = true;
+            clearTimeout(timer);
+            unsub();
+            resolve(user.uid);
+        });
+        timer = setTimeout(() => {
+            if (done) return;
+            done = true;
+            unsub();
+            resolve(auth.currentUser ? auth.currentUser.uid : null);
+        }, timeoutMs);
+    });
+}
+
+/**
+ * Prove possession of a tournament's organiser secret WITHOUT reading it.
+ *
+ * The organiser key and passcode hash used to sit under the tournament's own
+ * `meta` node, which is world-readable — so the "secret" that gated organiser
+ * access could simply be fetched by any visitor and replayed. They now live in
+ * `tournamentSecrets/<id>`, which is `".read": false`: no client can read it,
+ * including this one.
+ *
+ * So instead of reading the secret and comparing locally, we prove we already
+ * hold it by WRITING it back as `proof` (organiser key) or `passcodeProof`
+ * (passcode hash). The security rule compares the incoming value against the
+ * stored one — which the rule can see and we cannot — and rejects the write
+ * with permission-denied when it doesn't match. A rejected write stores
+ * nothing, so a wrong guess leaks nothing and changes nothing.
+ *
+ * The same write records `claimant: <uid>`, and the tournament write rule
+ * accepts `claimant == auth.uid` as write ownership. One successful call
+ * therefore both verifies the secret AND claims ownership for this session,
+ * which is why callers no longer need to hold on to the key afterwards — a
+ * stored "this session verified" marker is enough.
+ *
+ * @param {string} tournamentId
+ * @param {{key?: string, passcodeHash?: string}} secret - The secret to prove:
+ *        `key` is the organiser key, `passcodeHash` is the entered passcode
+ *        hashed into the same shape it was stored in. Pass one of them.
+ * @returns {Promise<boolean>} true when the proof was accepted. Returns false
+ *          — never throws — on a wrong secret, permission-denied, missing
+ *          auth, or any other error, so callers can treat it as a boolean.
+ */
+async function proveTournamentSecret(tournamentId, { key, passcodeHash } = {}) {
+    if (!tournamentId || (!key && !passcodeHash)) return false;
+    if (typeof firebase === 'undefined' || !firebase.auth || !firebase.database) {
+        console.error('proveTournamentSecret: Firebase auth/database SDK not loaded');
+        return false;
+    }
+
+    try {
+        const uid = await _awaitProofAuthUid();
+        if (!uid) {
+            console.warn('proveTournamentSecret: no Firebase auth uid (sign-in timed out)');
+            return false;
+        }
+
+        // `claimant` must equal auth.uid or the rule rejects the whole write.
+        const payload = { claimant: uid };
+        if (key) payload.proof = key;
+        if (passcodeHash) payload.passcodeProof = passcodeHash;
+
+        await firebase.database().ref('tournamentSecrets/' + tournamentId).update(payload);
+        return true;
+    } catch (error) {
+        // permission-denied is the expected answer to a wrong secret, not a
+        // fault — the caller only ever wants the boolean.
+        console.log('Secret proof rejected:', error && (error.code || error.message));
+        return false;
+    }
+}
+
+/**
+ * SHA-256 hex digest, matching the shape CryptoUtils.hashPasscode() produces.
+ * Duplicated here deliberately: shared/crypto.js is only loaded by the
+ * americano/mexicano/mixicano pages, but every format page loads this file.
+ * @param {string} value
+ * @returns {Promise<string|null>} Hex digest, or null if Web Crypto is absent.
+ */
+async function _sha256Hex(value) {
+    if (typeof crypto === 'undefined' || !crypto.subtle) return null;
+    try {
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+        return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+        console.warn('seedTournamentSecret: SHA-256 unavailable:', e && e.message);
+        return null;
+    }
+}
+
+/**
+ * Create `tournamentSecrets/<id>` for a tournament that has just been written.
+ *
+ * proveTournamentSecret() can only verify an organiser against a secrets node
+ * that already exists, and nothing else creates one — so without this call a
+ * newly created tournament has no provable secret and its organiser silently
+ * loses organiser status the moment they reload or switch device.
+ *
+ * Must run AFTER the tournament data is written: the rule permits the create
+ * only while `<root>/<id>/meta/organizerUid` already equals `auth.uid`, which
+ * is also why a create flow whose OrganizerAuth uid fell back to a local id
+ * (rather than a real Firebase uid) simply can't seed — it never owned the
+ * tournament as far as the rules are concerned.
+ *
+ * BOTH `key` and `passcodeHash` are always written, even for the formats that
+ * only have one secret. The rule accepts a later write when EITHER
+ * `proof == key` OR `passcodeProof == passcodeHash`; an absent field reads as
+ * null, so a node missing one of them makes that comparison `null == null` —
+ * true — and any signed-in visitor could claim the tournament by writing just
+ * `claimant`. Where a format has no separate passcode hash we therefore store
+ * SHA-256 of the key, which plugs that branch with a value nobody can produce
+ * without the secret. Better to skip the node entirely than to create a
+ * half-populated one.
+ *
+ * @param {string} tournamentId
+ * @param {{root: string, key: string, passcodeHash?: string}} secret -
+ *        `root` is the format's Firebase root (e.g. 'americano-tournaments'),
+ *        `key` the organiser key (the passcode itself, for formats that use it
+ *        as the key), `passcodeHash` the stored passcode hash where the format
+ *        keeps one separately from the key.
+ * @returns {Promise<boolean>} true when the node was created. Returns false —
+ *          never throws — on any failure, so tournament creation is never
+ *          broken by a seeding problem.
+ */
+async function seedTournamentSecret(tournamentId, { root, key, passcodeHash } = {}) {
+    if (!tournamentId || !root || !key) {
+        console.warn('seedTournamentSecret: missing tournamentId, root or key');
+        return false;
+    }
+    // Rule: key must be 6-64 chars. Formats that use the passcode as the
+    // organiser key accept passcodes as short as 4, and those cannot be
+    // stored — the whole write would be rejected on validation.
+    if (key.length < 6 || key.length > 64) {
+        console.warn(`seedTournamentSecret: key length ${key.length} outside 6-64, skipping seed`);
+        return false;
+    }
+    if (typeof firebase === 'undefined' || !firebase.auth || !firebase.database) {
+        console.error('seedTournamentSecret: Firebase auth/database SDK not loaded');
+        return false;
+    }
+
+    try {
+        const claimant = await _awaitProofAuthUid();
+        if (!claimant) {
+            console.warn('seedTournamentSecret: no Firebase auth uid (sign-in timed out)');
+            return false;
+        }
+
+        const hash = passcodeHash || await _sha256Hex(key);
+        if (!hash || hash.length > 128) {
+            console.warn('seedTournamentSecret: no usable passcode hash, skipping seed');
+            return false;
+        }
+
+        await firebase.database().ref('tournamentSecrets/' + tournamentId)
+            .set({ root, key, passcodeHash: hash, claimant });
+        return true;
+    } catch (error) {
+        console.warn('seedTournamentSecret: could not seed secrets node:', error && (error.code || error.message));
+        return false;
+    }
+}
+
 // Make available globally — plain-script pages use these directly
 if (typeof window !== 'undefined') {
     window.escapeHtml = escapeHtml;
     window.safeScore  = safeScore;
+    window.proveTournamentSecret = proveTournamentSecret;
+    window.seedTournamentSecret = seedTournamentSecret;
 }
 
 // Export for use in modules (if using ES modules)
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { FORMAT_CONFIG, validateFormatCount, getFormatConfig, getAllFormats, escapeHtml, safeScore };
+    module.exports = { FORMAT_CONFIG, validateFormatCount, getFormatConfig, getAllFormats, escapeHtml, safeScore, proveTournamentSecret, seedTournamentSecret };
 }

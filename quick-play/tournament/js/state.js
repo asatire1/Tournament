@@ -94,20 +94,22 @@ class TournamentState {
         }
 
         try {
-            const snapshot = await database.ref(`${this.getBasePath()}/meta/organiserKey`).once('value');
-            const storedKey = snapshot.val();
-            this.isOrganiser = (storedKey === key);
+            // Prove the key rather than reading it back and comparing here:
+            // see proveTournamentSecret() in shared/format-config.js.
+            this.isOrganiser = await proveTournamentSecret(this.tournamentId, { key });
             this.organiserKey = key;
 
             if (this.isOrganiser) {
                 console.log('✅ Organiser access granted');
-                // Persist the verified key in sessionStorage so the organiser
-                // can navigate into TV mode (or any keyless route) and come
-                // back without losing write ownership. sessionStorage is
+                // Persist the FACT that this session verified — never the key
+                // itself. The successful proof already recorded us as the
+                // claimant server-side, so write ownership survives without
+                // the browser holding a copy of the secret. sessionStorage is
                 // tab-scoped and cleared when the tab closes, which is the
-                // right lifetime for a shared-secret.
+                // right lifetime for this. It lets the organiser navigate into
+                // TV mode (or any keyless route) and come back as organiser.
                 try {
-                    sessionStorage.setItem('tournament_key_' + this.tournamentId, key);
+                    sessionStorage.setItem('tournament_organiser_' + this.tournamentId, '1');
                 } catch (e) { /* private mode / disabled — ignore */ }
                 // Upgrade from polling to real-time sync
                 this.upgradeToRealtime();
@@ -126,7 +128,7 @@ class TournamentState {
             } else {
                 console.log('❌ Invalid organiser key');
                 try {
-                    sessionStorage.removeItem('tournament_key_' + this.tournamentId);
+                    sessionStorage.removeItem('tournament_organiser_' + this.tournamentId);
                 } catch (e) { /* ignore */ }
             }
 
