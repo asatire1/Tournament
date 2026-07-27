@@ -1,0 +1,76 @@
+name: Deploy Database Rules
+
+# Realtime Database rules were the one deployed artefact with no automation:
+# firebase-rules-production.json had to be released by hand with
+# `firebase deploy --only database`, so production regularly drifted behind
+# main whenever someone forgot.
+#
+# Deliberately a separate workflow, not a step in deploy.yml. Rules need
+# neither the build nor dist/, and deploy.yml's Cloudflare step fails on every
+# run (no CLOUDFLARE_API_TOKEN), so a step sequenced after it would never run.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firebase-rules-production.json'
+      - 'firebase.json'
+      - '.firebaserc'
+      - '.github/workflows/deploy-rules.yml'
+  workflow_dispatch:  # Manual re-release without touching the rules file
+
+# Never let two rules releases overlap — last writer would win arbitrarily.
+concurrency:
+  group: database-rules
+  cancel-in-progress: false
+
+jobs:
+  deploy-rules:
+    name: Deploy rules
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fail fast if the service account is missing
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set. Rules cannot be deployed." >&2
+            echo "Add a service account JSON with the Firebase Realtime Database Admin role" >&2
+            echo "under Settings -> Secrets and variables -> Actions." >&2
+            exit 1
+          fi
+
+      - name: Write service account credentials
+        env:
+          # Via env, not inline interpolation: keeps secret contents out of the
+          # command line and away from shell parsing.
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/service-account.json"
+          python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$RUNNER_TEMP/service-account.json" \
+            || { echo "::error::FIREBASE_SERVICE_ACCOUNT is not valid JSON" >&2; exit 1; }
+
+      - name: Validate rules (dry run)
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: npx --yes firebase-tools@15 deploy --only database --dry-run --non-interactive
+
+      - name: Deploy rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: npx --yes firebase-tools@15 deploy --only database --non-interactive
+
+      - name: Remove credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/service-account.json"
