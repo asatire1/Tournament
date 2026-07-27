@@ -31,7 +31,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
+
+    <!-- seedTournamentSecret(), used by the tournament-creation flows below -->
+    <script src="shared/format-config.js"></script>
+
     <style>
         body {
             font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1856,19 +1859,57 @@
             'team-league': 'team-tournaments'
         };
         
+        // Quick-play page per format. These used to point at the bare
+        // /americano/-style paths, which are now redirect stubs that forward
+        // only the hash — so any query string was dropped on the way through.
         const TOURNAMENT_URLS = {
-            'americano': '/americano/',
-            'mexicano': '/mexicano/',
-            'mix': '/tournament/',
-            'team-league': '/team-league/'
+            'americano':   '/quick-play/americano/',
+            'mexicano':    '/quick-play/mexicano/',
+            'mix':         '/quick-play/tournament/',
+            'tournament':  '/quick-play/tournament/',
+            'team-league': '/quick-play/team-league/'
         };
-        
+
+        /**
+         * Build a link to a tournament.
+         *
+         * The quick-play router parses `#/t/<id>?key=<key>`: the tournament id
+         * and the organiser key both ride in the HASH. The old `?id=&key=`
+         * query form was read by nothing, so organiser links handed out here
+         * granted no organiser access even before the redirect stubs ate the
+         * query string. Omit the key for a spectator link.
+         */
         function getTournamentUrl(format, tournamentId, organiserKey) {
-            const baseUrl = TOURNAMENT_URLS[format] || '/';
-            if (organiserKey) {
-                return `${baseUrl}?id=${tournamentId}&key=${organiserKey}`;
-            }
-            return `${baseUrl}?id=${tournamentId}`;
+            const baseUrl = TOURNAMENT_URLS[format];
+            if (!baseUrl) return '/';
+
+            const route = `${baseUrl}#/t/${encodeURIComponent(tournamentId)}`;
+            return organiserKey
+                ? `${route}?key=${encodeURIComponent(organiserKey)}`
+                : route;
+        }
+
+        /** The signed-in admin's uid, recorded as the tournament's organizerUid. */
+        function adminUid() {
+            const user = firebase.auth().currentUser;
+            return user ? user.uid : null;
+        }
+
+        /**
+         * Give a tournament created here the same unreadable secrets node the
+         * quick-play create flows write. Organiser access is proved against
+         * tournamentSecrets now, so without this the organiser link handed out
+         * below silently grants nothing.
+         *
+         * Requires meta/organizerUid to already equal the caller's uid, which
+         * is why every create flow here sets it from adminUid().
+         */
+        async function seedAdminTournamentSecret(format, tournamentId, organiserKey, hashedPasscode) {
+            return await seedTournamentSecret(tournamentId, {
+                root: TOURNAMENT_PATHS[format],
+                key: organiserKey,
+                passcodeHash: hashedPasscode
+            });
         }
         
         function generateTournamentId() {
@@ -2078,6 +2119,7 @@
                     passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 playerCount,
@@ -2089,8 +2131,9 @@
                 scores,
                 tournamentStarted: true
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['americano']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('americano', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         
@@ -2119,6 +2162,7 @@
                     status: 'active',
                     organiserKey,
                     passcodeHash: hashedPasscode,
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 currentRound: 0,
@@ -2126,8 +2170,9 @@
                 players,
                 rounds: []
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['mexicano']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('mexicano', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         
@@ -2149,12 +2194,14 @@
                     passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 players
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['mix']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('mix', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         
@@ -2186,14 +2233,16 @@
                     passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
+                    organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
                 teams,
                 currentWeek: 1,
                 status: 'setup'
             };
-            
+
             await database.ref(`${TOURNAMENT_PATHS['team-league']}/${tournamentId}`).set(data);
+            await seedAdminTournamentSecret('team-league', tournamentId, organiserKey, hashedPasscode);
             return { tournamentId, organiserKey };
         }
         

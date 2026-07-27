@@ -405,10 +405,16 @@ exports.processRatingUpdate = functions
 //    tournament to anyone. Ownership transfer now happens here, where the key
 //    is actually compared, and the rules only accept the recorded owner.
 //
-//    NOTE: meta/organiserKey still sits under a world-readable node, so this
-//    check is only as strong as that key's secrecy. Moving the key (and
-//    passcodeHash) to a non-readable node is what makes this genuinely
-//    tamper-proof; this function is where that change lands when it happens.
+//    The key is compared against tournamentSecrets/<id>/key, which is
+//    ".read": false — unreadable to every client, but readable here because
+//    the Admin SDK bypasses the rules. That is what makes this check
+//    tamper-proof: a caller cannot look up the answer before guessing.
+//
+//    TRANSITIONAL: tournaments created before tournamentSecrets was seeded
+//    have no such node, and fall back to the world-readable meta/organiserKey.
+//    For those the check is only as strong as that key's secrecy, exactly as
+//    before. Remove the fallback once every tournament has a secrets node —
+//    at which point meta/organiserKey can be stripped altogether.
 // ---------------------------------------------------------------------------
 
 exports.claimTournamentOwnership = functions
@@ -438,7 +444,18 @@ exports.claimTournamentOwnership = functions
             throw new functions.https.HttpsError('not-found', 'Tournament not found');
         }
 
-        const storedKey = meta.organiserKey;
+        // Prefer the unreadable secrets node; fall back to meta only for
+        // tournaments that predate it. See TRANSITIONAL note above.
+        const secretSnap = await db.ref(`tournamentSecrets/${tournamentId}/key`).once('value');
+        let storedKey = secretSnap.val();
+
+        if (typeof storedKey !== 'string' || storedKey.length === 0) {
+            storedKey = meta.organiserKey;
+            if (typeof storedKey === 'string' && storedKey.length > 0) {
+                console.warn(`[claimTournamentOwnership] no secrets node for ${root}/${tournamentId}, falling back to meta/organiserKey`);
+            }
+        }
+
         if (typeof storedKey !== 'string' || storedKey.length === 0) {
             throw new functions.https.HttpsError(
                 'failed-precondition',
