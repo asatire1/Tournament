@@ -240,7 +240,7 @@
           ".write": "auth != null"
         },
         "knockoutTeams": {
-          ".write": "auth != null && (!data.parent().child('meta').child('organizerUid').exists() || data.parent().child('meta').child('organizerUid').val() == auth.uid)"
+          ".write": "auth != null && data.parent().child('meta').child('organizerUid').val() == auth.uid"
         },
         "meta": {
           "name": {
@@ -393,7 +393,7 @@
       ".read": true,
       ".indexOn": ["meta/eventDate", "meta/status", "meta/format", "meta/organizerId", "meta/createdAt"],
       "$competitionId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerId').exists() || data.child('meta/organizerId').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerId').val() == auth.uid)",
         "meta": {
           ".validate": "newData.hasChildren(['name', 'format', 'status'])",
           "name": {
