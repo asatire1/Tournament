@@ -456,7 +456,8 @@ class AmericanoState {
         database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).update({
             meta: {
                 name: this.tournamentName,
-                organiserKey: this.organiserKey,
+                // organiserKey deliberately omitted — meta is world-readable
+                // and this update would have written the secret back into it.
                 updatedAt: new Date().toISOString()
             },
             playerCount: this.playerCount,

@@ -802,7 +802,9 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, play
     const tournamentData = {
         meta: {
             name: name,
-            organiserKey: organiserKey,
+            // No organiserKey here: meta is world-readable, so a secret stored
+            // here is public. It goes to tournamentSecrets via
+            // seedTournamentSecret() below, which no client can read.
             playerCount: playerCount,
             totalRounds: playerConfig.totalRounds,
             matchesPerRound: playerConfig.matchesPerRound,
