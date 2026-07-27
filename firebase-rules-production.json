@@ -100,7 +100,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -161,7 +161,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -205,7 +205,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -226,7 +226,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -256,7 +256,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -286,7 +286,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -310,7 +310,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -343,7 +343,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -367,7 +367,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
@@ -380,7 +380,7 @@
       ".read": true,
       ".indexOn": ["meta/organizerUid", "meta/updatedAt", "meta/createdAt"],
       "$tournamentId": {
-        ".write": "auth != null && (!data.exists() || !data.child('meta/organizerUid').exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
+        ".write": "auth != null && (!data.exists() || data.child('meta/organizerUid').val() == auth.uid || root.child('tournamentSecrets').child($tournamentId).child('claimant').val() == auth.uid)",
         ".validate": "$tournamentId.matches(/^[a-zA-Z0-9]{6,20}$/)",
         "scores": {
           "$matchId": {
