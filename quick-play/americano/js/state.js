@@ -454,12 +454,13 @@ class AmericanoState {
         });
         
         database.ref(`${CONFIG.FIREBASE_ROOT}/${this.tournamentId}`).update({
-            meta: {
-                name: this.tournamentName,
-                // organiserKey deliberately omitted — meta is world-readable
-                // and this update would have written the secret back into it.
-                updatedAt: new Date().toISOString()
-            },
+            // Path-scoped, NOT `meta: {...}` — update() replaces a child it is
+            // given wholesale, so passing a whole meta object wiped every field
+            // not listed here: organizerUid, createdAt, the access-mode
+            // settings and createdBy. (organiserKey is deliberately absent too;
+            // meta is world-readable and must never carry the secret.)
+            'meta/name': this.tournamentName,
+            'meta/updatedAt': new Date().toISOString(),
             playerCount: this.playerCount,
             playerNames: this.playerNames,
             courtCount: this.courtCount,

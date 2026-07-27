@@ -424,46 +424,70 @@ async function _sha256Hex(value) {
  *        `key` the organiser key (the passcode itself, for formats that use it
  *        as the key), `passcodeHash` the stored passcode hash where the format
  *        keeps one separately from the key.
- * @returns {Promise<boolean>} true when the node was created. Returns false —
- *          never throws — on any failure, so tournament creation is never
- *          broken by a seeding problem.
+ * @returns {Promise<true>} on success.
+ * @throws {Error} when the node could not be created, after deleting the
+ *         tournament written moments earlier. Now that the key is no longer
+ *         copied into the readable meta node this call is load-bearing:
+ *         nothing else records it, so a tournament that fails to seed has no
+ *         provable organiser and no way back — the key would survive only in
+ *         whatever share link the organiser happens to still have open, and
+ *         no backfill could recover it. A failed creation they can retry
+ *         beats a tournament that works until the first reload, so the
+ *         half-made tournament goes rather than stays.
  */
 async function seedTournamentSecret(tournamentId, { root, key, passcodeHash } = {}) {
     if (!tournamentId || !root || !key) {
-        console.warn('seedTournamentSecret: missing tournamentId, root or key');
-        return false;
-    }
-    // Rule: key must be 6-64 chars. Formats that use the passcode as the
-    // organiser key accept passcodes as short as 4, and those cannot be
-    // stored — the whole write would be rejected on validation.
-    if (key.length < 6 || key.length > 64) {
-        console.warn(`seedTournamentSecret: key length ${key.length} outside 6-64, skipping seed`);
-        return false;
+        throw new Error('seedTournamentSecret: missing tournamentId, root or key');
     }
     if (typeof firebase === 'undefined' || !firebase.auth || !firebase.database) {
-        console.error('seedTournamentSecret: Firebase auth/database SDK not loaded');
-        return false;
+        throw new Error('seedTournamentSecret: Firebase auth/database SDK not loaded');
+    }
+
+    const reason = await _attemptSecretWrite(tournamentId, { root, key, passcodeHash });
+    if (!reason) return true;
+
+    await _discardTournament(root, tournamentId);
+    throw new Error(`Could not secure organiser access (${reason})`);
+}
+
+/**
+ * Try to write the secrets node.
+ * @returns {Promise<string|null>} null on success, else why it failed.
+ */
+async function _attemptSecretWrite(tournamentId, { root, key, passcodeHash }) {
+    // Rule: key must be 6-64 chars. The formats that use the passcode as the
+    // organiser key enforce a 6-character minimum at creation for exactly
+    // this reason, so reaching here means that check was bypassed.
+    if (key.length < 6 || key.length > 64) {
+        return `organiser key must be 6-64 characters, got ${key.length}`;
     }
 
     try {
         const claimant = await _awaitProofAuthUid();
-        if (!claimant) {
-            console.warn('seedTournamentSecret: no Firebase auth uid (sign-in timed out)');
-            return false;
-        }
+        if (!claimant) return 'not signed in (anonymous sign-in timed out)';
 
         const hash = passcodeHash || await _sha256Hex(key);
-        if (!hash || hash.length > 128) {
-            console.warn('seedTournamentSecret: no usable passcode hash, skipping seed');
-            return false;
-        }
+        if (!hash || hash.length > 128) return 'no usable passcode hash';
 
         await firebase.database().ref('tournamentSecrets/' + tournamentId)
             .set({ root, key, passcodeHash: hash, claimant });
-        return true;
+        return null;
     } catch (error) {
-        console.warn('seedTournamentSecret: could not seed secrets node:', error && (error.code || error.message));
-        return false;
+        return (error && (error.code || error.message)) || 'write rejected';
+    }
+}
+
+/**
+ * Delete a tournament that could not be secured. Best-effort: if this fails
+ * too, the tournament is left behind unowned, which is worth a loud log but
+ * is not something the caller can do anything about.
+ */
+async function _discardTournament(root, tournamentId) {
+    try {
+        await firebase.database().ref(root + '/' + tournamentId).remove();
+        console.warn(`Discarded ${root}/${tournamentId}: it could not be given a provable organiser`);
+    } catch (error) {
+        console.error(`Could not discard ${root}/${tournamentId} after a failed seed:`, error && (error.code || error.message));
     }
 }
 

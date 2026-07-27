@@ -2097,7 +2097,7 @@
                 
             } catch (error) {
                 console.error('Error creating tournament:', error);
-                showToast('❌ Failed to create tournament');
+                showToast('❌ Failed to create tournament: ' + (error.message || error));
             }
         }
         
@@ -2125,8 +2125,6 @@
             const data = {
                 meta: {
                     name: comp.meta.name,
-                    organiserKey,
-                    passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     organizerUid: adminUid(),
@@ -2170,8 +2168,6 @@
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     status: 'active',
-                    organiserKey,
-                    passcodeHash: hashedPasscode,
                     organizerUid: adminUid(),
                     createdFromCompetition: comp.id
                 },
@@ -2200,8 +2196,6 @@
             const data = {
                 meta: {
                     name: comp.meta.name,
-                    organiserKey,
-                    passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     organizerUid: adminUid(),
@@ -2239,8 +2233,6 @@
             const data = {
                 meta: {
                     name: comp.meta.name,
-                    organiserKey,
-                    passcodeHash: hashedPasscode,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                     organizerUid: adminUid(),
@@ -2323,8 +2315,6 @@
             const data = {
                 meta: {
                     name: comp.meta.name,
-                    organiserKey,
-                    passcodeHash: hashedPasscode,
                     playerCount,
                     totalRounds: playerConfig.totalRounds,
                     matchesPerRound: playerConfig.matchesPerRound,

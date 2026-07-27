@@ -549,7 +549,7 @@ async function handleCreateTournament() {
         showSuccessModal(result.tournamentId, result.organiserKey, mode, formatType);
     } catch (error) {
         console.error('Error creating tournament:', error);
-        showToast('❌ Failed to create session');
+        showToast('❌ Failed to create session: ' + (error.message || error));
     }
 }
 
