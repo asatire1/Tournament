@@ -24,6 +24,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Catch a malformed rules file on the PR. Deploying rules needs
+      # credentials, but parsing does not — and an unparseable file would
+      # otherwise only surface after merge, in Deploy Database Rules.
+      - name: Validate database rules
+        run: |
+          python3 - <<'PY'
+          import json, re, sys
+          path = 'firebase-rules-production.json'
+          raw = open(path).read()
+          try:
+              rules = json.loads(re.sub(r'//.*', '', raw))['rules']
+          except Exception as e:
+              sys.exit(f'{path} is not valid JSON: {e}')
+          if '.read' not in rules or '.write' not in rules:
+              sys.exit(f'{path} is missing a root .read/.write default')
+          if rules['.read'] is not False or rules['.write'] is not False:
+              sys.exit(f'{path} root must default to deny (.read and .write false)')
+          print(f'{path}: valid, {len(rules)} top-level nodes, root defaults to deny')
+          PY
+
       - name: Test
         run: npm test
 
