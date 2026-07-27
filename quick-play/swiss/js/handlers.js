@@ -1037,7 +1037,10 @@ async function createTournamentFromWizard() {
     const data = {
         meta: {
             name: CreateWizard.tournamentName,
-            organiserKey: CreateWizard.passcode,
+            // No organiserKey here: for this format the passcode IS the
+            // organiser key, and meta is world-readable — storing it here
+            // published it. It goes to tournamentSecrets via
+            // seedTournamentSecret() below, which no client can read.
             formatType: 'swiss',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

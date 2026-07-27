@@ -599,8 +599,9 @@ async function createTournament(name, passcode, playerCount, courtCount, modeSet
     const data = {
         meta: {
             name,
-            organiserKey,
-            passcodeHash: hashedPasscode,
+            // No organiserKey / passcodeHash here: meta is world-readable, so
+            // a secret stored here is public. Both go to tournamentSecrets via
+            // seedTournamentSecret() below, which no client can read.
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             organizerUid: organizerUid,

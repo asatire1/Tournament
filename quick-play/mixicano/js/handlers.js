@@ -680,8 +680,9 @@ async function handleCreateTournament() {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 status: 'active',
-                organiserKey: organiserKey,
-                passcodeHash: hashedPasscode,
+                // No organiserKey / passcodeHash here: meta is world-readable,
+                // so a secret stored here is public. Both go to
+                // tournamentSecrets via seedTournamentSecret() below.
                 // Organizer UID for cross-device access
                 organizerUid: organizerUid,
                 // Mode settings
