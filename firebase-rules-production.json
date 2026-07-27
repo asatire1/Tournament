@@ -518,8 +518,8 @@
     "tournamentSecrets": {
       "$tid": {
         ".read": false,
-        ".write": "auth != null && ((!data.exists() && root.child(newData.child('root').val()).child($tid).child('meta').child('organizerUid').val() == auth.uid) || (data.exists() && (newData.child('proof').val() == data.child('key').val() || newData.child('passcodeProof').val() == data.child('passcodeHash').val())))",
-        ".validate": "newData.hasChildren(['root'])",
+        ".write": "auth != null && ((!data.exists() && root.child(newData.child('root').val()).child($tid).child('meta').child('organizerUid').val() == auth.uid) || (data.exists() && ((data.child('key').exists() && newData.child('proof').val() == data.child('key').val()) || (data.child('passcodeHash').exists() && newData.child('passcodeProof').val() == data.child('passcodeHash').val()))))",
+        ".validate": "newData.hasChildren(['root', 'key', 'passcodeHash'])",
         "root":          { ".validate": "newData.isString() && newData.val().length <= 40 && (!data.exists() || newData.val() == data.val())" },
         "key":           { ".validate": "newData.isString() && newData.val().length >= 6 && newData.val().length <= 64 && (!data.exists() || newData.val() == data.val())" },
         "passcodeHash":  { ".validate": "newData.isString() && newData.val().length <= 128 && (!data.exists() || newData.val() == data.val())" },
