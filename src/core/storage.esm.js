@@ -13,8 +13,7 @@ export const STORAGE_KEYS = {
     TOURNAMENTS: 'uberpadel_tournaments',
     RECENT: 'uberpadel_recent',
     USER: 'uberpadel_user',
-    SETTINGS: 'uberpadel_settings',
-    ORGANISER_KEYS: 'uberpadel_organiser_keys'
+    SETTINGS: 'uberpadel_settings'
 };
 
 /**
@@ -262,29 +261,13 @@ class StorageManager {
         const recent = this.get(STORAGE_KEYS.RECENT, []);
         return recent.slice(0, limit);
     }
-    
-    /**
-     * Save organiser key for a tournament
-     * @param {string} format
-     * @param {string} id
-     * @param {string} key
-     */
-    saveOrganiserKey(format, id, key) {
-        const keys = this.get(STORAGE_KEYS.ORGANISER_KEYS, {});
-        keys[`${format}_${id}`] = key;
-        this.set(STORAGE_KEYS.ORGANISER_KEYS, keys, TTL.PERMANENT);
-    }
-    
-    /**
-     * Get organiser key for a tournament
-     * @param {string} format
-     * @param {string} id
-     * @returns {string|null}
-     */
-    getOrganiserKey(format, id) {
-        const keys = this.get(STORAGE_KEYS.ORGANISER_KEYS, {});
-        return keys[`${format}_${id}`] || null;
-    }
+
+    // The organiser-key save/get pair was removed here: it cached organiser
+    // keys in localStorage permanently. Organiser secrets are no longer held
+    // by the client at all — possession is proved by writing to the unreadable
+    // tournamentSecrets node (see proveTournamentSecret in
+    // shared/format-config.js), and only the fact of verification is stored.
+    // Neither method had any caller.
 }
 
 // Create singleton instance

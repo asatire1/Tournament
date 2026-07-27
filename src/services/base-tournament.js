@@ -477,37 +477,39 @@ class BaseTournament {
     }
 
     /**
-     * Verify passcode and return organiser key.
-     * Only SHA-256 hashes are accepted. Legacy weak hashes (base64, Java hashCode)
-     * are no longer supported — tournaments using them must be recreated.
+     * Verify a passcode.
+     *
+     * The stored hash can no longer be fetched and compared here — it lives
+     * under tournamentSecrets, which is unreadable by every client. Instead we
+     * hash the entered passcode and prove that value: the database rule holds
+     * the comparison. Only SHA-256 hashes are proved, so legacy weak hashes
+     * (base64, Java hashCode) stay unsupported exactly as before.
+     *
+     * Returns a boolean, not the organiser key: the key is unreadable by
+     * design, and a successful proof already claims write ownership for this
+     * session, so there is nothing left for a caller to do with a key.
+     *
      * @param {string} passcode
-     * @returns {Promise<string|null>} Organiser key if valid, null otherwise
+     * @returns {Promise<boolean>} True if the passcode was accepted.
      */
     async verifyPasscode(passcode) {
         try {
             const Firebase = window.Firebase;
-            const storedHash = await Firebase.getPasscodeHash(this.format, this.id);
-
-            if (!storedHash) return null;
-
-            // SHA-256 hashes are 64 hex chars. Reject anything that isn't.
-            if (!/^[0-9a-f]{64}$/i.test(storedHash)) {
-                console.warn(
-                    'Tournament uses a legacy passcode format that is no longer supported. ' +
-                    'The organiser should recreate the tournament to set a new passcode.'
-                );
-                return null;
-            }
-
             const hash = await this.hashPasscode(passcode);
-            if (storedHash === hash) {
-                return await Firebase.getOrganiserKey(this.format, this.id);
+
+            // SHA-256 hashes are 64 hex chars — the only shape we prove.
+            if (!/^[0-9a-f]{64}$/i.test(hash)) {
+                console.warn(
+                    'Passcode could not be hashed with SHA-256, so it cannot be verified. ' +
+                    'This browser is missing the Web Crypto API.'
+                );
+                return false;
             }
 
-            return null;
+            return await Firebase.verifyPasscode(this.format, this.id, hash);
         } catch (error) {
             console.error('Error verifying passcode:', error);
-            return null;
+            return false;
         }
     }
 

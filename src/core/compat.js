@@ -195,48 +195,53 @@ function setupCompat(format) {
         }
     };
     
-    // Verify organiser key
+    // Verify organiser key.
+    // The key is never read back — it is proved by writing it to
+    // tournamentSecrets/<id>, which no client can read. See
+    // proveTournamentSecret() in shared/format-config.js. A successful proof
+    // also claims write ownership for this session, so on success we record
+    // only that verification happened; the key itself is never persisted.
     window.verifyOrganiserKey = async function(tournamentId, key) {
+        let verified;
         if (typeof Firebase !== 'undefined') {
-            return Firebase.verifyOrganiserKey(format.toUpperCase().replace('-', '_'), tournamentId, key);
-        }
-        try {
-            const snapshot = await window.database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/organiserKey`).once('value');
-            return snapshot.val() === key;
-        } catch (error) {
-            console.error('Error verifying organiser key:', error);
+            verified = await Firebase.verifyOrganiserKey(format.toUpperCase().replace('-', '_'), tournamentId, key);
+        } else if (typeof proveTournamentSecret === 'function') {
+            verified = await proveTournamentSecret(tournamentId, { key });
+        } else {
+            console.error('verifyOrganiserKey: shared/format-config.js must be loaded');
             return false;
         }
+        if (verified) window.markOrganiserVerified(tournamentId);
+        return verified;
     };
-    
-    // Get passcode hash
-    window.getPasscodeHash = async function(tournamentId) {
+
+    // Verify organiser passcode. Replaces getPasscodeHash(): the stored hash
+    // is unreadable, so the caller hashes the entered passcode and that value
+    // is proved instead of being compared locally.
+    window.verifyPasscode = async function(tournamentId, passcodeHash) {
+        let verified;
         if (typeof Firebase !== 'undefined') {
-            return Firebase.getPasscodeHash(format.toUpperCase().replace('-', '_'), tournamentId);
+            verified = await Firebase.verifyPasscode(format.toUpperCase().replace('-', '_'), tournamentId, passcodeHash);
+        } else if (typeof proveTournamentSecret === 'function') {
+            verified = await proveTournamentSecret(tournamentId, { passcodeHash });
+        } else {
+            console.error('verifyPasscode: shared/format-config.js must be loaded');
+            return false;
         }
-        try {
-            const snapshot = await window.database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/passcodeHash`).once('value');
-            return snapshot.val();
-        } catch (error) {
-            console.error('Error getting passcode hash:', error);
-            return null;
-        }
+        if (verified) window.markOrganiserVerified(tournamentId);
+        return verified;
     };
-    
-    // Get organiser key
-    window.getOrganiserKey = async function(tournamentId) {
-        if (typeof Firebase !== 'undefined') {
-            return Firebase.getOrganiserKey(format.toUpperCase().replace('-', '_'), tournamentId);
-        }
+
+    // Record that this tab proved the organiser secret for a tournament.
+    // This marker — not the key — is what survives navigation; see
+    // core/router.js, which reads it to restore organiser status.
+    window.markOrganiserVerified = function(tournamentId) {
+        if (!tournamentId) return;
         try {
-            const snapshot = await window.database.ref(`${CONFIG.FIREBASE_ROOT}/${tournamentId}/meta/organiserKey`).once('value');
-            return snapshot.val();
-        } catch (error) {
-            console.error('Error getting organiser key:', error);
-            return null;
-        }
+            sessionStorage.setItem(`organiser_verified_${tournamentId}`, '1');
+        } catch (e) { /* sessionStorage unavailable */ }
     };
-    
+
     // ===== Player colors =====
     window.PLAYER_COLORS = PLAYER_COLORS;
     

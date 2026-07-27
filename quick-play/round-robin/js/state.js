@@ -80,9 +80,9 @@ class RoundRobinState {
         }
 
         try {
-            const snapshot = await database.ref(`${this.getBasePath()}/meta/organiserKey`).once('value');
-            const storedKey = snapshot.val();
-            this.isOrganiser = (storedKey === key);
+            // Prove the key instead of reading it back: see
+            // proveTournamentSecret() in shared/format-config.js.
+            this.isOrganiser = await proveTournamentSecret(this.tournamentId, { key });
             this.organiserKey = key;
 
             if (this.isOrganiser) {

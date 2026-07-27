@@ -32,6 +32,21 @@ async function handleRouteChange(route, tournamentId, organiserKey) {
 }
 
 /**
+ * Did this tab already verify the organiser passcode for this tournament?
+ * Only the fact of verification is stored — never the key or the passcode.
+ * @param {string} tournamentId
+ * @returns {boolean}
+ */
+function isVerifiedOrganiser(tournamentId) {
+    if (!tournamentId) return false;
+    try {
+        return sessionStorage.getItem('americano_organiser_' + tournamentId) === '1';
+    } catch (e) {
+        return false; // private mode / disabled
+    }
+}
+
+/**
  * Initialize tournament view
  */
 async function initializeTournament(tournamentId, organiserKey) {
@@ -53,11 +68,17 @@ async function initializeTournament(tournamentId, organiserKey) {
     // Create new state
     state = new AmericanoState(tournamentId);
     
-    // Verify organiser key if provided
+    // Verify organiser key if provided. Failing that, honour the marker left
+    // by a successful passcode login earlier in this tab: the organiser key is
+    // unreadable by design so there is nothing to re-verify, and the proof
+    // already claimed write ownership server-side. This is what keeps
+    // organiser status across keyless navigation, including TV mode and back.
     if (organiserKey) {
         await state.verifyOrganiserKey(organiserKey);
+    } else if (isVerifiedOrganiser(tournamentId)) {
+        state.isOrganiser = true;
     }
-    
+
     // Load data from Firebase (this will trigger render when data arrives)
     state.loadFromFirebase();
 }

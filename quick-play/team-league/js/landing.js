@@ -331,7 +331,7 @@ function renderWizardStep1() {
                         id="wizard-passcode" 
                         value="${WizardState.passcode}"
                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors text-lg" 
-                        placeholder="Create a passcode (min 4 chars)"
+                        placeholder="Create a passcode (min 6 chars)"
                     />
                     <p class="text-xs text-gray-500 mt-1">You'll need this to manage the tournament</p>
                 </div>
@@ -735,8 +735,12 @@ function wizardNext() {
         const passcode = document.getElementById('wizard-passcode')?.value;
         const passcodeConfirm = document.getElementById('wizard-passcode-confirm')?.value;
         
-        if (!passcode || passcode.length < 4) {
-            showWizardError('Passcode must be at least 4 characters');
+        // Minimum 6: the passcode is this format's organiser key, and
+        // tournamentSecrets rejects a key shorter than 6 characters — a
+        // shorter one could not be seeded and the organiser could never
+        // re-claim the tournament on another device.
+        if (!passcode || passcode.length < 6) {
+            showWizardError('Passcode must be at least 6 characters');
             return;
         }
         
@@ -1425,6 +1429,12 @@ async function createTournamentInFirebase(tournamentId, organiserKey, name, team
     });
 
     await database.ref(`team-tournaments/${tournamentId}`).set(data);
+
+    // Seed the unreadable secrets node so this organiser can prove ownership
+    // later. Must follow the write above — the rule checks meta/organizerUid.
+    // The passcode is the organiser key for this format.
+    await seedTournamentSecret(tournamentId, { root: 'team-tournaments', key: organiserKey });
+
     console.log(`✅ Tournament ${tournamentId} created (mode: ${modeSettings?.mode || 'anyone'})`);
 }
 
