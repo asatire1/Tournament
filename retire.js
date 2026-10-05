@@ -1,14 +1,14 @@
 /*
  * The old UberPadel site is retired (October 2026). New games run on
  * https://uberpadel.com. Landing pages redirect there. Links to an existing
- * event (#/t/CODE and other #/ routes, ?id=, ?key=) stay here, because those
+ * event (#/t/CODE and other #/ routes, ?id=, ?key=, ?comp=) stay here, because those
  * events live only in this site's database; they get a banner instead.
  */
 (function () {
   var NEW = 'https://uberpadel.com';
   var hash = location.hash || '';
   var search = location.search || '';
-  var hasEvent = /^#\/./.test(hash) || /[?&](id|key|code|t)=/.test(search);
+  var hasEvent = /^#\/./.test(hash) || /[?&](id|key|code|t|comp|competition)=/.test(search);
 
   if (!hasEvent) {
     var path = location.pathname.replace(/index\.html$/, '');
@@ -38,7 +38,7 @@
     bar.id = 'up-retired';
     bar.setAttribute('role', 'note');
     bar.style.cssText =
-      'position:sticky;top:0;z-index:99999;background:#111737;color:#fff;' +
+      'position:sticky;top:0;z-index:40;background:#111737;color:#fff;' +
       'font:500 14px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;' +
       'padding:10px 16px;text-align:center';
     bar.innerHTML =
